@@ -90,7 +90,7 @@
   scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
 }
 
-.menu__lista {
+.menu .menu__lista {
   position: relative;
   display: grid;
   gap: 2px;
@@ -134,74 +134,16 @@
   text-overflow: ellipsis;
 }
 
-/* Módulo activo: queda atado con una cinta blanca cosida */
+/* Módulo activo: fondo blanco, el riel verde lo enmarca */
 .menu__enlace[aria-current="page"] {
   background: var(--blanco);
   color: var(--verde-800);
   font-weight: var(--peso-semi);
 }
 
-.menu__enlace[aria-current="page"]::before,
-.menu__enlace[aria-current="page"]::after {
-  content: "";
-  position: absolute;
-  left: 6px;
-  right: 6px;
-  height: 1px;
-  background: repeating-linear-gradient(90deg, var(--verde-300) 0 5px, transparent 5px 9px);
-}
-
-.menu__enlace[aria-current="page"]::before {
-  top: 4px;
-}
-
-.menu__enlace[aria-current="page"]::after {
-  bottom: 4px;
-}
-
-/* Con JS la cinta es una sola pieza que se desliza al módulo activo */
-.menu--cinta .menu__enlace[aria-current="page"] {
-  background: transparent;
-}
-
-.menu--cinta .menu__enlace[aria-current="page"]::before,
-.menu--cinta .menu__enlace[aria-current="page"]::after {
-  content: none;
-}
-
-.menu__cinta {
-  position: absolute;
-  left: var(--esp-1);
-  right: var(--esp-1);
-  top: 0;
-  height: var(--alto-control);
-  border-radius: var(--radio);
+.menu__enlace[aria-current="page"]:hover {
   background: var(--blanco);
-  transform: translateY(var(--cinta-y, 0));
-  transition: transform 220ms var(--ease-in-out);
-  pointer-events: none;
-}
-
-.menu__cinta::before,
-.menu__cinta::after {
-  content: "";
-  position: absolute;
-  left: 6px;
-  right: 6px;
-  height: 1px;
-  background: repeating-linear-gradient(90deg, var(--verde-300) 0 5px, transparent 5px 9px);
-}
-
-.menu__cinta::before {
-  top: 4px;
-}
-
-.menu__cinta::after {
-  bottom: 4px;
-}
-
-.menu__cinta.sin-transicion {
-  transition: none;
+  color: var(--verde-900);
 }
 
 .menu__separador {
@@ -279,6 +221,7 @@
   top: 0;
   z-index: var(--z-barra);
   background: var(--blanco);
+  border-bottom: 1px solid var(--color-borde);
 }
 
 .barra {
@@ -595,13 +538,9 @@
   }
 }
 
-/* Movimiento reducido: el cajón aparece por fundido, la cinta salta sin
-   deslizarse y la etiqueta flotante no se desplaza. */
+/* Movimiento reducido: el cajón aparece por fundido y la etiqueta flotante
+   no se desplaza. */
 @media (prefers-reduced-motion: reduce) {
-  .menu__cinta {
-    transition: none;
-  }
-
   .panel:not(.riel-expandido) .menu__texto {
     transform: translate(0, -50%);
   }
@@ -617,5 +556,16 @@
   .riel.esta-abierto {
     opacity: 1;
     transition: opacity var(--dur-corta) ease, visibility 0s;
+  }
+}
+
+.menu__aviso--vencido {
+  background: var(--terracota-100);
+  color: var(--terracota-700);
+}
+
+@media (min-width: 768px) {
+  .panel:not(.riel-expandido) .menu__aviso.menu__aviso--vencido {
+    background: var(--terracota-200);
   }
 }

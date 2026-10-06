@@ -1,0 +1,126 @@
+<!-- {"titulo":"Pagos QR","modulo":"qr","h1":"Pagos QR","js":["qr.js"],"cssExtra":["modulos.css"]} -->
+    <main class="contenido" id="contenido">
+      <div class="alerta alerta--aviso" id="qr-por-vencer">
+        <svg class="icono" aria-hidden="true"><use href="#i-reloj"></use></svg>
+        <p class="alerta__titulo">El QR vence hoy a las 16:40</p>
+        <p class="alerta__texto">Quedan 2 h 05 min. Cuando venza, el punto de venta deshabilita el cobro con QR hasta que se suba uno nuevo.</p>
+      </div>
+      <div class="alerta alerta--peligro" id="qr-vencido" hidden>
+        <svg class="icono" aria-hidden="true"><use href="#i-qrOff"></use></svg>
+        <p class="alerta__titulo">QR vencido</p>
+        <p class="alerta__texto" data-requiere="qr.subir">El cobro con QR está bloqueado en el punto de venta. Sube un QR nuevo para seguir cobrando así.</p>
+        <p class="alerta__texto" data-sin-permiso="qr.subir">El cobro con QR está bloqueado. Pide al administrador un QR nuevo.</p>
+      </div>
+
+      <section class="qr-actual panel-bloque" aria-labelledby="t-qr-actual">
+        <div class="qr-actual__imagen">
+          <img id="qr-img" src="../assets/img/qr-cobro-demo.svg" alt="QR de cobro vigente (ejemplo)" width="200" height="200">
+        </div>
+        <div class="qr-actual__datos">
+          <div class="seccion__cabeza">
+            <h2 id="t-qr-actual">QR vigente</h2>
+            <span class="insignia insignia--ok" id="qr-estado">Activo</span>
+          </div>
+          <dl class="datos">
+            <dt>Monto fijo</dt><dd class="num">Bs 0,50</dd>
+            <dt>Banco</dt><dd>BNB <span class="ejemplo">Ejemplo</span></dd>
+            <dt>Subido</dt><dd>05/10/2026, 16:40 por Ana Lucía Vaca</dd>
+            <dt>Vence</dt><dd id="qr-vence">Hoy, 16:40 (dura 24 horas)</dd>
+            <dt>Ventas cobradas</dt><dd class="num">3 · Bs 1,50</dd>
+          </dl>
+          <div class="qr-actual__acciones" data-requiere="qr.subir">
+            <button class="boton boton--primario" type="button" data-alternar="form-qr" aria-expanded="false" aria-controls="form-qr">
+              <svg class="icono" aria-hidden="true"><use href="#i-subir2"></use></svg>
+              Subir QR nuevo
+            </button>
+            <button class="boton" type="button" id="btn-retirar" data-abrir-modal="modal-retirar">
+              <svg class="icono" aria-hidden="true"><use href="#i-qrOff"></use></svg>
+              Retirar ahora
+            </button>
+          </div>
+          <p class="qr-actual__demo" data-requiere="qr.subir">
+            <span class="ejemplo">Prototipo</span>
+            <button class="enlace-boton" type="button" id="simular">Simular vencimiento</button>
+          </p>
+        </div>
+      </section>
+
+      <form class="panel-bloque formulario-rapido" id="form-qr" novalidate hidden aria-labelledby="t-subir">
+        <input type="hidden" name="_csrf" value="">
+        <div class="panel-bloque__cabecera">
+          <h2 class="panel-bloque__titulo" id="t-subir">Subir QR nuevo</h2>
+          <button class="boton boton--fantasma boton--icono" type="button" data-alternar="form-qr" aria-label="Cerrar formulario">
+            <svg class="icono" aria-hidden="true"><use href="#i-cerrar"></use></svg>
+          </button>
+        </div>
+        <div class="panel-bloque__cuerpo formulario-rapido__campos">
+          <div class="campo campo--ancho">
+            <div class="archivo" id="zona-qr">
+              <span class="archivo__icono" aria-hidden="true"><svg class="icono icono--lg"><use href="#i-qr"></use></svg></span>
+              <p class="archivo__titulo">Arrastra la imagen del QR o <span>elige un archivo</span></p>
+              <p class="archivo__ayuda" id="qr-archivo-ayuda">PNG, JPG o WebP, máximo 2 MB. Debe ser una imagen nueva: no se acepta un QR ya usado.</p>
+              <label class="visualmente-oculto" for="qr-archivo">Imagen del QR</label>
+              <input id="qr-archivo" type="file" accept="image/png,image/jpeg,image/webp" aria-describedby="qr-archivo-ayuda qr-archivo-error">
+            </div>
+            <p class="campo__error" id="qr-archivo-error" hidden></p>
+            <p class="archivo-elegido" id="qr-archivo-nombre" hidden></p>
+          </div>
+          <div class="campo">
+            <label class="campo__etiqueta" for="qr-monto">Monto fijo del QR</label>
+            <div class="control-grupo">
+              <span class="control-grupo__prefijo" aria-hidden="true">Bs</span>
+              <input class="control control--numero" id="qr-monto" type="text" inputmode="decimal" value="0,50" aria-describedby="qr-monto-error">
+            </div>
+            <p class="campo__error" id="qr-monto-error" hidden></p>
+          </div>
+          <div class="campo">
+            <label class="campo__etiqueta" for="qr-banco">Banco</label>
+            <input class="control" id="qr-banco" type="text" value="BNB" autocomplete="off">
+          </div>
+          <p class="campo--ancho formulario-rapido__nota">Al subirlo, el QR actual pasa a «Reemplazado». El nuevo vale 24 horas desde ahora.</p>
+        </div>
+        <div class="panel-bloque__pie">
+          <button class="boton boton--primario" type="submit">Subir y activar</button>
+          <button class="boton" type="button" data-alternar="form-qr">Cancelar</button>
+        </div>
+      </form>
+
+      <section class="seccion" aria-labelledby="t-historial-qr" data-requiere="qr.historial">
+        <h2 class="seccion__titulo" id="t-historial-qr">Historial</h2>
+        <div class="tabla-contenedor">
+          <table class="tabla tabla--fichas">
+            <caption class="visualmente-oculto">Historial de QR de cobro</caption>
+            <thead>
+              <tr>
+                <th scope="col">Subido</th>
+                <th scope="col">Por</th>
+                <th scope="col">Banco</th>
+                <th scope="col" class="col-num">Monto</th>
+                <th scope="col">Estuvo activo</th>
+                <th scope="col" class="col-num">Ventas</th>
+                <th scope="col">Estado</th>
+              </tr>
+            </thead>
+            <tbody id="filas-qr">
+              <tr><td class="num">05/10/2026 16:40</td><td>Ana Lucía Vaca</td><td>BNB</td><td class="col-num num">0,50</td><td>En curso</td><td class="col-num num">3</td><td class="celda-estado"><span class="insignia insignia--ok">Activo</span></td></tr>
+              <tr><td class="num">04/10/2026 16:12</td><td>Ana Lucía Vaca</td><td>BNB</td><td class="col-num num">0,50</td><td>24 h</td><td class="col-num num">5</td><td><span class="insignia insignia--neutra">Vencido</span></td></tr>
+              <tr><td class="num">03/10/2026 09:30</td><td>Ana Lucía Vaca</td><td>Banco Unión</td><td class="col-num num">0,50</td><td>6 h 42 min</td><td class="col-num num">2</td><td><span class="insignia insignia--neutra">Reemplazado</span></td></tr>
+              <tr><td class="num">02/10/2026 08:05</td><td>Ana Lucía Vaca</td><td>BNB</td><td class="col-num num">0,50</td><td>1 h 15 min</td><td class="col-num num">0</td><td><span class="insignia insignia--peligro">Retirado</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <dialog class="modal" id="modal-retirar" aria-labelledby="retirar-titulo">
+        <form method="dialog">
+          <div class="modal__cuerpo">
+            <h2 class="modal__titulo" id="retirar-titulo">¿Retirar el QR ahora?</h2>
+            <p class="modal__texto">Sale de circulación de inmediato y el punto de venta no podrá cobrar con QR hasta que subas uno nuevo.</p>
+          </div>
+          <div class="modal__acciones">
+            <button class="boton" type="submit" value="cancelar" autofocus>Cancelar</button>
+            <button class="boton boton--peligro" type="submit" value="retirar">Retirar QR</button>
+          </div>
+        </form>
+      </dialog>
+    </main>

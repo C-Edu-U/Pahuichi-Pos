@@ -1,0 +1,155 @@
+<!-- {"titulo":"Bitácora","modulo":"bitacora","h1":"Bitácora","js":[],"cssExtra":["modulos.css"]} -->
+    <main class="contenido" id="contenido">
+      <p class="cabeza-pagina__texto bitacora__intro">Registro de quién hizo qué y cuándo. No se puede editar ni borrar.</p>
+      <div class="filtros" role="search" aria-label="Filtrar bitácora">
+        <div class="campo filtros__busqueda">
+          <label class="campo__etiqueta" for="b-buscar">Buscar</label>
+          <div class="control-grupo">
+            <svg class="icono control-grupo__icono" aria-hidden="true"><use href="#i-buscar"></use></svg>
+            <input class="control" id="b-buscar" type="search" placeholder="Detalle, entidad o IP" data-filtra="filas-bitacora" autocomplete="off">
+          </div>
+        </div>
+        <div class="campo">
+          <label class="campo__etiqueta" for="b-usuario">Usuario</label>
+          <select class="control" id="b-usuario" data-filtra="filas-bitacora" data-campo="usuario">
+            <option value="">Todos</option>
+            <option>Ana Lucía Vaca</option>
+            <option>Mariela Suárez</option>
+            <option>Sistema</option>
+          </select>
+        </div>
+        <div class="campo">
+          <label class="campo__etiqueta" for="b-accion">Acción</label>
+          <select class="control" id="b-accion" data-filtra="filas-bitacora" data-campo="accion">
+            <option value="">Todas</option>
+            <option value="venta">Ventas</option>
+            <option value="anulacion">Anulaciones</option>
+            <option value="caja">Caja</option>
+            <option value="qr">Pagos QR</option>
+            <option value="usuario">Usuarios</option>
+            <option value="denegado">Accesos denegados</option>
+            <option value="config">Configuración</option>
+            <option value="producto">Productos</option>
+            <option value="sesion">Inicios de sesión</option>
+          </select>
+        </div>
+        <div class="campo">
+          <label class="campo__etiqueta" for="b-dia">Día</label>
+          <select class="control" id="b-dia" data-filtra="filas-bitacora" data-campo="dia">
+            <option value="">Todos</option>
+            <option value="06/10/2026">Hoy, 06/10</option>
+            <option value="05/10/2026">Ayer, 05/10</option>
+          </select>
+        </div>
+      </div>
+      <p class="resultado"><span class="resultado__cuenta" data-cuenta="filas-bitacora" data-singular="registro" data-plural="registros">0 registros</span></p>
+      <div class="tabla-contenedor">
+        <table class="tabla tabla--bitacora tabla--fichas">
+          <caption class="visualmente-oculto">Bitácora de auditoría</caption>
+          <thead>
+            <tr>
+              <th scope="col">Fecha y hora</th>
+              <th scope="col">Usuario</th>
+              <th scope="col">Acción</th>
+              <th scope="col">Entidad</th>
+              <th scope="col">Detalle</th>
+              <th scope="col">IP</th>
+            </tr>
+          </thead>
+          <tbody id="filas-bitacora">
+            <tr data-usuario="Ana Lucía Vaca" data-accion="config" data-dia="06/10/2026">
+              <td class="num">06/10/2026 14:31</td>
+              <td>Ana Lucía Vaca</td>
+              <td><span class="insignia insignia--neutra">Configuración</span></td>
+              <td>Empresa</td>
+              <td>Cambió la modalidad a computarizada en línea</td>
+              <td class="codigo">190.181.24.10</td>
+            </tr>
+            <tr data-usuario="Mariela Suárez" data-accion="denegado" data-dia="06/10/2026">
+              <td class="num">06/10/2026 12:58</td>
+              <td>Mariela Suárez</td>
+              <td><span class="insignia insignia--peligro">Acceso denegado</span></td>
+              <td>Usuarios</td>
+              <td>Intentó abrir /usuarios con rol Cajero</td>
+              <td class="codigo">190.181.24.37</td>
+            </tr>
+            <tr data-usuario="Mariela Suárez" data-accion="venta" data-dia="06/10/2026">
+              <td class="num">06/10/2026 12:41</td>
+              <td>Mariela Suárez</td>
+              <td><span class="insignia insignia--ok">Venta</span></td>
+              <td>Factura N° 128</td>
+              <td>Bs 76,00 en efectivo a Rodríguez Peña</td>
+              <td class="codigo">190.181.24.37</td>
+            </tr>
+            <tr data-usuario="Mariela Suárez" data-accion="producto" data-dia="06/10/2026">
+              <td class="num">06/10/2026 11:52</td>
+              <td>Mariela Suárez</td>
+              <td><span class="insignia insignia--neutra">Producto</span></td>
+              <td>HO-06 Masaco de plátano</td>
+              <td>Marcado como agotado hoy</td>
+              <td class="codigo">190.181.24.37</td>
+            </tr>
+            <tr data-usuario="Ana Lucía Vaca" data-accion="anulacion" data-dia="06/10/2026">
+              <td class="num">06/10/2026 11:34</td>
+              <td>Ana Lucía Vaca</td>
+              <td><span class="insignia insignia--peligro">Anulación</span></td>
+              <td>Factura N° 123</td>
+              <td>Motivo 1: factura mal emitida</td>
+              <td class="codigo">190.181.24.10</td>
+            </tr>
+            <tr data-usuario="Sistema" data-accion="usuario" data-dia="06/10/2026">
+              <td class="num">06/10/2026 10:47</td>
+              <td>Sistema</td>
+              <td><span class="insignia insignia--aviso">Usuario</span></td>
+              <td>jorge</td>
+              <td>Bloqueado 15 minutos tras 5 intentos fallidos</td>
+              <td class="codigo">181.115.60.92</td>
+            </tr>
+            <tr data-usuario="Ana Lucía Vaca" data-accion="sesion" data-dia="06/10/2026">
+              <td class="num">06/10/2026 07:40</td>
+              <td>Ana Lucía Vaca</td>
+              <td><span class="insignia insignia--neutra">Inicio de sesión</span></td>
+              <td>admin</td>
+              <td>Ingreso correcto</td>
+              <td class="codigo">190.181.24.10</td>
+            </tr>
+            <tr data-usuario="Mariela Suárez" data-accion="caja" data-dia="06/10/2026">
+              <td class="num">06/10/2026 07:02</td>
+              <td>Mariela Suárez</td>
+              <td><span class="insignia insignia--ok">Caja</span></td>
+              <td>Turno 214</td>
+              <td>Abrió caja con Bs 200,00</td>
+              <td class="codigo">190.181.24.37</td>
+            </tr>
+            <tr data-usuario="Ana Lucía Vaca" data-accion="qr" data-dia="05/10/2026">
+              <td class="num">05/10/2026 16:40</td>
+              <td>Ana Lucía Vaca</td>
+              <td><span class="insignia insignia--neutra">Pago QR</span></td>
+              <td>QR 32</td>
+              <td>Subió un QR nuevo de Bs 0,50 (BNB)</td>
+              <td class="codigo">190.181.24.10</td>
+            </tr>
+            <tr data-usuario="Mariela Suárez" data-accion="caja" data-dia="05/10/2026">
+              <td class="num">05/10/2026 15:12</td>
+              <td>Mariela Suárez</td>
+              <td><span class="insignia insignia--ok">Caja</span></td>
+              <td>Turno 213</td>
+              <td>Cerró caja. Arqueo cuadra</td>
+              <td class="codigo">190.181.24.37</td>
+            </tr>
+            <tr data-usuario="Ana Lucía Vaca" data-accion="usuario" data-dia="05/10/2026">
+              <td class="num">05/10/2026 09:20</td>
+              <td>Ana Lucía Vaca</td>
+              <td><span class="insignia insignia--aviso">Usuario</span></td>
+              <td>fabiola</td>
+              <td>Desactivó la cuenta</td>
+              <td class="codigo">190.181.24.10</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="vacio" data-vacio-de="filas-bitacora" hidden>
+          <h2 class="vacio__titulo">Ningún registro coincide</h2>
+          <button class="boton" type="button" data-limpiar-filtros="filas-bitacora">Quitar filtros</button>
+        </div>
+      </div>
+    </main>

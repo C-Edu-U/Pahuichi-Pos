@@ -1,7 +1,7 @@
 /* ==========================================================================
    Pahuichi POS · Tokens del sistema de diseño
-   Base: algodón blanco y verde de la bandera cruceña. El color entra como
-   "cintas": bandas que marcan dónde estás y qué estado tiene algo.
+   Base: blanco y el verde de la bandera cruceña; terracota y ámbar solo
+   para estados.
    Espaciado en múltiplos de 8 (4 px solo para separaciones internas).
    ========================================================================== */
 
@@ -44,6 +44,10 @@
   --linea-suave: #ecf0ee;
   --fondo-alterno: #f6f8f7;
   --blanco: #ffffff;
+
+  /* --- Series de datos (validadas para daltonismo: ΔE 16,2) --- */
+  --serie-efectivo: #177448;
+  --serie-qr: #4a6fb5;
 
   /* --- Roles semánticos --- */
   --color-texto: var(--tinta-900);
@@ -117,7 +121,6 @@
   --riel-plegado: 4.5rem;     /* 72 */
   --barra-alto: 4rem;         /* 64 */
   --contenido-max: 80rem;     /* 1280 */
-  --cinta-alto: 6px;
 
   /* --- Movimiento: corto, con propósito --- */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);

@@ -1,31 +1,8 @@
 /* ==========================================================================
    Pahuichi POS · Componentes
    Botón, campo, selector, carga de archivo, panel, tabla, insignia, alerta,
-   pestañas, modal, estado vacío y la cinta.
+   pestañas, modal y estado vacío.
    ========================================================================== */
-
-/* --------------------------------------------------------------------------
-   Cinta: banda de color con una costura punteada. Es el sello del sistema:
-   marca encabezados de página y el módulo activo. No se usa como adorno.
-   -------------------------------------------------------------------------- */
-.cinta {
-  --cinta-color: var(--verde-600);
-  --cinta-costura: rgba(255, 255, 255, 0.78);
-  display: block;
-  height: var(--cinta-alto);
-  background:
-    repeating-linear-gradient(90deg, var(--cinta-costura) 0 6px, transparent 6px 11px) center / 100% 1px no-repeat,
-    var(--cinta-color);
-}
-
-.cinta--terracota {
-  --cinta-color: var(--terracota-600);
-}
-
-.cinta--ambar {
-  --cinta-color: var(--ambar-500);
-  --cinta-costura: rgba(255, 255, 255, 0.9);
-}
 
 /* --------------------------------------------------------------------------
    Sello de la marca: las tres franjas de la bandera, verde-blanco-verde
@@ -148,7 +125,7 @@
 .boton[disabled],
 .boton[aria-disabled="true"] {
   --boton-fondo: var(--linea-suave);
-  --boton-texto: var(--tinta-500);
+  --boton-texto: var(--tinta-600);
   --boton-borde: var(--linea);
   cursor: not-allowed;
   transform: none;
@@ -434,6 +411,7 @@ select.control {
 
 .panel-bloque__cabecera {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--esp-2);
@@ -588,7 +566,7 @@ select.control {
 }
 
 /* --------------------------------------------------------------------------
-   Alertas: la cinta va arriba, no un borde lateral grueso
+   Alertas: borde fino y fondo tenue, nunca un borde lateral grueso
    -------------------------------------------------------------------------- */
 .alerta {
   --alerta-fondo: var(--verde-50);
@@ -649,7 +627,7 @@ select.control {
 }
 
 /* --------------------------------------------------------------------------
-   Pestañas de filtro: la activa queda "atada" con su cinta inferior
+   Pestañas de filtro: la activa lleva un subrayado verde
    -------------------------------------------------------------------------- */
 .pestanas {
   display: flex;
@@ -870,5 +848,195 @@ select.control {
     .modal[open] {
       transform: none;
     }
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Avisos flotantes: confirman una acción sin interrumpir
+   -------------------------------------------------------------------------- */
+.avisos {
+  position: fixed;
+  left: 50%;
+  bottom: var(--esp-3);
+  z-index: var(--z-modal);
+  display: grid;
+  gap: var(--esp-1);
+  width: min(26rem, calc(100vw - var(--esp-4)));
+  translate: -50% 0;
+  pointer-events: none;
+}
+
+.aviso-flotante {
+  padding: var(--esp-2) var(--esp-3);
+  border-radius: var(--radio);
+  background: var(--tinta-900);
+  color: var(--blanco);
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-medio);
+  box-shadow: var(--sombra-2);
+  transition: opacity var(--dur-media) ease, transform var(--dur-media) var(--ease-out);
+}
+
+@starting-style {
+  .aviso-flotante {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.aviso-flotante.se-va {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @starting-style {
+    .aviso-flotante {
+      transform: none;
+    }
+  }
+}
+
+/* Botón con aspecto de enlace (acciones secundarias dentro de un texto) */
+.enlace-boton {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-enlace);
+  font-weight: var(--peso-semi);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.enlace-boton:hover {
+  color: var(--color-primario-hover);
+}
+
+.control--area {
+  min-height: auto;
+  padding: var(--esp-1) var(--esp-2);
+  line-height: var(--interlineado-base);
+  resize: vertical;
+}
+
+.control-grupo__sufijo {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--esp-2);
+  border: 1px solid var(--color-borde-fuerte);
+  border-left: 0;
+  border-radius: 0 var(--radio) var(--radio) 0;
+  background: var(--fondo-alterno);
+  color: var(--color-texto-2);
+}
+
+.control-grupo:has(.control-grupo__sufijo) .control {
+  border-radius: var(--radio) 0 0 var(--radio);
+}
+
+/* Grupo de botones con aspecto de control segmentado (vista, formato) */
+.subnav--botones {
+  margin: 0;
+}
+
+.subnav--botones .subnav__enlace {
+  border: 0;
+  background: none;
+  font-size: var(--texto-base);
+  cursor: pointer;
+}
+
+.subnav--botones .subnav__enlace[aria-pressed="true"] {
+  background: var(--blanco);
+  color: var(--verde-800);
+  box-shadow: var(--sombra-1), 0 0 0 1px var(--color-borde);
+}
+
+
+/* --------------------------------------------------------------------------
+   Tabla en fichas (móvil): cada fila se lee de arriba abajo con la
+   etiqueta de su columna a la izquierda y el dato a la derecha
+   -------------------------------------------------------------------------- */
+@media (max-width: 767.98px) {
+  .tabla--fichas thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  .tabla--fichas,
+  .tabla--fichas tbody {
+    display: block;
+  }
+
+  .tabla--fichas tbody tr {
+    display: grid;
+    gap: var(--esp-05);
+    padding: var(--esp-2);
+    border-bottom: 1px solid var(--linea-suave);
+  }
+
+  .tabla--fichas tbody tr:last-child {
+    border-bottom: 0;
+  }
+
+  .tabla--fichas tbody tr[hidden] {
+    display: none;
+  }
+
+  .tabla--fichas tbody td {
+    display: block;
+    height: auto;
+    padding: 0;
+    border: 0;
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+
+  .tabla--fichas tbody td::before {
+    content: attr(data-etiqueta);
+    float: left;
+    margin-right: var(--esp-2);
+    color: var(--color-texto-2);
+    font-size: var(--texto-xs);
+    font-weight: var(--peso-medio);
+    text-align: left;
+  }
+
+  .tabla--fichas tbody td:first-child,
+  .tabla--fichas tbody td.col-accion {
+    text-align: left;
+  }
+
+  .tabla--fichas tbody td:first-child::before,
+  .tabla--fichas tbody td.col-accion::before,
+  .tabla--fichas tbody td[data-etiqueta=""]::before {
+    content: none;
+  }
+
+  .tabla--fichas tbody td:first-child {
+    margin-bottom: var(--esp-05);
+  }
+
+  .tabla--fichas .col-accion {
+    width: auto;
+    margin-top: var(--esp-1);
+  }
+
+  .tabla--fichas .acciones-fila {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .tabla--fichas .acciones-fila .boton:not(.boton-agotado[aria-pressed="true"]) {
+    --boton-borde: var(--color-borde-fuerte);
+  }
+
+  .tabla--fichas tbody td[hidden] {
+    display: none;
   }
 }

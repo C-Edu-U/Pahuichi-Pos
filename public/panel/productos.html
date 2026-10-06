@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Productos · Pahuichi POS</title>
   <meta name="theme-color" content="#13603e">
+  <link rel="preload" href="../assets/fonts/archivo-variable-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="../assets/css/tokens.css">
   <link rel="stylesheet" href="../assets/css/base.css">
   <link rel="stylesheet" href="../assets/css/components.css">
@@ -28,19 +29,19 @@
     <nav class="menu" aria-label="Módulos">
       <ul class="menu__lista" role="list">
         <li class="menu__item" data-modulo="escritorio"><a class="menu__enlace" href="escritorio.html"><svg class="icono" aria-hidden="true"><use href="#i-escritorio"></use></svg><span class="menu__texto">Escritorio</span></a></li>
-        <li class="menu__item" data-modulo="pos"><a class="menu__enlace" href="proximamente.html?m=pos"><svg class="icono" aria-hidden="true"><use href="#i-pos"></use></svg><span class="menu__texto">Punto de venta</span></a></li>
-        <li class="menu__item" data-modulo="caja"><a class="menu__enlace" href="proximamente.html?m=caja"><svg class="icono" aria-hidden="true"><use href="#i-caja"></use></svg><span class="menu__texto">Caja</span></a></li>
-        <li class="menu__item" data-modulo="ventas"><a class="menu__enlace" href="proximamente.html?m=ventas"><svg class="icono" aria-hidden="true"><use href="#i-ventas"></use></svg><span class="menu__texto">Ventas y facturas</span></a></li>
-        <li class="menu__item" data-modulo="clientes"><a class="menu__enlace" href="proximamente.html?m=clientes"><svg class="icono" aria-hidden="true"><use href="#i-clientes"></use></svg><span class="menu__texto">Clientes</span></a></li>
+        <li class="menu__item" data-modulo="pos"><a class="menu__enlace" href="pos.html"><svg class="icono" aria-hidden="true"><use href="#i-pos"></use></svg><span class="menu__texto">Punto de venta</span></a></li>
+        <li class="menu__item" data-modulo="caja"><a class="menu__enlace" href="caja.html"><svg class="icono" aria-hidden="true"><use href="#i-caja"></use></svg><span class="menu__texto">Caja</span></a></li>
+        <li class="menu__item" data-modulo="ventas"><a class="menu__enlace" href="ventas.html"><svg class="icono" aria-hidden="true"><use href="#i-ventas"></use></svg><span class="menu__texto">Ventas y facturas</span></a></li>
+        <li class="menu__item" data-modulo="clientes"><a class="menu__enlace" href="clientes.html"><svg class="icono" aria-hidden="true"><use href="#i-clientes"></use></svg><span class="menu__texto">Clientes</span></a></li>
         <li class="menu__separador" role="separator"></li>
         <li class="menu__item" data-modulo="productos"><a class="menu__enlace" href="productos.html" aria-current="page"><svg class="icono" aria-hidden="true"><use href="#i-productos"></use></svg><span class="menu__texto">Productos y categorías</span></a></li>
-        <li class="menu__item" data-modulo="qr"><a class="menu__enlace" href="proximamente.html?m=qr"><svg class="icono" aria-hidden="true"><use href="#i-qr"></use></svg><span class="menu__texto">Pagos QR</span><span class="menu__aviso"><span class="visualmente-oculto">QR vence en </span>2 h</span></a></li>
+        <li class="menu__item" data-modulo="qr"><a class="menu__enlace" href="qr.html"><svg class="icono" aria-hidden="true"><use href="#i-qr"></use></svg><span class="menu__texto">Pagos QR</span><span class="menu__aviso"><span class="visualmente-oculto">QR vence en </span>2 h</span></a></li>
         <li class="menu__separador" role="separator"></li>
-        <li class="menu__item" data-modulo="reportes"><a class="menu__enlace" href="proximamente.html?m=reportes"><svg class="icono" aria-hidden="true"><use href="#i-reportes"></use></svg><span class="menu__texto">Reportes</span></a></li>
-        <li class="menu__item" data-modulo="bitacora"><a class="menu__enlace" href="proximamente.html?m=bitacora"><svg class="icono" aria-hidden="true"><use href="#i-bitacora"></use></svg><span class="menu__texto">Bitácora</span></a></li>
+        <li class="menu__item" data-modulo="reportes"><a class="menu__enlace" href="reportes.html"><svg class="icono" aria-hidden="true"><use href="#i-reportes"></use></svg><span class="menu__texto">Reportes</span></a></li>
+        <li class="menu__item" data-modulo="bitacora"><a class="menu__enlace" href="bitacora.html"><svg class="icono" aria-hidden="true"><use href="#i-bitacora"></use></svg><span class="menu__texto">Bitácora</span></a></li>
         <li class="menu__separador" role="separator"></li>
-        <li class="menu__item" data-modulo="usuarios"><a class="menu__enlace" href="proximamente.html?m=usuarios"><svg class="icono" aria-hidden="true"><use href="#i-usuarios"></use></svg><span class="menu__texto">Usuarios</span></a></li>
-        <li class="menu__item" data-modulo="config"><a class="menu__enlace" href="proximamente.html?m=config"><svg class="icono" aria-hidden="true"><use href="#i-config"></use></svg><span class="menu__texto">Configuración</span></a></li>
+        <li class="menu__item" data-modulo="usuarios"><a class="menu__enlace" href="usuarios.html"><svg class="icono" aria-hidden="true"><use href="#i-usuarios"></use></svg><span class="menu__texto">Usuarios</span></a></li>
+        <li class="menu__item" data-modulo="config"><a class="menu__enlace" href="config.html"><svg class="icono" aria-hidden="true"><use href="#i-config"></use></svg><span class="menu__texto">Configuración</span></a></li>
       </ul>
     </nav>
     <div class="riel__pie">
@@ -76,7 +77,6 @@
           </button>
         </div>
       </div>
-      <span class="cinta" aria-hidden="true"></span>
     </header>
 
     <main class="contenido" id="contenido">
@@ -318,7 +318,6 @@
       <p class="visualmente-oculto" aria-live="polite" id="anuncio"></p>
     </main>
   </div>
-
 
   <script src="../assets/js/iconos.js"></script>
   <script src="../assets/js/app.js"></script>

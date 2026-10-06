@@ -1,0 +1,149 @@
+<!-- {"titulo":"Caja","modulo":"caja","h1":"Caja","js":["caja.js"],"cssExtra":["modulos.css"]} -->
+    <main class="contenido" id="contenido">
+
+      <!-- Sin turno abierto -->
+      <section class="caja-abrir" id="caja-cerrada" aria-labelledby="t-abrir" hidden>
+        <div class="alerta alerta--aviso">
+          <svg class="icono" aria-hidden="true"><use href="#i-candado"></use></svg>
+          <p class="alerta__titulo">La caja está cerrada</p>
+          <p class="alerta__texto">No se puede vender sin un turno abierto. Cuenta el efectivo con el que empiezas y abre la caja.</p>
+        </div>
+        <form class="caja-abrir__form panel-bloque" id="form-abrir" novalidate data-requiere="caja.operar">
+          <input type="hidden" name="_csrf" value="">
+          <div class="panel-bloque__cuerpo grupo-campos">
+            <h2 class="grupo-campos__titulo" id="t-abrir">Abrir caja</h2>
+            <div class="campo">
+              <label class="campo__etiqueta" for="monto-inicial">Monto inicial en efectivo</label>
+              <div class="control-grupo">
+                <span class="control-grupo__prefijo" aria-hidden="true">Bs</span>
+                <input class="control control--numero" id="monto-inicial" type="text" inputmode="decimal" value="200,00" aria-describedby="monto-inicial-error">
+              </div>
+              <p class="campo__error" id="monto-inicial-error" hidden></p>
+            </div>
+            <button class="boton boton--primario" type="submit">
+              <svg class="icono" aria-hidden="true"><use href="#i-abrir"></use></svg>
+              Abrir caja
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Turno abierto -->
+      <div class="caja" id="caja-abierta">
+        <section class="caja__turno" aria-labelledby="t-turno">
+          <div class="seccion__cabeza">
+            <h2 id="t-turno">Turno actual</h2>
+            <span class="insignia insignia--ok">Abierto</span>
+          </div>
+          <div class="panel-bloque">
+            <dl class="resumen resumen--sin-borde">
+              <div class="resumen__fila"><dt>Cajera</dt><dd>Mariela Suárez Añez</dd></div>
+              <div class="resumen__fila"><dt>Abierto</dt><dd class="num">Hoy, 07:02</dd></div>
+              <div class="resumen__fila"><dt>Monto inicial</dt><dd class="num">200,00</dd></div>
+              <div class="resumen__fila"><dt>Ventas en efectivo <span class="resumen__nota">38 ventas</span></dt><dd class="num">1.084,50</dd></div>
+              <div class="resumen__fila"><dt>Ventas con QR <span class="resumen__nota">3 ventas, no entran a caja</span></dt><dd class="num">1,50</dd></div>
+              <div class="resumen__fila"><dt>Anuladas <span class="resumen__nota">1 venta</span></dt><dd class="num">−30,00</dd></div>
+            </dl>
+            <p class="esperado">
+              <span>Efectivo esperado</span>
+              <span class="esperado__monto"><span class="cifra__moneda">Bs</span><span id="esperado">1.254,50</span></span>
+            </p>
+          </div>
+        </section>
+
+        <form class="caja__arqueo" id="form-arqueo" novalidate data-requiere="caja.operar" aria-labelledby="t-arqueo">
+          <input type="hidden" name="_csrf" value="">
+          <div class="seccion__cabeza">
+            <h2 id="t-arqueo">Arqueo y cierre</h2>
+          </div>
+          <div class="panel-bloque">
+            <div class="panel-bloque__cuerpo">
+              <p class="caja__ayuda">Cuenta el efectivo por denominación. La diferencia se calcula sola.</p>
+              <table class="tabla tabla--conteo">
+                <caption class="visualmente-oculto">Conteo de efectivo</caption>
+                <thead>
+                  <tr><th scope="col">Denominación</th><th scope="col" class="col-num">Cantidad</th><th scope="col" class="col-num">Subtotal</th></tr>
+                </thead>
+                <tbody id="conteo">
+                  <tr><th scope="row">Billete de 200</th><td class="col-num"><input class="control control--numero control--conteo" type="text" inputmode="numeric" data-valor="200" aria-label="Cantidad de billetes de 200" value="3"></td><td class="col-num num" data-sub>600,00</td></tr>
+                  <tr><th scope="row">Billete de 100</th><td class="col-num"><input class="control control--numero control--conteo" type="text" inputmode="numeric" data-valor="100" aria-label="Cantidad de billetes de 100" value="4"></td><td class="col-num num" data-sub>400,00</td></tr>
+                  <tr><th scope="row">Billete de 50</th><td class="col-num"><input class="control control--numero control--conteo" type="text" inputmode="numeric" data-valor="50" aria-label="Cantidad de billetes de 50" value="3"></td><td class="col-num num" data-sub>150,00</td></tr>
+                  <tr><th scope="row">Billete de 20</th><td class="col-num"><input class="control control--numero control--conteo" type="text" inputmode="numeric" data-valor="20" aria-label="Cantidad de billetes de 20" value="4"></td><td class="col-num num" data-sub>80,00</td></tr>
+                  <tr><th scope="row">Billete de 10</th><td class="col-num"><input class="control control--numero control--conteo" type="text" inputmode="numeric" data-valor="10" aria-label="Cantidad de billetes de 10" value="1"></td><td class="col-num num" data-sub>10,00</td></tr>
+                  <tr><th scope="row">Moneda de 5</th><td class="col-num"><input class="control control--numero control--conteo" type="text" inputmode="numeric" data-valor="5" aria-label="Cantidad de monedas de 5" value="2"></td><td class="col-num num" data-sub>10,00</td></tr>
+                  <tr><th scope="row">Moneda de 2</th><td class="col-num"><input class="control control--numero control--conteo" type="text" inputmode="numeric" data-valor="2" aria-label="Cantidad de monedas de 2" value="1"></td><td class="col-num num" data-sub>2,00</td></tr>
+                  <tr><th scope="row">Moneda de 1</th><td class="col-num"><input class="control control--numero control--conteo" type="text" inputmode="numeric" data-valor="1" aria-label="Cantidad de monedas de 1" value="2"></td><td class="col-num num" data-sub>2,00</td></tr>
+                  <tr><th scope="row">Moneda de 0,50</th><td class="col-num"><input class="control control--numero control--conteo" type="text" inputmode="numeric" data-valor="0.5" aria-label="Cantidad de monedas de 0,50" value="1"></td><td class="col-num num" data-sub>0,50</td></tr>
+                </tbody>
+              </table>
+
+              <dl class="arqueo">
+                <div class="arqueo__fila"><dt>Contado</dt><dd class="num" id="contado">1.254,50</dd></div>
+                <div class="arqueo__fila"><dt>Esperado</dt><dd class="num">1.254,50</dd></div>
+                <div class="arqueo__fila arqueo__fila--diferencia" id="fila-diferencia"><dt>Diferencia</dt><dd><span class="insignia insignia--ok" id="diferencia">Cuadra</span></dd></div>
+              </dl>
+
+              <label class="casilla casilla--recuadro">
+                <input type="checkbox" id="resumen-menores" checked>
+                <span class="casilla__texto">
+                  <span class="casilla__titulo">Emitir la factura resumen de ventas menores</span>
+                  <span class="casilla__ayuda">12 ventas de menos de Bs 5 sin factura, por Bs 39,00. Sale a nombre de 99003 con la leyenda «VENTAS MENORES DEL DÍA».</span>
+                </span>
+              </label>
+
+              <div class="campo">
+                <label class="campo__etiqueta" for="observacion">Observación <span class="campo__opcional">(opcional)</span></label>
+                <textarea class="control control--area" id="observacion" rows="2" placeholder="Por ejemplo, el motivo de un faltante"></textarea>
+              </div>
+            </div>
+            <div class="panel-bloque__pie">
+              <button class="boton boton--primario" type="button" data-abrir-modal="modal-cerrar">
+                <svg class="icono" aria-hidden="true"><use href="#i-candado"></use></svg>
+                Cerrar turno
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <section class="seccion" aria-labelledby="t-historial">
+        <div class="seccion__cabeza">
+          <h2 id="t-historial">Turnos anteriores</h2>
+        </div>
+        <div class="tabla-contenedor">
+          <table class="tabla tabla--fichas">
+            <caption class="visualmente-oculto">Turnos de caja anteriores</caption>
+            <thead>
+              <tr>
+                <th scope="col">Fecha</th>
+                <th scope="col">Cajero</th>
+                <th scope="col">Horario</th>
+                <th scope="col" class="col-num">Inicial</th>
+                <th scope="col" class="col-num">Esperado</th>
+                <th scope="col" class="col-num">Contado</th>
+                <th scope="col" class="col-num">Diferencia</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td class="num">05/10/2026</td><td>Mariela Suárez</td><td class="num">07:01 a 15:12</td><td class="col-num num">200,00</td><td class="col-num num">1.412,00</td><td class="col-num num">1.412,00</td><td class="col-num"><span class="insignia insignia--ok">Cuadra</span></td></tr>
+              <tr><td class="num">04/10/2026</td><td>Jorge Rivero Chávez</td><td class="num">07:05 a 15:20</td><td class="col-num num">200,00</td><td class="col-num num">1.637,50</td><td class="col-num num">1.627,50</td><td class="col-num"><span class="insignia insignia--peligro">Faltan 10,00</span></td></tr>
+              <tr><td class="num">03/10/2026</td><td>Mariela Suárez</td><td class="num">06:58 a 15:04</td><td class="col-num num">200,00</td><td class="col-num num">1.188,00</td><td class="col-num num">1.190,00</td><td class="col-num"><span class="insignia insignia--aviso">Sobran 2,00</span></td></tr>
+              <tr><td class="num">02/10/2026</td><td>Jorge Rivero Chávez</td><td class="num">07:03 a 15:15</td><td class="col-num num">150,00</td><td class="col-num num">1.326,50</td><td class="col-num num">1.326,50</td><td class="col-num"><span class="insignia insignia--ok">Cuadra</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <dialog class="modal" id="modal-cerrar" aria-labelledby="modal-cerrar-titulo">
+        <form method="dialog">
+          <div class="modal__cuerpo">
+            <h2 class="modal__titulo" id="modal-cerrar-titulo">¿Cerrar el turno?</h2>
+            <p class="modal__texto" id="modal-cerrar-texto">El arqueo cuadra. Después de cerrar no podrás vender hasta abrir otro turno.</p>
+          </div>
+          <div class="modal__acciones">
+            <button class="boton" type="submit" value="cancelar" autofocus>Seguir contando</button>
+            <button class="boton boton--primario" type="submit" value="cerrar">Cerrar turno</button>
+          </div>
+        </form>
+      </dialog>
+    </main>

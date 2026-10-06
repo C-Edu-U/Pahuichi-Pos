@@ -1,0 +1,118 @@
+<!-- {"titulo":"Clientes","modulo":"clientes","h1":"Clientes","js":["clientes.js"],"cssExtra":["modulos.css"]} -->
+    <main class="contenido" id="contenido">
+      <div class="cabeza-pagina">
+        <p class="cabeza-pagina__texto">Clientes frecuentes con su NIT o CI para facturar más rápido desde el punto de venta.</p>
+        <div class="cabeza-pagina__acciones" data-requiere="clientes.crear">
+          <button class="boton boton--primario" type="button" data-alternar="form-cliente" aria-expanded="false" aria-controls="form-cliente">
+            <svg class="icono" aria-hidden="true"><use href="#i-usuarioMas"></use></svg>
+            Nuevo cliente
+          </button>
+        </div>
+      </div>
+
+      <form class="panel-bloque formulario-rapido" id="form-cliente" novalidate hidden aria-labelledby="t-nuevo-cliente">
+        <input type="hidden" name="_csrf" value="">
+        <div class="panel-bloque__cabecera">
+          <h2 class="panel-bloque__titulo" id="t-nuevo-cliente">Nuevo cliente</h2>
+          <button class="boton boton--fantasma boton--icono" type="button" data-alternar="form-cliente" aria-label="Cerrar formulario">
+            <svg class="icono" aria-hidden="true"><use href="#i-cerrar"></use></svg>
+          </button>
+        </div>
+        <div class="panel-bloque__cuerpo formulario-rapido__campos">
+          <div class="campo">
+            <label class="campo__etiqueta" for="c-tipo">Tipo de documento</label>
+            <select class="control" id="c-tipo">
+              <option value="CI">1 · Cédula de identidad (CI)</option>
+              <option value="CEX">2 · Cédula de identidad de extranjero (CEX)</option>
+              <option value="PAS">3 · Pasaporte (PAS)</option>
+              <option value="OD">4 · Otro documento (OD)</option>
+              <option value="NIT">5 · NIT</option>
+            </select>
+          </div>
+          <div class="campo">
+            <label class="campo__etiqueta" for="c-numero">Número de documento</label>
+            <input class="control" id="c-numero" type="text" inputmode="numeric" autocomplete="off" aria-describedby="c-numero-error">
+            <p class="campo__error" id="c-numero-error" hidden></p>
+          </div>
+          <div class="campo" id="campo-complemento">
+            <label class="campo__etiqueta" for="c-complemento">Complemento <span class="campo__opcional">(opcional)</span></label>
+            <input class="control codigo-entrada" id="c-complemento" type="text" maxlength="2" autocomplete="off" aria-describedby="c-complemento-ayuda">
+            <p class="campo__ayuda" id="c-complemento-ayuda">Solo si la CI lo tiene, p. ej. 1F.</p>
+          </div>
+          <div class="campo campo--ancho">
+            <label class="campo__etiqueta" for="c-nombre">Nombre o razón social</label>
+            <input class="control" id="c-nombre" type="text" autocomplete="off" aria-describedby="c-nombre-error">
+            <p class="campo__error" id="c-nombre-error" hidden></p>
+          </div>
+          <div class="campo campo--ancho">
+            <label class="campo__etiqueta" for="c-email">Correo <span class="campo__opcional">(opcional)</span></label>
+            <input class="control" id="c-email" type="email" autocomplete="off" aria-describedby="c-email-error">
+            <p class="campo__error" id="c-email-error" hidden></p>
+          </div>
+        </div>
+        <div class="panel-bloque__pie">
+          <button class="boton boton--primario" type="submit">Guardar cliente</button>
+          <button class="boton" type="button" data-alternar="form-cliente">Cancelar</button>
+        </div>
+      </form>
+
+      <div class="herramientas herramientas--simple">
+        <div class="herramientas__busqueda control-grupo">
+          <svg class="icono control-grupo__icono" aria-hidden="true"><use href="#i-buscar"></use></svg>
+          <label class="visualmente-oculto" for="c-buscar">Buscar cliente</label>
+          <input class="control" id="c-buscar" type="search" placeholder="Nombre, NIT o CI" data-filtra="filas-clientes" autocomplete="off">
+        </div>
+        <div class="herramientas__filtro">
+          <label class="visualmente-oculto" for="c-filtro-tipo">Tipo de documento</label>
+          <select class="control" id="c-filtro-tipo" data-filtra="filas-clientes" data-campo="tipo">
+            <option value="">Todos los documentos</option>
+            <option value="CI">CI</option>
+            <option value="NIT">NIT</option>
+            <option value="CEX">CEX</option>
+            <option value="PAS">Pasaporte</option>
+          </select>
+        </div>
+      </div>
+
+      <p class="resultado"><span class="resultado__cuenta" data-cuenta="filas-clientes" data-singular="cliente" data-plural="clientes">0 clientes</span></p>
+
+      <div class="tabla-contenedor">
+        <table class="tabla tabla--fichas">
+          <caption class="visualmente-oculto">Clientes</caption>
+          <thead>
+            <tr>
+              <th scope="col">Cliente</th>
+              <th scope="col">Documento</th>
+              <th scope="col">Correo</th>
+              <th scope="col" class="col-num">Compras</th>
+              <th scope="col">Última compra</th>
+              <th scope="col" class="col-accion"><span class="visualmente-oculto">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody id="filas-clientes">
+            <tr data-tipo="CI"><td><span class="tabla__principal">Rodríguez Peña</span><span class="tabla__secundario codigo">CLI-0001</span></td><td><span class="insignia insignia--neutra">CI</span> <span class="num">4567891</span></td><td class="celda-vacia">Sin correo</td><td class="col-num num">14</td><td class="num">06/10/2026</td><td class="col-accion"><div class="acciones-fila"><button class="boton boton--icono" type="button" data-requiere="clientes.editar" aria-label="Editar Rodríguez Peña"><svg class="icono" aria-hidden="true"><use href="#i-editar"></use></svg></button></div></td></tr>
+            <tr data-tipo="NIT"><td><span class="tabla__principal">Constructora Piraí S.R.L.</span><span class="tabla__secundario codigo">CLI-0002</span></td><td><span class="insignia insignia--neutra">NIT</span> <span class="num">1023987026</span></td><td>compras@pirai.bo</td><td class="col-num num">9</td><td class="num">06/10/2026</td><td class="col-accion"><div class="acciones-fila"><button class="boton boton--icono" type="button" data-requiere="clientes.editar" aria-label="Editar Constructora Piraí S.R.L."><svg class="icono" aria-hidden="true"><use href="#i-editar"></use></svg></button></div></td></tr>
+            <tr data-tipo="CI"><td><span class="tabla__principal">Gutiérrez Añez</span><span class="tabla__secundario codigo">CLI-0003</span></td><td><span class="insignia insignia--neutra">CI</span> <span class="num">6234510-1F</span></td><td class="celda-vacia">Sin correo</td><td class="col-num num">5</td><td class="num">06/10/2026</td><td class="col-accion"><div class="acciones-fila"><button class="boton boton--icono" type="button" data-requiere="clientes.editar" aria-label="Editar Gutiérrez Añez"><svg class="icono" aria-hidden="true"><use href="#i-editar"></use></svg></button></div></td></tr>
+            <tr data-tipo="CI"><td><span class="tabla__principal">Saucedo Roca</span><span class="tabla__secundario codigo">CLI-0004</span></td><td><span class="insignia insignia--neutra">CI</span> <span class="num">3398217</span></td><td class="celda-vacia">Sin correo</td><td class="col-num num">7</td><td class="num">06/10/2026</td><td class="col-accion"><div class="acciones-fila"><button class="boton boton--icono" type="button" data-requiere="clientes.editar" aria-label="Editar Saucedo Roca"><svg class="icono" aria-hidden="true"><use href="#i-editar"></use></svg></button></div></td></tr>
+            <tr data-tipo="NIT"><td><span class="tabla__principal">Distribuidora El Trompillo</span><span class="tabla__secundario codigo">CLI-0005</span></td><td><span class="insignia insignia--neutra">NIT</span> <span class="num">1987654013</span></td><td>pedidos@trompillo.bo</td><td class="col-num num">3</td><td class="num">06/10/2026</td><td class="col-accion"><div class="acciones-fila"><button class="boton boton--icono" type="button" data-requiere="clientes.editar" aria-label="Editar Distribuidora El Trompillo"><svg class="icono" aria-hidden="true"><use href="#i-editar"></use></svg></button></div></td></tr>
+            <tr data-tipo="PAS"><td><span class="tabla__principal">Lucía Fernandes</span><span class="tabla__secundario codigo">CLI-0006</span></td><td><span class="insignia insignia--neutra">PAS</span> <span class="num">FB482913</span></td><td class="celda-vacia">Sin correo</td><td class="col-num num">1</td><td class="num">28/09/2026</td><td class="col-accion"><div class="acciones-fila"><button class="boton boton--icono" type="button" data-requiere="clientes.editar" aria-label="Editar Lucía Fernandes"><svg class="icono" aria-hidden="true"><use href="#i-editar"></use></svg></button></div></td></tr>
+          </tbody>
+        </table>
+        <div class="vacio" data-vacio-de="filas-clientes" hidden>
+          <svg class="icono icono--lg vacio__icono" aria-hidden="true"><use href="#i-clientes"></use></svg>
+          <h2 class="vacio__titulo">Ningún cliente coincide</h2>
+          <p class="vacio__texto">Revisa el número o regístralo como cliente nuevo.</p>
+          <button class="boton" type="button" data-limpiar-filtros="filas-clientes">Quitar filtros</button>
+        </div>
+      </div>
+
+      <section class="seccion" aria-labelledby="t-especiales">
+        <h2 class="seccion__titulo" id="t-especiales">Casos especiales del SIN</h2>
+        <dl class="especiales">
+          <div class="especiales__item"><dt class="codigo">99001</dt><dd>Embajadas, consulados y organismos internacionales.</dd></div>
+          <div class="especiales__item"><dt class="codigo">99002</dt><dd>Control tributario. Lo usa el botón «Sin datos» del punto de venta, a nombre de S/N.</dd></div>
+          <div class="especiales__item"><dt class="codigo">99003</dt><dd>Ventas menores del día. Factura resumen al cerrar caja.</dd></div>
+        </dl>
+        <p class="especiales__nota">Se envían con tipo de documento NIT y código de excepción 1. Toda factura lleva un número de documento, sin importar el monto.</p>
+      </section>
+    </main>

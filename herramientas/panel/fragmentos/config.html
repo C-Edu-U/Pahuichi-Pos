@@ -1,0 +1,200 @@
+<!-- {"titulo":"Configuración","modulo":"config","h1":"Configuración","js":["config.js"],"cssExtra":["modulos.css"]} -->
+    <main class="contenido" id="contenido">
+      <div class="config">
+        <nav class="config__indice" aria-label="Secciones de configuración">
+          <a href="#datos-fiscales">Datos fiscales</a>
+          <a href="#facturacion">Facturación</a>
+          <a href="#pagos-qr">Pagos QR</a>
+          <a href="#leyendas">Leyendas</a>
+          <a href="#catalogos">Catálogos del SIN</a>
+        </nav>
+
+        <div class="config__secciones">
+          <form class="panel-bloque config__seccion" id="datos-fiscales" novalidate aria-labelledby="t-fiscales" data-guardar="Datos fiscales guardados.">
+            <input type="hidden" name="_csrf" value="">
+            <div class="panel-bloque__cabecera">
+              <h2 class="panel-bloque__titulo" id="t-fiscales">Datos fiscales de la empresa</h2>
+              <span class="ejemplo">Datos de ejemplo</span>
+            </div>
+            <div class="panel-bloque__cuerpo formulario-rapido__campos">
+              <div class="campo">
+                <label class="campo__etiqueta" for="e-nit">NIT</label>
+                <input class="control codigo-entrada" id="e-nit" type="text" inputmode="numeric" value="1023456021" aria-describedby="e-nit-error">
+                <p class="campo__error" id="e-nit-error" hidden></p>
+              </div>
+              <div class="campo">
+                <label class="campo__etiqueta" for="e-razon">Razón social</label>
+                <input class="control" id="e-razon" type="text" value="PAHUICHI S.R.L." aria-describedby="e-razon-error">
+                <p class="campo__error" id="e-razon-error" hidden></p>
+              </div>
+              <div class="campo campo--ancho">
+                <label class="campo__etiqueta" for="e-direccion">Dirección</label>
+                <input class="control" id="e-direccion" type="text" value="Calle por confirmar, Santa Cruz de la Sierra">
+              </div>
+              <div class="campo">
+                <label class="campo__etiqueta" for="e-municipio">Municipio</label>
+                <input class="control" id="e-municipio" type="text" value="Santa Cruz de la Sierra">
+              </div>
+              <div class="campo">
+                <label class="campo__etiqueta" for="e-telefono">Teléfono</label>
+                <input class="control" id="e-telefono" type="tel" placeholder="Por confirmar">
+              </div>
+              <div class="campo">
+                <label class="campo__etiqueta" for="e-sucursal">Sucursal</label>
+                <input class="control control--numero" id="e-sucursal" type="text" inputmode="numeric" value="0" aria-describedby="e-sucursal-ayuda">
+                <p class="campo__ayuda" id="e-sucursal-ayuda">0 es la casa matriz.</p>
+              </div>
+              <div class="campo">
+                <label class="campo__etiqueta" for="e-pv">Punto de venta</label>
+                <input class="control control--numero" id="e-pv" type="text" inputmode="numeric" value="0">
+              </div>
+              <div class="campo campo--ancho">
+                <label class="campo__etiqueta" for="e-actividad">Actividad económica principal</label>
+                <select class="control" id="e-actividad">
+                  <option value="561011" selected>561011 · Restaurantes y venta de comidas</option>
+                  <option value="107100">107100 · Elaboración de productos de panadería</option>
+                </select>
+              </div>
+              <div class="campo campo--ancho">
+                <label class="campo__etiqueta" for="e-modalidad">Modalidad de facturación</label>
+                <select class="control" id="e-modalidad">
+                  <option value="2" selected>Computarizada en línea</option>
+                  <option value="1">Electrónica en línea</option>
+                </select>
+              </div>
+            </div>
+            <div class="panel-bloque__pie">
+              <button class="boton boton--primario" type="submit">Guardar datos fiscales</button>
+            </div>
+          </form>
+
+          <form class="panel-bloque config__seccion" id="facturacion" novalidate aria-labelledby="t-facturacion" data-guardar="Opciones de facturación guardadas.">
+            <input type="hidden" name="_csrf" value="">
+            <div class="panel-bloque__cabecera">
+              <h2 class="panel-bloque__titulo" id="t-facturacion">Facturación</h2>
+            </div>
+            <div class="panel-bloque__cuerpo config__opciones">
+              <label class="casilla interruptor">
+                <input type="checkbox" role="switch" checked>
+                <span class="casilla__texto">
+                  <span class="casilla__titulo">IVA transparente</span>
+                  <span class="casilla__ayuda">Muestra el precio sin IVA y el IVA incluido (13 %) en la factura. RND 102600000034, Ley 1733.</span>
+                </span>
+              </label>
+
+              <fieldset class="opciones">
+                <legend class="campo__etiqueta">Número para el botón «Sin datos»</legend>
+                <label class="opcion"><input type="radio" name="sin-datos" value="99002" checked> <span><strong class="codigo">99002</strong> Control tributario</span></label>
+                <label class="opcion"><input type="radio" name="sin-datos" value="99003"> <span><strong class="codigo">99003</strong> Ventas menores del día</span></label>
+                <p class="campo__ayuda">Pendiente de confirmar con el docente. La razón social siempre es S/N.</p>
+              </fieldset>
+
+              <fieldset class="opciones">
+                <legend class="campo__etiqueta">Formato de impresión por defecto</legend>
+                <label class="opcion"><input type="radio" name="formato" value="rollo" checked> <span>Rollo de 80 mm</span></label>
+                <label class="opcion"><input type="radio" name="formato" value="media"> <span>Media hoja</span></label>
+              </fieldset>
+
+              <fieldset class="opciones">
+                <legend class="campo__etiqueta">QR de verificación de la factura</legend>
+                <label class="opcion"><input type="radio" name="dominio" value="piloto" checked> <span>Sitio piloto del SIN <span class="codigo">pilotosiat.impuestos.gob.bo</span></span></label>
+                <label class="opcion"><input type="radio" name="dominio" value="produccion"> <span>Producción <span class="codigo">siat.impuestos.gob.bo</span></span></label>
+              </fieldset>
+
+              <dl class="datos">
+                <dt>CUFD vigente</dt><dd><span class="codigo">BQUFDdkRDQUE=MzQ1MDc2RkQ4M0Y5Nzg=</span> <span class="insignia insignia--neutra">Simulado</span></dd>
+                <dt>Rota</dt><dd>Cada 24 horas. Próxima rotación: mañana a las 00:00.</dd>
+                <dt>Próxima factura</dt><dd class="num">N° 129</dd>
+              </dl>
+            </div>
+            <div class="panel-bloque__pie">
+              <button class="boton boton--primario" type="submit">Guardar facturación</button>
+            </div>
+          </form>
+
+          <form class="panel-bloque config__seccion" id="pagos-qr" novalidate aria-labelledby="t-pagos-qr" data-guardar="Opciones de pagos QR guardadas.">
+            <input type="hidden" name="_csrf" value="">
+            <div class="panel-bloque__cabecera">
+              <h2 class="panel-bloque__titulo" id="t-pagos-qr">Pagos QR</h2>
+            </div>
+            <div class="panel-bloque__cuerpo formulario-rapido__campos">
+              <div class="campo">
+                <label class="campo__etiqueta" for="q-monto">Monto fijo del QR</label>
+                <div class="control-grupo">
+                  <span class="control-grupo__prefijo" aria-hidden="true">Bs</span>
+                  <input class="control control--numero" id="q-monto" type="text" inputmode="decimal" value="0,50">
+                </div>
+              </div>
+              <div class="campo">
+                <label class="campo__etiqueta" for="q-aviso">Avisar antes de que venza</label>
+                <div class="control-grupo">
+                  <input class="control control--numero" id="q-aviso" type="text" inputmode="numeric" value="2">
+                  <span class="control-grupo__sufijo" aria-hidden="true">horas</span>
+                </div>
+              </div>
+            </div>
+            <div class="panel-bloque__pie">
+              <button class="boton boton--primario" type="submit">Guardar pagos QR</button>
+            </div>
+          </form>
+
+          <section class="panel-bloque config__seccion" id="leyendas" aria-labelledby="t-leyendas">
+            <div class="panel-bloque__cabecera">
+              <h2 class="panel-bloque__titulo" id="t-leyendas">Leyendas de la Ley N° 453</h2>
+              <button class="boton" type="button" data-alternar="form-leyenda" aria-expanded="false" aria-controls="form-leyenda">
+                <svg class="icono" aria-hidden="true"><use href="#i-mas"></use></svg>
+                Agregar leyenda
+              </button>
+            </div>
+            <form class="panel-bloque__cuerpo formulario-rapido__campos form-leyenda" id="form-leyenda" novalidate hidden>
+              <div class="campo campo--ancho">
+                <label class="campo__etiqueta" for="l-texto">Texto de la leyenda</label>
+                <textarea class="control control--area" id="l-texto" rows="2" aria-describedby="l-texto-error"></textarea>
+                <p class="campo__error" id="l-texto-error" hidden></p>
+              </div>
+              <div class="campo">
+                <label class="campo__etiqueta" for="l-actividad">Actividad</label>
+                <select class="control" id="l-actividad">
+                  <option value="561011">561011</option>
+                  <option value="107100">107100</option>
+                  <option value="110400">110400</option>
+                </select>
+              </div>
+              <div class="campo form-leyenda__acciones">
+                <button class="boton boton--primario" type="submit">Agregar</button>
+              </div>
+            </form>
+            <p class="config__nota">En cada factura se elige una al azar, según la actividad del producto.</p>
+            <ul class="leyendas" id="lista-leyendas" role="list">
+              <li class="leyenda-fila"><span class="codigo">561011</span><p>Ley N° 453: El proveedor deberá entregar el producto en las modalidades y términos ofertados o convenidos.</p></li>
+              <li class="leyenda-fila"><span class="codigo">561011</span><p>Ley N° 453: Tienes derecho a recibir información sobre las características y contenidos de los productos que consumes.</p></li>
+              <li class="leyenda-fila"><span class="codigo">107100</span><p>Ley N° 453: Está prohibido importar, distribuir o comercializar productos expirados o prontos a expirar.</p></li>
+              <li class="leyenda-fila"><span class="codigo">110400</span><p>Ley N° 453: Tienes derecho a un trato equitativo sin discriminación en la oferta de productos.</p></li>
+            </ul>
+          </section>
+
+          <section class="panel-bloque config__seccion" id="catalogos" aria-labelledby="t-catalogos">
+            <div class="panel-bloque__cabecera">
+              <h2 class="panel-bloque__titulo" id="t-catalogos">Catálogos del SIN</h2>
+              <button class="boton" type="button" id="sincronizar">
+                <svg class="icono" aria-hidden="true"><use href="#i-descargar"></use></svg>
+                Actualizar catálogos
+              </button>
+            </div>
+            <table class="tabla tabla--compacta">
+              <caption class="visualmente-oculto">Catálogos cargados</caption>
+              <thead><tr><th scope="col">Catálogo</th><th scope="col" class="col-num">Registros</th></tr></thead>
+              <tbody>
+                <tr><td>Tipos de documento de identidad</td><td class="col-num num">5</td></tr>
+                <tr><td>Métodos de pago</td><td class="col-num num">8</td></tr>
+                <tr><td>Unidades de medida</td><td class="col-num num">3</td></tr>
+                <tr><td>Motivos de anulación</td><td class="col-num num">4</td></tr>
+                <tr><td>Leyendas de facturas</td><td class="col-num num" id="cuenta-leyendas">4</td></tr>
+                <tr><td>Actividades económicas</td><td class="col-num num">3</td></tr>
+              </tbody>
+            </table>
+            <p class="config__nota" id="ultima-sincronizacion">Última actualización: 01/10/2026, 08:00.</p>
+          </section>
+        </div>
+      </div>
+    </main>

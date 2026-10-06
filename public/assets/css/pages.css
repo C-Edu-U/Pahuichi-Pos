@@ -142,8 +142,8 @@
   color: var(--color-texto-2);
 }
 
-/* La barra de avance es una cinta cosida */
-.cinta-progreso {
+/* Barra de avance */
+.progreso {
   -webkit-appearance: none;
   appearance: none;
   display: block;
@@ -157,19 +157,17 @@
   overflow: hidden;
 }
 
-.cinta-progreso::-webkit-progress-bar {
+.progreso::-webkit-progress-bar {
   background: var(--linea-suave);
 }
 
-.cinta-progreso::-webkit-progress-value {
+.progreso::-webkit-progress-value {
   background:
-    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.8) 0 6px, transparent 6px 11px) center / 100% 1px no-repeat,
     var(--verde-600);
 }
 
-.cinta-progreso::-moz-progress-bar {
+.progreso::-moz-progress-bar {
   background:
-    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.8) 0 6px, transparent 6px 11px) center / 100% 1px no-repeat,
     var(--verde-600);
 }
 

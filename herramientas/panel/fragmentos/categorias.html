@@ -1,0 +1,105 @@
+<!-- {"titulo":"Categorías","modulo":"productos","h1":"Categorías","js":["categorias.js"]} -->
+    <main class="contenido" id="contenido">
+      <nav class="subnav" aria-label="Catálogo">
+        <a class="subnav__enlace" href="productos.html">Productos</a>
+        <a class="subnav__enlace" href="categorias.html" aria-current="page">Categorías</a>
+      </nav>
+
+      <div class="categorias">
+        <form class="nueva-categoria" id="form-categoria" method="post" action="#" novalidate data-requiere="productos.editar">
+          <input type="hidden" name="_csrf" value="">
+          <h2 class="nueva-categoria__titulo">Nueva categoría</h2>
+          <div class="campo">
+            <label class="campo__etiqueta" for="cat-nombre">Nombre</label>
+            <input class="control" id="cat-nombre" name="nombre" type="text" maxlength="40" required aria-describedby="cat-nombre-error" autocomplete="off">
+            <p class="campo__error" id="cat-nombre-error" hidden></p>
+          </div>
+          <div class="campo">
+            <label class="campo__etiqueta" for="cat-orden">Orden en el punto de venta</label>
+            <input class="control control--numero" id="cat-orden" name="orden" type="text" inputmode="numeric" maxlength="2" value="6" aria-describedby="cat-orden-ayuda">
+            <p class="campo__ayuda" id="cat-orden-ayuda">Las categorías se muestran de menor a mayor.</p>
+          </div>
+          <button class="boton boton--primario" type="submit">
+            <svg class="icono" aria-hidden="true"><use href="#i-mas"></use></svg>
+            Agregar categoría
+          </button>
+        </form>
+
+        <div class="tabla-contenedor">
+          <table class="tabla tabla--categorias">
+            <caption class="visualmente-oculto">Categorías del menú</caption>
+            <thead>
+              <tr>
+                <th scope="col" class="col-num">Orden</th>
+                <th scope="col">Categoría</th>
+                <th scope="col" class="col-num">Productos</th>
+                <th scope="col">Estado</th>
+                <th scope="col" class="col-accion"><span class="visualmente-oculto">Acciones</span></th>
+              </tr>
+            </thead>
+            <tbody id="filas-categorias">
+              <tr>
+                <td class="col-num num">1</td>
+                <td><span class="tabla__principal">Platos</span></td>
+                <td class="col-num num">5</td>
+                <td class="celda-estado"><span class="insignia insignia--ok">Activa</span></td>
+                <td class="col-accion"><div class="acciones-fila" data-requiere="productos.editar">
+                  <button class="boton" type="button" data-abrir-modal="modal-desactivar" data-nombre="Platos" data-productos="5">Desactivar</button>
+                </div></td>
+              </tr>
+              <tr>
+                <td class="col-num num">2</td>
+                <td><span class="tabla__principal">Horneados</span></td>
+                <td class="col-num num">6</td>
+                <td class="celda-estado"><span class="insignia insignia--ok">Activa</span></td>
+                <td class="col-accion"><div class="acciones-fila" data-requiere="productos.editar">
+                  <button class="boton" type="button" data-abrir-modal="modal-desactivar" data-nombre="Horneados" data-productos="6">Desactivar</button>
+                </div></td>
+              </tr>
+              <tr>
+                <td class="col-num num">3</td>
+                <td><span class="tabla__principal">Bebidas</span></td>
+                <td class="col-num num">3</td>
+                <td class="celda-estado"><span class="insignia insignia--ok">Activa</span></td>
+                <td class="col-accion"><div class="acciones-fila" data-requiere="productos.editar">
+                  <button class="boton" type="button" data-abrir-modal="modal-desactivar" data-nombre="Bebidas" data-productos="3">Desactivar</button>
+                </div></td>
+              </tr>
+              <tr>
+                <td class="col-num num">4</td>
+                <td><span class="tabla__principal">Postres</span><span class="tabla__secundario">Todavía sin productos</span></td>
+                <td class="col-num num">0</td>
+                <td class="celda-estado"><span class="insignia insignia--ok">Activa</span></td>
+                <td class="col-accion"><div class="acciones-fila" data-requiere="productos.editar">
+                  <button class="boton" type="button" data-abrir-modal="modal-desactivar" data-nombre="Postres" data-productos="0">Desactivar</button>
+                </div></td>
+              </tr>
+              <tr>
+                <td class="col-num num">5</td>
+                <td><span class="tabla__principal">Prueba</span><span class="tabla__secundario">Para probar el cobro con QR de Bs 0,50</span></td>
+                <td class="col-num num">1</td>
+                <td class="celda-estado"><span class="insignia insignia--ok">Activa</span></td>
+                <td class="col-accion"><div class="acciones-fila" data-requiere="productos.editar">
+                  <button class="boton" type="button" data-abrir-modal="modal-desactivar" data-nombre="Prueba" data-productos="1">Desactivar</button>
+                </div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <dialog class="modal" id="modal-desactivar" aria-labelledby="modal-desactivar-titulo" aria-describedby="modal-desactivar-texto">
+        <form method="dialog">
+          <div class="modal__cuerpo">
+            <h2 class="modal__titulo" id="modal-desactivar-titulo">¿Desactivar la categoría?</h2>
+            <p class="modal__texto" id="modal-desactivar-texto">Sus productos dejarán de verse en el punto de venta. Puedes volver a activarla cuando quieras.</p>
+          </div>
+          <div class="modal__acciones">
+            <button class="boton" type="submit" value="cancelar" autofocus>Cancelar</button>
+            <button class="boton boton--peligro" type="submit" value="desactivar">Desactivar</button>
+          </div>
+        </form>
+      </dialog>
+
+      <p class="visualmente-oculto" aria-live="polite" id="anuncio"></p>
+    </main>

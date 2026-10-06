@@ -1,0 +1,144 @@
+<!-- {"titulo":"Escritorio","modulo":"escritorio","h1":"Escritorio","js":[],"cssExtra":["modulos.css"]} -->
+    <main class="contenido" id="contenido">
+
+      <!-- Administrador: todo y alertas -->
+      <div class="escritorio" data-solo-rol="sysadmin">
+        <section class="escritorio__pendientes" aria-labelledby="t-pendientes">
+          <h2 class="seccion__titulo" id="t-pendientes">Para hoy</h2>
+          <ul class="pendientes" role="list">
+            <li class="pendiente pendiente--aviso">
+              <svg class="icono pendiente__icono" aria-hidden="true"><use href="#i-reloj"></use></svg>
+              <div class="pendiente__texto">
+                <p class="pendiente__titulo">El QR de cobro vence a las 16:40</p>
+                <p class="pendiente__detalle">Faltan 2 h. Cuando venza, el punto de venta deshabilita el cobro con QR hasta que subas uno nuevo.</p>
+              </div>
+              <a class="boton pendiente__accion" href="qr.html">Ir a Pagos QR</a>
+            </li>
+            <li class="pendiente pendiente--aviso">
+              <svg class="icono pendiente__icono" aria-hidden="true"><use href="#i-candado"></use></svg>
+              <div class="pendiente__texto">
+                <p class="pendiente__titulo">Jorge Rivero está bloqueado hasta las 10:47</p>
+                <p class="pendiente__detalle">5 intentos fallidos de inicio de sesión desde 181.115.60.92.</p>
+              </div>
+              <a class="boton pendiente__accion" href="usuarios.html">Revisar</a>
+            </li>
+            <li class="pendiente pendiente--aviso">
+              <svg class="icono pendiente__icono" aria-hidden="true"><use href="#i-alerta"></use></svg>
+              <div class="pendiente__texto">
+                <p class="pendiente__titulo">Sonso de yuca no tiene código de producto SIN</p>
+                <p class="pendiente__detalle">El plazo de homologación del SIN es el 30 de octubre de 2026.</p>
+              </div>
+              <a class="boton pendiente__accion" href="producto-form.html?id=HO-05">Completar</a>
+            </li>
+            <li class="pendiente">
+              <svg class="icono pendiente__icono" aria-hidden="true"><use href="#i-agotado"></use></svg>
+              <div class="pendiente__texto">
+                <p class="pendiente__titulo">Masaco de plátano está agotado hoy</p>
+                <p class="pendiente__detalle">Lo marcó Mariela Suárez a las 11:52. Vuelve a estar disponible mañana.</p>
+              </div>
+              <a class="boton pendiente__accion" href="productos.html?estado=agotado">Ver</a>
+            </li>
+          </ul>
+        </section>
+
+        <section class="escritorio__hoy" aria-labelledby="t-hoy">
+          <h2 class="seccion__titulo" id="t-hoy">Hoy en el local</h2>
+          <div class="panel-bloque">
+            <div class="panel-bloque__cuerpo hoy">
+              <p class="hoy__etiqueta">Ventas cobradas</p>
+              <p class="hoy__valor"><span class="cifra__moneda">Bs</span>1.086,00</p>
+              <p class="hoy__detalle">41 ventas · ticket promedio Bs 26,49 · +8,4 % frente a ayer</p>
+            </div>
+            <dl class="resumen">
+              <div class="resumen__fila"><dt>Caja</dt><dd>Abierta por Mariela desde las 07:02</dd></div>
+              <div class="resumen__fila"><dt>Efectivo esperado</dt><dd class="num">1.254,50</dd></div>
+              <div class="resumen__fila"><dt>Facturas anuladas</dt><dd class="num">1</dd></div>
+              <div class="resumen__fila"><dt>Productos homologados</dt><dd class="num">14 de 15</dd></div>
+            </dl>
+            <div class="panel-bloque__pie">
+              <a class="boton boton--primario" href="reportes.html">Ver reportes</a>
+              <a class="boton" href="producto-form.html">
+                <svg class="icono" aria-hidden="true"><use href="#i-mas"></use></svg>
+                Nuevo producto
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <section class="escritorio__actividad" aria-labelledby="t-actividad">
+          <div class="seccion__cabeza">
+            <h2 id="t-actividad">Actividad reciente</h2>
+            <a href="bitacora.html">Ver bitácora</a>
+          </div>
+          <ol class="actividad" role="list">
+            <li><span class="actividad__hora num">12:58</span><p><strong>Mariela Suárez</strong> intentó abrir Usuarios <span class="insignia insignia--peligro">403</span></p></li>
+            <li><span class="actividad__hora num">12:41</span><p><strong>Mariela Suárez</strong> emitió la factura N° 128 por Bs 76,00</p></li>
+            <li><span class="actividad__hora num">11:52</span><p><strong>Mariela Suárez</strong> marcó Masaco de plátano como agotado</p></li>
+            <li><span class="actividad__hora num">11:34</span><p><strong>Ana Lucía Vaca</strong> anuló la factura N° 123</p></li>
+          </ol>
+        </section>
+      </div>
+
+      <!-- Cajero: su turno -->
+      <div class="escritorio escritorio--cajero" data-solo-rol="cajero" hidden>
+        <section aria-labelledby="t-turno">
+          <h2 class="seccion__titulo" id="t-turno">Tu turno</h2>
+          <div class="panel-bloque">
+            <div class="panel-bloque__cuerpo hoy">
+              <p class="hoy__etiqueta">Cobrado en tu turno</p>
+              <p class="hoy__valor"><span class="cifra__moneda">Bs</span>1.086,00</p>
+              <p class="hoy__detalle">Caja abierta desde las 07:02 · 41 ventas</p>
+            </div>
+            <dl class="resumen">
+              <div class="resumen__fila"><dt>Monto inicial</dt><dd class="num">200,00</dd></div>
+              <div class="resumen__fila"><dt>Efectivo esperado en caja</dt><dd class="num">1.254,50</dd></div>
+              <div class="resumen__fila"><dt>Ventas menores sin factura</dt><dd class="num">12 · Bs 39,00</dd></div>
+            </dl>
+            <div class="panel-bloque__pie">
+              <a class="boton boton--primario" href="pos.html">
+                <svg class="icono" aria-hidden="true"><use href="#i-pos"></use></svg>
+                Ir al punto de venta
+              </a>
+              <a class="boton" href="caja.html">Arqueo y cierre</a>
+            </div>
+          </div>
+        </section>
+        <section aria-labelledby="t-mis-ventas">
+          <div class="seccion__cabeza">
+            <h2 id="t-mis-ventas">Tus últimas ventas</h2>
+            <a href="ventas.html">Ver todas</a>
+          </div>
+          <ol class="actividad" role="list">
+            <li><span class="actividad__hora num">12:41</span><p>Factura N° 128 · Rodríguez Peña</p><span class="actividad__monto num">Bs 76,00</span></li>
+            <li><span class="actividad__hora num">12:33</span><p>Factura N° 127 · S/N</p><span class="actividad__monto num">Bs 38,00</span></li>
+            <li><span class="actividad__hora num">12:20</span><p>Factura N° 126 · Constructora Piraí S.R.L.</p><span class="actividad__monto num">Bs 214,00</span></li>
+          </ol>
+        </section>
+      </div>
+
+      <!-- Analista: ventas del día -->
+      <div class="escritorio escritorio--cajero" data-solo-rol="analista" hidden>
+        <section aria-labelledby="t-ventas-dia">
+          <h2 class="seccion__titulo" id="t-ventas-dia">Ventas del día</h2>
+          <div class="panel-bloque">
+            <div class="panel-bloque__cuerpo hoy">
+              <p class="hoy__etiqueta">Ventas cobradas</p>
+              <p class="hoy__valor"><span class="cifra__moneda">Bs</span>1.086,00</p>
+              <p class="hoy__detalle">41 ventas · ticket promedio Bs 26,49 · +8,4 % frente a ayer</p>
+            </div>
+            <dl class="resumen">
+              <div class="resumen__fila"><dt>Plato más vendido</dt><dd>Cuñapé · 46 unidades</dd></div>
+              <div class="resumen__fila"><dt>Hora pico</dt><dd class="num">12:00 a 13:00 · Bs 289,00</dd></div>
+              <div class="resumen__fila"><dt>Cobro con QR</dt><dd class="num">3 ventas · Bs 1,50</dd></div>
+            </dl>
+            <div class="panel-bloque__pie">
+              <a class="boton boton--primario" href="reportes.html">Abrir el tablero</a>
+              <a class="boton" href="reportes.html">
+                <svg class="icono" aria-hidden="true"><use href="#i-descargar"></use></svg>
+                Libro de Ventas
+              </a>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>

@@ -1,0 +1,143 @@
+<!-- {"titulo":"Reportes","modulo":"reportes","h1":"Reportes","js":["reportes.js"],"cssExtra":["modulos.css"]} -->
+    <main class="contenido" id="contenido">
+      <div class="reportes-cabeza">
+        <div class="subnav subnav--botones" role="group" aria-label="Vista">
+          <button class="subnav__enlace" type="button" data-vista="tablero" aria-pressed="true">Tablero</button>
+          <button class="subnav__enlace" type="button" data-vista="libro" aria-pressed="false">Libro de Ventas</button>
+        </div>
+        <button class="boton" type="button" id="exportar" data-requiere="reportes.exportar">
+          <svg class="icono" aria-hidden="true"><use href="#i-descargar"></use></svg>
+          Exportar CSV
+        </button>
+      </div>
+
+      <div class="filtros" role="search" aria-label="Filtrar reportes">
+        <div class="campo">
+          <label class="campo__etiqueta" for="r-periodo">Periodo</label>
+          <select class="control" id="r-periodo">
+            <option value="hoy" selected>Hoy</option>
+            <option value="ayer">Ayer</option>
+            <option value="semana">Últimos 7 días</option>
+            <option value="mes">Octubre 2026</option>
+          </select>
+        </div>
+        <div class="campo">
+          <label class="campo__etiqueta" for="r-cajero">Cajero</label>
+          <select class="control" id="r-cajero">
+            <option value="">Todos</option>
+            <option value="mariela">Mariela Suárez</option>
+            <option value="jorge">Jorge Rivero</option>
+          </select>
+        </div>
+        <div class="campo">
+          <label class="campo__etiqueta" for="r-metodo">Método de pago</label>
+          <select class="control" id="r-metodo">
+            <option value="">Todos</option>
+            <option value="efectivo">Efectivo</option>
+            <option value="qr">QR</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Tablero -->
+      <div class="tablero" id="vista-tablero">
+        <section class="cifras" aria-label="Resumen del periodo" id="cifras">
+          <div class="cifra cifra--principal">
+            <p class="cifra__etiqueta">Ventas</p>
+            <p class="cifra__valor"><span class="cifra__moneda">Bs</span><span id="c-ventas">1.086,00</span></p>
+            <p class="cifra__delta" id="c-delta">+8,4 % frente a ayer</p>
+          </div>
+          <div class="cifra">
+            <p class="cifra__etiqueta">Ventas cobradas</p>
+            <p class="cifra__valor" id="c-tickets">41</p>
+          </div>
+          <div class="cifra">
+            <p class="cifra__etiqueta">Ticket promedio</p>
+            <p class="cifra__valor"><span class="cifra__moneda">Bs</span><span id="c-promedio">26,49</span></p>
+          </div>
+          <div class="cifra">
+            <p class="cifra__etiqueta">Anuladas</p>
+            <p class="cifra__valor" id="c-anuladas">1</p>
+          </div>
+        </section>
+
+        <section class="grafico grafico--ancho" aria-labelledby="g-hora-t">
+          <div class="grafico__cabeza">
+            <h2 class="grafico__titulo" id="g-hora-t">Ventas por hora</h2>
+            <p class="grafico__sub">En bolivianos, de 7:00 a 15:00</p>
+          </div>
+          <div class="grafico__lienzo" id="g-hora" role="img" aria-labelledby="g-hora-t"></div>
+          <details class="grafico__tabla">
+            <summary>Ver como tabla</summary>
+            <table class="tabla tabla--compacta" id="t-hora"></table>
+          </details>
+        </section>
+
+        <section class="grafico" aria-labelledby="g-top-t">
+          <div class="grafico__cabeza">
+            <h2 class="grafico__titulo" id="g-top-t">Platos más vendidos</h2>
+            <p class="grafico__sub">Unidades vendidas</p>
+          </div>
+          <div class="grafico__lienzo" id="g-top" role="img" aria-labelledby="g-top-t"></div>
+          <details class="grafico__tabla">
+            <summary>Ver como tabla</summary>
+            <table class="tabla tabla--compacta" id="t-top"></table>
+          </details>
+        </section>
+
+        <section class="grafico" aria-labelledby="g-metodo-t">
+          <div class="grafico__cabeza">
+            <h2 class="grafico__titulo" id="g-metodo-t">Método de pago</h2>
+            <p class="grafico__sub">Parte del total cobrado</p>
+          </div>
+          <div class="grafico__lienzo" id="g-metodo" role="img" aria-labelledby="g-metodo-t"></div>
+          <ul class="leyenda" id="leyenda-metodo" role="list"></ul>
+          <details class="grafico__tabla">
+            <summary>Ver como tabla</summary>
+            <table class="tabla tabla--compacta" id="t-metodo"></table>
+          </details>
+        </section>
+      </div>
+
+      <!-- Libro de Ventas -->
+      <section class="libro" id="vista-libro" aria-labelledby="t-libro" hidden>
+        <div class="seccion__cabeza">
+          <h2 id="t-libro">Libro de Ventas · Octubre 2026</h2>
+          <span class="insignia insignia--neutra">Formato SIN</span>
+        </div>
+        <div class="tabla-contenedor">
+          <table class="tabla tabla--libro" id="tabla-libro">
+            <caption class="visualmente-oculto">Libro de Ventas con columnas del SIN</caption>
+            <thead>
+              <tr>
+                <th scope="col" class="col-num">N°</th>
+                <th scope="col">Especificación</th>
+                <th scope="col">Fecha</th>
+                <th scope="col" class="col-num">N° factura</th>
+                <th scope="col">Código de autorización</th>
+                <th scope="col">NIT / CI cliente</th>
+                <th scope="col">Complemento</th>
+                <th scope="col">Nombre o razón social</th>
+                <th scope="col" class="col-num">Importe total</th>
+                <th scope="col" class="col-num">ICE</th>
+                <th scope="col" class="col-num">IEHD</th>
+                <th scope="col" class="col-num">IPJ</th>
+                <th scope="col" class="col-num">Tasas</th>
+                <th scope="col" class="col-num">No sujeto a IVA</th>
+                <th scope="col" class="col-num">Exentas</th>
+                <th scope="col" class="col-num">Tasa cero</th>
+                <th scope="col" class="col-num">Subtotal</th>
+                <th scope="col" class="col-num">Descuentos</th>
+                <th scope="col" class="col-num">Gift card</th>
+                <th scope="col" class="col-num">Base débito fiscal</th>
+                <th scope="col" class="col-num">Débito fiscal</th>
+                <th scope="col">Estado</th>
+                <th scope="col">Código de control</th>
+                <th scope="col">Tipo de venta</th>
+              </tr>
+            </thead>
+            <tbody id="filas-libro"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>

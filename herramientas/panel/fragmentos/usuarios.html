@@ -1,0 +1,110 @@
+<!-- {"titulo":"Usuarios","modulo":"usuarios","h1":"Usuarios","js":["usuarios.js"],"cssExtra":["modulos.css"]} -->
+    <main class="contenido" id="contenido">
+      <div class="cabeza-pagina">
+        <p class="cabeza-pagina__texto">Quién puede entrar al sistema y con qué rol. Las claves nunca se ven: se resetean.</p>
+        <div class="cabeza-pagina__acciones">
+          <button class="boton boton--primario" type="button" data-alternar="form-usuario" aria-expanded="false" aria-controls="form-usuario">
+            <svg class="icono" aria-hidden="true"><use href="#i-usuarioMas"></use></svg>
+            Nuevo usuario
+          </button>
+        </div>
+      </div>
+
+      <form class="panel-bloque formulario-rapido" id="form-usuario" novalidate hidden aria-labelledby="t-nuevo-usuario">
+        <input type="hidden" name="_csrf" value="">
+        <div class="panel-bloque__cabecera">
+          <h2 class="panel-bloque__titulo" id="t-nuevo-usuario">Nuevo usuario</h2>
+          <button class="boton boton--fantasma boton--icono" type="button" data-alternar="form-usuario" aria-label="Cerrar formulario">
+            <svg class="icono" aria-hidden="true"><use href="#i-cerrar"></use></svg>
+          </button>
+        </div>
+        <div class="panel-bloque__cuerpo formulario-rapido__campos">
+          <div class="campo campo--ancho">
+            <label class="campo__etiqueta" for="u-nombre">Nombre completo</label>
+            <input class="control" id="u-nombre" type="text" autocomplete="off" aria-describedby="u-nombre-error">
+            <p class="campo__error" id="u-nombre-error" hidden></p>
+          </div>
+          <div class="campo">
+            <label class="campo__etiqueta" for="u-usuario">Usuario</label>
+            <input class="control" id="u-usuario" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" aria-describedby="u-usuario-ayuda u-usuario-error">
+            <p class="campo__ayuda" id="u-usuario-ayuda">Minúsculas y números, sin espacios.</p>
+            <p class="campo__error" id="u-usuario-error" hidden></p>
+          </div>
+          <div class="campo">
+            <label class="campo__etiqueta" for="u-rol">Rol</label>
+            <select class="control" id="u-rol">
+              <option value="cajero">Cajero</option>
+              <option value="analista">Analista</option>
+              <option value="sysadmin">Administrador</option>
+            </select>
+          </div>
+          <p class="campo--ancho formulario-rapido__nota">Se genera una clave temporal que el usuario debe cambiar al primer ingreso.</p>
+        </div>
+        <div class="panel-bloque__pie">
+          <button class="boton boton--primario" type="submit">Crear usuario</button>
+          <button class="boton" type="button" data-alternar="form-usuario">Cancelar</button>
+        </div>
+      </form>
+
+      <div class="herramientas herramientas--simple">
+        <div class="herramientas__busqueda control-grupo">
+          <svg class="icono control-grupo__icono" aria-hidden="true"><use href="#i-buscar"></use></svg>
+          <label class="visualmente-oculto" for="u-buscar">Buscar usuario</label>
+          <input class="control" id="u-buscar" type="search" placeholder="Nombre o usuario" data-filtra="filas-usuarios" autocomplete="off">
+        </div>
+        <div class="herramientas__filtro">
+          <label class="visualmente-oculto" for="u-filtro-rol">Rol</label>
+          <select class="control" id="u-filtro-rol" data-filtra="filas-usuarios" data-campo="rol">
+            <option value="">Todos los roles</option>
+            <option value="cajero">Cajero</option>
+            <option value="analista">Analista</option>
+            <option value="sysadmin">Administrador</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="tabla-contenedor">
+        <table class="tabla tabla--usuarios tabla--fichas">
+          <caption class="visualmente-oculto">Usuarios del sistema</caption>
+          <thead>
+            <tr>
+              <th scope="col">Usuario</th>
+              <th scope="col">Rol</th>
+              <th scope="col">Estado</th>
+              <th scope="col">Último ingreso</th>
+              <th scope="col" class="col-accion"><span class="visualmente-oculto">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody id="filas-usuarios">
+            <tr data-rol="sysadmin" data-nombre="Ana Lucía Vaca Saucedo"><td><span class="tabla__principal">Ana Lucía Vaca Saucedo</span><span class="tabla__secundario codigo">admin</span></td><td><span class="insignia insignia--neutra">Administrador</span></td><td class="celda-estado"><span class="insignia insignia--ok">Activo</span></td><td class="num">Hoy, 07:40</td><td class="col-accion"><div class="acciones-fila"><button class="boton" type="button" data-abrir-modal="modal-clave">Resetear clave</button></div></td></tr>
+            <tr data-rol="cajero" data-nombre="Mariela Suárez Añez"><td><span class="tabla__principal">Mariela Suárez Añez</span><span class="tabla__secundario codigo">mariela</span></td><td><span class="insignia insignia--neutra">Cajero</span></td><td class="celda-estado"><span class="insignia insignia--ok">Activo</span></td><td class="num">Hoy, 06:58</td><td class="col-accion"><div class="acciones-fila"><button class="boton" type="button" data-abrir-modal="modal-clave">Resetear clave</button><button class="boton" type="button" data-activo="true">Desactivar</button></div></td></tr>
+            <tr data-rol="cajero" data-nombre="Jorge Rivero Chávez"><td><span class="tabla__principal">Jorge Rivero Chávez</span><span class="tabla__secundario codigo">jorge</span></td><td><span class="insignia insignia--neutra">Cajero</span></td><td class="celda-estado"><span class="insignia insignia--aviso">Bloqueado hasta 10:47</span></td><td class="num">Ayer, 07:05</td><td class="col-accion"><div class="acciones-fila"><button class="boton" type="button" data-desbloquear>Desbloquear</button><button class="boton" type="button" data-abrir-modal="modal-clave">Resetear clave</button></div></td></tr>
+            <tr data-rol="analista" data-nombre="Rodrigo Justiniano Paz"><td><span class="tabla__principal">Rodrigo Justiniano Paz</span><span class="tabla__secundario codigo">rodrigo</span></td><td><span class="insignia insignia--neutra">Analista</span></td><td class="celda-estado"><span class="insignia insignia--ok">Activo</span></td><td class="num">Hoy, 09:15</td><td class="col-accion"><div class="acciones-fila"><button class="boton" type="button" data-abrir-modal="modal-clave">Resetear clave</button><button class="boton" type="button" data-activo="true">Desactivar</button></div></td></tr>
+            <tr data-rol="cajero" data-nombre="Fabiola Roca Justiniano"><td><span class="tabla__principal">Fabiola Roca Justiniano</span><span class="tabla__secundario codigo">fabiola</span></td><td><span class="insignia insignia--neutra">Cajero</span></td><td class="celda-estado"><span class="insignia insignia--neutra">Inactivo</span></td><td class="num">12/08/2026</td><td class="col-accion"><div class="acciones-fila"><button class="boton" type="button" data-abrir-modal="modal-clave">Resetear clave</button><button class="boton" type="button" data-activo="false">Activar</button></div></td></tr>
+          </tbody>
+        </table>
+        <div class="vacio" data-vacio-de="filas-usuarios" hidden>
+          <h2 class="vacio__titulo">Ningún usuario coincide</h2>
+          <button class="boton" type="button" data-limpiar-filtros="filas-usuarios">Quitar filtros</button>
+        </div>
+      </div>
+
+      <dialog class="modal" id="modal-clave" aria-labelledby="clave-titulo">
+        <div class="modal__cuerpo" id="clave-paso">
+          <h2 class="modal__titulo" id="clave-titulo">¿Resetear la clave?</h2>
+          <p class="modal__texto" id="clave-texto">Se generará una clave temporal y la actual dejará de funcionar.</p>
+        </div>
+        <div class="modal__cuerpo" id="clave-lista" hidden>
+          <h2 class="modal__titulo">Clave temporal</h2>
+          <p class="modal__texto">Entrégala en persona. Solo se muestra esta vez y deberá cambiarse al ingresar.</p>
+          <p class="clave-temporal" id="clave-temporal">cuñape-4827</p>
+        </div>
+        <div class="modal__acciones" id="clave-acciones">
+          <button class="boton" type="button" data-cerrar-modal>Cancelar</button>
+          <button class="boton boton--primario" type="button" id="generar-clave">Resetear clave</button>
+        </div>
+        <div class="modal__acciones" id="clave-cerrar" hidden>
+          <button class="boton boton--primario" type="button" data-cerrar-modal>Listo</button>
+        </div>
+      </dialog>
+    </main>

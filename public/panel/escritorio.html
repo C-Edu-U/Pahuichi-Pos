@@ -5,11 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Escritorio · Pahuichi POS</title>
   <meta name="theme-color" content="#13603e">
+  <link rel="preload" href="../assets/fonts/archivo-variable-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="../assets/css/tokens.css">
   <link rel="stylesheet" href="../assets/css/base.css">
   <link rel="stylesheet" href="../assets/css/components.css">
   <link rel="stylesheet" href="../assets/css/layout.css">
   <link rel="stylesheet" href="../assets/css/pages.css">
+  <link rel="stylesheet" href="../assets/css/modulos.css">
   <link rel="stylesheet" href="../assets/css/print.css" media="print">
 </head>
 <body class="panel" data-modulo="escritorio">
@@ -28,19 +30,19 @@
     <nav class="menu" aria-label="Módulos">
       <ul class="menu__lista" role="list">
         <li class="menu__item" data-modulo="escritorio"><a class="menu__enlace" href="escritorio.html" aria-current="page"><svg class="icono" aria-hidden="true"><use href="#i-escritorio"></use></svg><span class="menu__texto">Escritorio</span></a></li>
-        <li class="menu__item" data-modulo="pos"><a class="menu__enlace" href="proximamente.html?m=pos"><svg class="icono" aria-hidden="true"><use href="#i-pos"></use></svg><span class="menu__texto">Punto de venta</span></a></li>
-        <li class="menu__item" data-modulo="caja"><a class="menu__enlace" href="proximamente.html?m=caja"><svg class="icono" aria-hidden="true"><use href="#i-caja"></use></svg><span class="menu__texto">Caja</span></a></li>
-        <li class="menu__item" data-modulo="ventas"><a class="menu__enlace" href="proximamente.html?m=ventas"><svg class="icono" aria-hidden="true"><use href="#i-ventas"></use></svg><span class="menu__texto">Ventas y facturas</span></a></li>
-        <li class="menu__item" data-modulo="clientes"><a class="menu__enlace" href="proximamente.html?m=clientes"><svg class="icono" aria-hidden="true"><use href="#i-clientes"></use></svg><span class="menu__texto">Clientes</span></a></li>
+        <li class="menu__item" data-modulo="pos"><a class="menu__enlace" href="pos.html"><svg class="icono" aria-hidden="true"><use href="#i-pos"></use></svg><span class="menu__texto">Punto de venta</span></a></li>
+        <li class="menu__item" data-modulo="caja"><a class="menu__enlace" href="caja.html"><svg class="icono" aria-hidden="true"><use href="#i-caja"></use></svg><span class="menu__texto">Caja</span></a></li>
+        <li class="menu__item" data-modulo="ventas"><a class="menu__enlace" href="ventas.html"><svg class="icono" aria-hidden="true"><use href="#i-ventas"></use></svg><span class="menu__texto">Ventas y facturas</span></a></li>
+        <li class="menu__item" data-modulo="clientes"><a class="menu__enlace" href="clientes.html"><svg class="icono" aria-hidden="true"><use href="#i-clientes"></use></svg><span class="menu__texto">Clientes</span></a></li>
         <li class="menu__separador" role="separator"></li>
         <li class="menu__item" data-modulo="productos"><a class="menu__enlace" href="productos.html"><svg class="icono" aria-hidden="true"><use href="#i-productos"></use></svg><span class="menu__texto">Productos y categorías</span></a></li>
-        <li class="menu__item" data-modulo="qr"><a class="menu__enlace" href="proximamente.html?m=qr"><svg class="icono" aria-hidden="true"><use href="#i-qr"></use></svg><span class="menu__texto">Pagos QR</span><span class="menu__aviso"><span class="visualmente-oculto">QR vence en </span>2 h</span></a></li>
+        <li class="menu__item" data-modulo="qr"><a class="menu__enlace" href="qr.html"><svg class="icono" aria-hidden="true"><use href="#i-qr"></use></svg><span class="menu__texto">Pagos QR</span><span class="menu__aviso"><span class="visualmente-oculto">QR vence en </span>2 h</span></a></li>
         <li class="menu__separador" role="separator"></li>
-        <li class="menu__item" data-modulo="reportes"><a class="menu__enlace" href="proximamente.html?m=reportes"><svg class="icono" aria-hidden="true"><use href="#i-reportes"></use></svg><span class="menu__texto">Reportes</span></a></li>
-        <li class="menu__item" data-modulo="bitacora"><a class="menu__enlace" href="proximamente.html?m=bitacora"><svg class="icono" aria-hidden="true"><use href="#i-bitacora"></use></svg><span class="menu__texto">Bitácora</span></a></li>
+        <li class="menu__item" data-modulo="reportes"><a class="menu__enlace" href="reportes.html"><svg class="icono" aria-hidden="true"><use href="#i-reportes"></use></svg><span class="menu__texto">Reportes</span></a></li>
+        <li class="menu__item" data-modulo="bitacora"><a class="menu__enlace" href="bitacora.html"><svg class="icono" aria-hidden="true"><use href="#i-bitacora"></use></svg><span class="menu__texto">Bitácora</span></a></li>
         <li class="menu__separador" role="separator"></li>
-        <li class="menu__item" data-modulo="usuarios"><a class="menu__enlace" href="proximamente.html?m=usuarios"><svg class="icono" aria-hidden="true"><use href="#i-usuarios"></use></svg><span class="menu__texto">Usuarios</span></a></li>
-        <li class="menu__item" data-modulo="config"><a class="menu__enlace" href="proximamente.html?m=config"><svg class="icono" aria-hidden="true"><use href="#i-config"></use></svg><span class="menu__texto">Configuración</span></a></li>
+        <li class="menu__item" data-modulo="usuarios"><a class="menu__enlace" href="usuarios.html"><svg class="icono" aria-hidden="true"><use href="#i-usuarios"></use></svg><span class="menu__texto">Usuarios</span></a></li>
+        <li class="menu__item" data-modulo="config"><a class="menu__enlace" href="config.html"><svg class="icono" aria-hidden="true"><use href="#i-config"></use></svg><span class="menu__texto">Configuración</span></a></li>
       </ul>
     </nav>
     <div class="riel__pie">
@@ -76,12 +78,11 @@
           </button>
         </div>
       </div>
-      <span class="cinta" aria-hidden="true"></span>
     </header>
 
     <main class="contenido" id="contenido">
 
-      <!-- Administrador -->
+      <!-- Administrador: todo y alertas -->
       <div class="escritorio" data-solo-rol="sysadmin">
         <section class="escritorio__pendientes" aria-labelledby="t-pendientes">
           <h2 class="seccion__titulo" id="t-pendientes">Para hoy</h2>
@@ -92,7 +93,15 @@
                 <p class="pendiente__titulo">El QR de cobro vence a las 16:40</p>
                 <p class="pendiente__detalle">Faltan 2 h. Cuando venza, el punto de venta deshabilita el cobro con QR hasta que subas uno nuevo.</p>
               </div>
-              <a class="boton pendiente__accion" href="proximamente.html?m=qr">Ir a Pagos QR</a>
+              <a class="boton pendiente__accion" href="qr.html">Ir a Pagos QR</a>
+            </li>
+            <li class="pendiente pendiente--aviso">
+              <svg class="icono pendiente__icono" aria-hidden="true"><use href="#i-candado"></use></svg>
+              <div class="pendiente__texto">
+                <p class="pendiente__titulo">Jorge Rivero está bloqueado hasta las 10:47</p>
+                <p class="pendiente__detalle">5 intentos fallidos de inicio de sesión desde 181.115.60.92.</p>
+              </div>
+              <a class="boton pendiente__accion" href="usuarios.html">Revisar</a>
             </li>
             <li class="pendiente pendiente--aviso">
               <svg class="icono pendiente__icono" aria-hidden="true"><use href="#i-alerta"></use></svg>
@@ -100,7 +109,7 @@
                 <p class="pendiente__titulo">Sonso de yuca no tiene código de producto SIN</p>
                 <p class="pendiente__detalle">El plazo de homologación del SIN es el 30 de octubre de 2026.</p>
               </div>
-              <a class="boton pendiente__accion" href="producto-form.html?id=H05">Completar</a>
+              <a class="boton pendiente__accion" href="producto-form.html?id=HO-05">Completar</a>
             </li>
             <li class="pendiente">
               <svg class="icono pendiente__icono" aria-hidden="true"><use href="#i-agotado"></use></svg>
@@ -113,81 +122,108 @@
           </ul>
         </section>
 
-        <section class="escritorio__catalogo" aria-labelledby="t-catalogo">
-          <h2 class="seccion__titulo" id="t-catalogo">Catálogo</h2>
+        <section class="escritorio__hoy" aria-labelledby="t-hoy">
+          <h2 class="seccion__titulo" id="t-hoy">Hoy en el local</h2>
           <div class="panel-bloque">
-            <div class="panel-bloque__cuerpo homologacion">
-              <div class="homologacion__cifra">
-                <span class="homologacion__valor num">14</span>
-                <span class="homologacion__de">de 15 productos homologados con el SIN</span>
-              </div>
-              <progress class="cinta-progreso" max="15" value="14" aria-label="Productos con código SIN">14 de 15</progress>
-              <p class="homologacion__plazo">Plazo: 30 de octubre de 2026</p>
+            <div class="panel-bloque__cuerpo hoy">
+              <p class="hoy__etiqueta">Ventas cobradas</p>
+              <p class="hoy__valor"><span class="cifra__moneda">Bs</span>1.086,00</p>
+              <p class="hoy__detalle">41 ventas · ticket promedio Bs 26,49 · +8,4 % frente a ayer</p>
             </div>
             <dl class="resumen">
-              <div class="resumen__fila"><dt>Productos activos</dt><dd class="num">15</dd></div>
-              <div class="resumen__fila"><dt>Categorías</dt><dd class="num">5</dd></div>
-              <div class="resumen__fila"><dt>Agotados hoy</dt><dd class="num">1</dd></div>
-              <div class="resumen__fila"><dt>Sin foto</dt><dd class="num">15</dd></div>
+              <div class="resumen__fila"><dt>Caja</dt><dd>Abierta por Mariela desde las 07:02</dd></div>
+              <div class="resumen__fila"><dt>Efectivo esperado</dt><dd class="num">1.254,50</dd></div>
+              <div class="resumen__fila"><dt>Facturas anuladas</dt><dd class="num">1</dd></div>
+              <div class="resumen__fila"><dt>Productos homologados</dt><dd class="num">14 de 15</dd></div>
             </dl>
             <div class="panel-bloque__pie">
-              <a class="boton boton--primario" href="producto-form.html">
+              <a class="boton boton--primario" href="reportes.html">Ver reportes</a>
+              <a class="boton" href="producto-form.html">
                 <svg class="icono" aria-hidden="true"><use href="#i-mas"></use></svg>
                 Nuevo producto
               </a>
-              <a class="boton" href="productos.html">Ver productos</a>
             </div>
           </div>
         </section>
 
-        <section class="escritorio__entregas" aria-labelledby="t-entregas">
-          <h2 class="seccion__titulo" id="t-entregas">Lo que viene</h2>
-          <ol class="entregas" role="list">
-            <li class="entrega">
-              <p class="entrega__sprint">Sprint 2</p>
-              <p class="entrega__texto">Punto de venta, cobro en efectivo y con QR, clientes, emisión de factura, usuarios y datos fiscales.</p>
-            </li>
-            <li class="entrega">
-              <p class="entrega__sprint">Sprint 3</p>
-              <p class="entrega__texto">Caja con arqueo, reportes, factura impresa, anulaciones, Libro de Ventas y bitácora.</p>
-            </li>
+        <section class="escritorio__actividad" aria-labelledby="t-actividad">
+          <div class="seccion__cabeza">
+            <h2 id="t-actividad">Actividad reciente</h2>
+            <a href="bitacora.html">Ver bitácora</a>
+          </div>
+          <ol class="actividad" role="list">
+            <li><span class="actividad__hora num">12:58</span><p><strong>Mariela Suárez</strong> intentó abrir Usuarios <span class="insignia insignia--peligro">403</span></p></li>
+            <li><span class="actividad__hora num">12:41</span><p><strong>Mariela Suárez</strong> emitió la factura N° 128 por Bs 76,00</p></li>
+            <li><span class="actividad__hora num">11:52</span><p><strong>Mariela Suárez</strong> marcó Masaco de plátano como agotado</p></li>
+            <li><span class="actividad__hora num">11:34</span><p><strong>Ana Lucía Vaca</strong> anuló la factura N° 123</p></li>
           </ol>
         </section>
       </div>
 
-      <!-- Cajero -->
-      <div class="escritorio escritorio--simple" data-solo-rol="cajero" hidden>
+      <!-- Cajero: su turno -->
+      <div class="escritorio escritorio--cajero" data-solo-rol="cajero" hidden>
         <section aria-labelledby="t-turno">
           <h2 class="seccion__titulo" id="t-turno">Tu turno</h2>
-          <div class="alerta alerta--info">
-            <svg class="icono" aria-hidden="true"><use href="#i-info"></use></svg>
-            <p class="alerta__titulo">La apertura de caja llega en el sprint 3</p>
-            <p class="alerta__texto">Mientras tanto puedes revisar el menú del día y marcar los platos que se agotaron.</p>
-            <div class="alerta__acciones">
-              <a class="boton" href="productos.html">Ver menú del día</a>
+          <div class="panel-bloque">
+            <div class="panel-bloque__cuerpo hoy">
+              <p class="hoy__etiqueta">Cobrado en tu turno</p>
+              <p class="hoy__valor"><span class="cifra__moneda">Bs</span>1.086,00</p>
+              <p class="hoy__detalle">Caja abierta desde las 07:02 · 41 ventas</p>
+            </div>
+            <dl class="resumen">
+              <div class="resumen__fila"><dt>Monto inicial</dt><dd class="num">200,00</dd></div>
+              <div class="resumen__fila"><dt>Efectivo esperado en caja</dt><dd class="num">1.254,50</dd></div>
+              <div class="resumen__fila"><dt>Ventas menores sin factura</dt><dd class="num">12 · Bs 39,00</dd></div>
+            </dl>
+            <div class="panel-bloque__pie">
+              <a class="boton boton--primario" href="pos.html">
+                <svg class="icono" aria-hidden="true"><use href="#i-pos"></use></svg>
+                Ir al punto de venta
+              </a>
+              <a class="boton" href="caja.html">Arqueo y cierre</a>
             </div>
           </div>
         </section>
+        <section aria-labelledby="t-mis-ventas">
+          <div class="seccion__cabeza">
+            <h2 id="t-mis-ventas">Tus últimas ventas</h2>
+            <a href="ventas.html">Ver todas</a>
+          </div>
+          <ol class="actividad" role="list">
+            <li><span class="actividad__hora num">12:41</span><p>Factura N° 128 · Rodríguez Peña</p><span class="actividad__monto num">Bs 76,00</span></li>
+            <li><span class="actividad__hora num">12:33</span><p>Factura N° 127 · S/N</p><span class="actividad__monto num">Bs 38,00</span></li>
+            <li><span class="actividad__hora num">12:20</span><p>Factura N° 126 · Constructora Piraí S.R.L.</p><span class="actividad__monto num">Bs 214,00</span></li>
+          </ol>
+        </section>
       </div>
 
-      <!-- Analista -->
-      <div class="escritorio escritorio--simple" data-solo-rol="analista" hidden>
+      <!-- Analista: ventas del día -->
+      <div class="escritorio escritorio--cajero" data-solo-rol="analista" hidden>
         <section aria-labelledby="t-ventas-dia">
           <h2 class="seccion__titulo" id="t-ventas-dia">Ventas del día</h2>
-          <div class="alerta alerta--info">
-            <svg class="icono" aria-hidden="true"><use href="#i-info"></use></svg>
-            <p class="alerta__titulo">El tablero de ventas llega en el sprint 3</p>
-            <p class="alerta__texto">Ventas del día, platos más vendidos y ventas por hora (HU-19). Por ahora puedes consultar el catálogo.</p>
-            <div class="alerta__acciones">
-              <a class="boton" href="productos.html">Ver catálogo</a>
+          <div class="panel-bloque">
+            <div class="panel-bloque__cuerpo hoy">
+              <p class="hoy__etiqueta">Ventas cobradas</p>
+              <p class="hoy__valor"><span class="cifra__moneda">Bs</span>1.086,00</p>
+              <p class="hoy__detalle">41 ventas · ticket promedio Bs 26,49 · +8,4 % frente a ayer</p>
+            </div>
+            <dl class="resumen">
+              <div class="resumen__fila"><dt>Plato más vendido</dt><dd>Cuñapé · 46 unidades</dd></div>
+              <div class="resumen__fila"><dt>Hora pico</dt><dd class="num">12:00 a 13:00 · Bs 289,00</dd></div>
+              <div class="resumen__fila"><dt>Cobro con QR</dt><dd class="num">3 ventas · Bs 1,50</dd></div>
+            </dl>
+            <div class="panel-bloque__pie">
+              <a class="boton boton--primario" href="reportes.html">Abrir el tablero</a>
+              <a class="boton" href="reportes.html">
+                <svg class="icono" aria-hidden="true"><use href="#i-descargar"></use></svg>
+                Libro de Ventas
+              </a>
             </div>
           </div>
         </section>
       </div>
-
     </main>
   </div>
-
 
   <script src="../assets/js/iconos.js"></script>
   <script src="../assets/js/app.js"></script>

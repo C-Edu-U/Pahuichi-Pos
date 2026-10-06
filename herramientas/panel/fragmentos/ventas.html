@@ -1,0 +1,306 @@
+<!-- {"titulo":"Ventas y facturas","modulo":"ventas","h1":"Ventas y facturas","js":["ventas.js"],"cssExtra":["modulos.css"]} -->
+    <main class="contenido" id="contenido">
+      <div class="cabeza-pagina">
+        <p class="cabeza-pagina__texto" data-solo-rol="cajero" hidden>Tus ventas. Puedes reimprimir cualquier factura; para anular, pídeselo al administrador.</p>
+        <p class="cabeza-pagina__texto" data-solo-rol="analista sysadmin">Todas las ventas con su factura. Las anuladas se conservan con su motivo.</p>
+        <div class="cabeza-pagina__acciones">
+          <a class="boton boton--primario" href="pos.html" data-requiere="modulo.pos">
+            <svg class="icono" aria-hidden="true"><use href="#i-mas"></use></svg>
+            Nueva venta
+          </a>
+        </div>
+      </div>
+
+      <div class="filtros" role="search" aria-label="Filtrar ventas">
+        <div class="campo filtros__busqueda">
+          <label class="campo__etiqueta" for="v-buscar">Buscar</label>
+          <div class="control-grupo">
+            <svg class="icono control-grupo__icono" aria-hidden="true"><use href="#i-buscar"></use></svg>
+            <input class="control" id="v-buscar" type="search" placeholder="N° de factura, cliente o NIT/CI" data-filtra="filas-ventas" autocomplete="off">
+          </div>
+        </div>
+        <div class="campo">
+          <label class="campo__etiqueta" for="v-dia">Día</label>
+          <select class="control" id="v-dia" data-filtra="filas-ventas" data-campo="dia">
+            <option value="2026-10-06" selected>Hoy, 06/10</option>
+            <option value="2026-10-05">Ayer, 05/10</option>
+            <option value="2026-08-28">28/08/2026</option>
+            <option value="">Todos los días</option>
+          </select>
+        </div>
+        <div class="campo" data-requiere="ventas.todas">
+          <label class="campo__etiqueta" for="v-cajero">Cajero</label>
+          <select class="control" id="v-cajero" data-filtra="filas-ventas" data-campo="cajero">
+            <option value="">Todos</option>
+            <option>Mariela Suárez</option>
+            <option>Jorge Rivero</option>
+          </select>
+        </div>
+        <div class="campo">
+          <label class="campo__etiqueta" for="v-metodo">Método</label>
+          <select class="control" id="v-metodo" data-filtra="filas-ventas" data-campo="metodo">
+            <option value="">Todos</option>
+            <option value="efectivo">Efectivo</option>
+            <option value="qr">QR</option>
+          </select>
+        </div>
+        <div class="campo">
+          <label class="campo__etiqueta" for="v-estado">Estado</label>
+          <select class="control" id="v-estado" data-filtra="filas-ventas" data-campo="estado">
+            <option value="">Todos</option>
+            <option value="pagada">Pagadas</option>
+            <option value="anulada">Anuladas</option>
+          </select>
+        </div>
+      </div>
+
+      <p class="resultado">
+        <span class="resultado__cuenta"><span data-cuenta="filas-ventas" data-singular="venta" data-plural="ventas">0 ventas</span> · <span class="num" id="v-suma">Bs 0,00</span> cobrados</span>
+      </p>
+
+      <div class="tabla-contenedor">
+        <table class="tabla tabla--ventas tabla--fichas">
+          <caption class="visualmente-oculto">Ventas y facturas</caption>
+          <thead>
+            <tr>
+              <th scope="col">Factura</th>
+              <th scope="col">Cliente</th>
+              <th scope="col" class="col-cajero">Cajero</th>
+              <th scope="col">Método</th>
+              <th scope="col" class="col-num">Total</th>
+              <th scope="col">Estado</th>
+              <th scope="col" class="col-accion"><span class="visualmente-oculto">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody id="filas-ventas">
+              <tr data-dia="2026-10-06" data-cajero="Mariela Suárez" data-metodo="efectivo" data-estado="pagada" data-factura="128" data-total="76">
+                <td><a class="tabla__principal enlace-fila" href="factura.html?n=128">N° 128</a><span class="tabla__secundario num">06/10/2026 · 12:41</span></td>
+                <td><span class="celda-cliente">Rodríguez Peña</span><span class="tabla__secundario">CI 4567891</span></td>
+                <td class="col-cajero">Mariela Suárez</td>
+                <td><span class="metodo metodo--efectivo">Efectivo</span></td>
+                <td class="col-num"><span class="monto"><span class="monto__moneda">Bs</span>76,00</span></td>
+                <td class="celda-estado"><span class="insignia insignia--ok">Pagada</span></td>
+                <td class="col-accion"><div class="acciones-fila">
+                  <a class="boton boton--icono" href="factura.html?n=128" aria-label="Reimprimir factura 128"><svg class="icono" aria-hidden="true"><use href="#i-imprimir"></use></svg></a>
+                  <button class="boton" type="button" data-requiere="ventas.anular" data-abrir-modal="modal-anular" data-factura="128">Anular</button>
+                </div></td>
+              </tr>
+              <tr data-dia="2026-10-06" data-cajero="Mariela Suárez" data-metodo="efectivo" data-estado="pagada" data-factura="127" data-total="38">
+                <td><a class="tabla__principal enlace-fila" href="factura.html?n=127">N° 127</a><span class="tabla__secundario num">06/10/2026 · 12:33</span></td>
+                <td><span class="celda-cliente">S/N</span><span class="tabla__secundario">99002</span></td>
+                <td class="col-cajero">Mariela Suárez</td>
+                <td><span class="metodo metodo--efectivo">Efectivo</span></td>
+                <td class="col-num"><span class="monto"><span class="monto__moneda">Bs</span>38,00</span></td>
+                <td class="celda-estado"><span class="insignia insignia--ok">Pagada</span></td>
+                <td class="col-accion"><div class="acciones-fila">
+                  <a class="boton boton--icono" href="factura.html?n=127" aria-label="Reimprimir factura 127"><svg class="icono" aria-hidden="true"><use href="#i-imprimir"></use></svg></a>
+                  <button class="boton" type="button" data-requiere="ventas.anular" data-abrir-modal="modal-anular" data-factura="127">Anular</button>
+                </div></td>
+              </tr>
+              <tr data-dia="2026-10-06" data-cajero="Mariela Suárez" data-metodo="efectivo" data-estado="pagada" data-factura="126" data-total="214">
+                <td><a class="tabla__principal enlace-fila" href="factura.html?n=126">N° 126</a><span class="tabla__secundario num">06/10/2026 · 12:20</span></td>
+                <td><span class="celda-cliente">Constructora Piraí S.R.L.</span><span class="tabla__secundario">NIT 1023987026</span></td>
+                <td class="col-cajero">Mariela Suárez</td>
+                <td><span class="metodo metodo--efectivo">Efectivo</span></td>
+                <td class="col-num"><span class="monto"><span class="monto__moneda">Bs</span>214,00</span></td>
+                <td class="celda-estado"><span class="insignia insignia--ok">Pagada</span></td>
+                <td class="col-accion"><div class="acciones-fila">
+                  <a class="boton boton--icono" href="factura.html?n=126" aria-label="Reimprimir factura 126"><svg class="icono" aria-hidden="true"><use href="#i-imprimir"></use></svg></a>
+                  <button class="boton" type="button" data-requiere="ventas.anular" data-abrir-modal="modal-anular" data-factura="126">Anular</button>
+                </div></td>
+              </tr>
+              <tr data-dia="2026-10-06" data-cajero="Mariela Suárez" data-metodo="qr" data-estado="pagada" data-factura="125" data-total="0.5">
+                <td><a class="tabla__principal enlace-fila" href="factura.html?n=125">N° 125</a><span class="tabla__secundario num">06/10/2026 · 12:02</span></td>
+                <td><span class="celda-cliente">S/N</span><span class="tabla__secundario">99002</span></td>
+                <td class="col-cajero">Mariela Suárez</td>
+                <td><span class="metodo metodo--qr">QR</span></td>
+                <td class="col-num"><span class="monto"><span class="monto__moneda">Bs</span>0,50</span></td>
+                <td class="celda-estado"><span class="insignia insignia--ok">Pagada</span></td>
+                <td class="col-accion"><div class="acciones-fila">
+                  <a class="boton boton--icono" href="factura.html?n=125" aria-label="Reimprimir factura 125"><svg class="icono" aria-hidden="true"><use href="#i-imprimir"></use></svg></a>
+                  <button class="boton" type="button" data-requiere="ventas.anular" data-abrir-modal="modal-anular" data-factura="125">Anular</button>
+                </div></td>
+              </tr>
+              <tr data-dia="2026-10-06" data-cajero="Mariela Suárez" data-metodo="efectivo" data-estado="pagada" data-factura="124" data-total="53">
+                <td><a class="tabla__principal enlace-fila" href="factura.html?n=124">N° 124</a><span class="tabla__secundario num">06/10/2026 · 11:47</span></td>
+                <td><span class="celda-cliente">Gutiérrez Añez</span><span class="tabla__secundario">CI 6234510-1F</span></td>
+                <td class="col-cajero">Mariela Suárez</td>
+                <td><span class="metodo metodo--efectivo">Efectivo</span></td>
+                <td class="col-num"><span class="monto"><span class="monto__moneda">Bs</span>53,00</span></td>
+                <td class="celda-estado"><span class="insignia insignia--ok">Pagada</span></td>
+                <td class="col-accion"><div class="acciones-fila">
+                  <a class="boton boton--icono" href="factura.html?n=124" aria-label="Reimprimir factura 124"><svg class="icono" aria-hidden="true"><use href="#i-imprimir"></use></svg></a>
+                  <button class="boton" type="button" data-requiere="ventas.anular" data-abrir-modal="modal-anular" data-factura="124">Anular</button>
+                </div></td>
+              </tr>
+              <tr data-dia="2026-10-06" data-cajero="Mariela Suárez" data-metodo="efectivo" data-estado="anulada" data-factura="123" data-total="30">
+                <td><a class="tabla__principal enlace-fila" href="factura.html?n=123">N° 123</a><span class="tabla__secundario num">06/10/2026 · 11:30</span></td>
+                <td><span class="celda-cliente">S/N</span><span class="tabla__secundario">99002</span></td>
+                <td class="col-cajero">Mariela Suárez</td>
+                <td><span class="metodo metodo--efectivo">Efectivo</span></td>
+                <td class="col-num"><span class="monto monto--anulado"><span class="monto__moneda">Bs</span>30,00</span></td>
+                <td class="celda-estado"><span class="insignia insignia--peligro">Anulada</span></td>
+                <td class="col-accion"><div class="acciones-fila">
+                  <a class="boton boton--icono" href="factura.html?n=123" aria-label="Reimprimir factura 123"><svg class="icono" aria-hidden="true"><use href="#i-imprimir"></use></svg></a>
+                  
+                </div></td>
+              </tr>
+              <tr data-dia="2026-10-06" data-cajero="Mariela Suárez" data-metodo="efectivo" data-estado="pagada" data-factura="122" data-total="95">
+                <td><a class="tabla__principal enlace-fila" href="factura.html?n=122">N° 122</a><span class="tabla__secundario num">06/10/2026 · 11:12</span></td>
+                <td><span class="celda-cliente">Saucedo Roca</span><span class="tabla__secundario">CI 3398217</span></td>
+                <td class="col-cajero">Mariela Suárez</td>
+                <td><span class="metodo metodo--efectivo">Efectivo</span></td>
+                <td class="col-num"><span class="monto"><span class="monto__moneda">Bs</span>95,00</span></td>
+                <td class="celda-estado"><span class="insignia insignia--ok">Pagada</span></td>
+                <td class="col-accion"><div class="acciones-fila">
+                  <a class="boton boton--icono" href="factura.html?n=122" aria-label="Reimprimir factura 122"><svg class="icono" aria-hidden="true"><use href="#i-imprimir"></use></svg></a>
+                  <button class="boton" type="button" data-requiere="ventas.anular" data-abrir-modal="modal-anular" data-factura="122">Anular</button>
+                </div></td>
+              </tr>
+              <tr data-dia="2026-10-06" data-cajero="Mariela Suárez" data-metodo="qr" data-estado="pagada" data-factura="121" data-total="0.5">
+                <td><a class="tabla__principal enlace-fila" href="factura.html?n=121">N° 121</a><span class="tabla__secundario num">06/10/2026 · 10:55</span></td>
+                <td><span class="celda-cliente">S/N</span><span class="tabla__secundario">99002</span></td>
+                <td class="col-cajero">Mariela Suárez</td>
+                <td><span class="metodo metodo--qr">QR</span></td>
+                <td class="col-num"><span class="monto"><span class="monto__moneda">Bs</span>0,50</span></td>
+                <td class="celda-estado"><span class="insignia insignia--ok">Pagada</span></td>
+                <td class="col-accion"><div class="acciones-fila">
+                  <a class="boton boton--icono" href="factura.html?n=121" aria-label="Reimprimir factura 121"><svg class="icono" aria-hidden="true"><use href="#i-imprimir"></use></svg></a>
+                  <button class="boton" type="button" data-requiere="ventas.anular" data-abrir-modal="modal-anular" data-factura="121">Anular</button>
+                </div></td>
+              </tr>
+              <tr data-dia="2026-10-06" data-cajero="Mariela Suárez" data-metodo="efectivo" data-estado="pagada" data-factura="120" data-total="142">
+                <td><a class="tabla__principal enlace-fila" href="factura.html?n=120">N° 120</a><span class="tabla__secundario num">06/10/2026 · 10:21</span></td>
+                <td><span class="celda-cliente">Distribuidora El Trompillo</span><span class="tabla__secundario">NIT 1987654013</span></td>
+                <td class="col-cajero">Mariela Suárez</td>
+                <td><span class="metodo metodo--efectivo">Efectivo</span></td>
+                <td class="col-num"><span class="monto"><span class="monto__moneda">Bs</span>142,00</span></td>
+                <td class="celda-estado"><span class="insignia insignia--ok">Pagada</span></td>
+                <td class="col-accion"><div class="acciones-fila">
+                  <a class="boton boton--icono" href="factura.html?n=120" aria-label="Reimprimir factura 120"><svg class="icono" aria-hidden="true"><use href="#i-imprimir"></use></svg></a>
+                  <button class="boton" type="button" data-requiere="ventas.anular" data-abrir-modal="modal-anular" data-factura="120">Anular</button>
+                </div></td>
+              </tr>
+              <tr data-dia="2026-10-06" data-cajero="Mariela Suárez" data-metodo="efectivo" data-estado="pagada" data-factura="119" data-total="18">
+                <td><a class="tabla__principal enlace-fila" href="factura.html?n=119">N° 119</a><span class="tabla__secundario num">06/10/2026 · 09:48</span></td>
+                <td><span class="celda-cliente">S/N</span><span class="tabla__secundario">99002</span></td>
+                <td class="col-cajero">Mariela Suárez</td>
+                <td><span class="metodo metodo--efectivo">Efectivo</span></td>
+                <td class="col-num"><span class="monto"><span class="monto__moneda">Bs</span>18,00</span></td>
+                <td class="celda-estado"><span class="insignia insignia--ok">Pagada</span></td>
+                <td class="col-accion"><div class="acciones-fila">
+                  <a class="boton boton--icono" href="factura.html?n=119" aria-label="Reimprimir factura 119"><svg class="icono" aria-hidden="true"><use href="#i-imprimir"></use></svg></a>
+                  <button class="boton" type="button" data-requiere="ventas.anular" data-abrir-modal="modal-anular" data-factura="119">Anular</button>
+                </div></td>
+              </tr>
+              <tr data-dia="2026-10-06" data-cajero="Mariela Suárez" data-metodo="qr" data-estado="pagada" data-factura="118" data-total="0.5">
+                <td><a class="tabla__principal enlace-fila" href="factura.html?n=118">N° 118</a><span class="tabla__secundario num">06/10/2026 · 08:15</span></td>
+                <td><span class="celda-cliente">S/N</span><span class="tabla__secundario">99002</span></td>
+                <td class="col-cajero">Mariela Suárez</td>
+                <td><span class="metodo metodo--qr">QR</span></td>
+                <td class="col-num"><span class="monto"><span class="monto__moneda">Bs</span>0,50</span></td>
+                <td class="celda-estado"><span class="insignia insignia--ok">Pagada</span></td>
+                <td class="col-accion"><div class="acciones-fila">
+                  <a class="boton boton--icono" href="factura.html?n=118" aria-label="Reimprimir factura 118"><svg class="icono" aria-hidden="true"><use href="#i-imprimir"></use></svg></a>
+                  <button class="boton" type="button" data-requiere="ventas.anular" data-abrir-modal="modal-anular" data-factura="118">Anular</button>
+                </div></td>
+              </tr>
+              <tr data-dia="2026-10-06" data-cajero="Mariela Suárez" data-metodo="efectivo" data-estado="pagada" data-factura="117" data-total="24">
+                <td><a class="tabla__principal enlace-fila" href="factura.html?n=117">N° 117</a><span class="tabla__secundario num">06/10/2026 · 07:36</span></td>
+                <td><span class="celda-cliente">S/N</span><span class="tabla__secundario">99002</span></td>
+                <td class="col-cajero">Mariela Suárez</td>
+                <td><span class="metodo metodo--efectivo">Efectivo</span></td>
+                <td class="col-num"><span class="monto"><span class="monto__moneda">Bs</span>24,00</span></td>
+                <td class="celda-estado"><span class="insignia insignia--ok">Pagada</span></td>
+                <td class="col-accion"><div class="acciones-fila">
+                  <a class="boton boton--icono" href="factura.html?n=117" aria-label="Reimprimir factura 117"><svg class="icono" aria-hidden="true"><use href="#i-imprimir"></use></svg></a>
+                  <button class="boton" type="button" data-requiere="ventas.anular" data-abrir-modal="modal-anular" data-factura="117">Anular</button>
+                </div></td>
+              </tr>
+              <tr data-dia="2026-10-05" data-cajero="Mariela Suárez" data-metodo="efectivo" data-estado="pagada" data-factura="116" data-total="60">
+                <td><a class="tabla__principal enlace-fila" href="factura.html?n=116">N° 116</a><span class="tabla__secundario num">05/10/2026 · 14:52</span></td>
+                <td><span class="celda-cliente">Rodríguez Peña</span><span class="tabla__secundario">CI 4567891</span></td>
+                <td class="col-cajero">Mariela Suárez</td>
+                <td><span class="metodo metodo--efectivo">Efectivo</span></td>
+                <td class="col-num"><span class="monto"><span class="monto__moneda">Bs</span>60,00</span></td>
+                <td class="celda-estado"><span class="insignia insignia--ok">Pagada</span></td>
+                <td class="col-accion"><div class="acciones-fila">
+                  <a class="boton boton--icono" href="factura.html?n=116" aria-label="Reimprimir factura 116"><svg class="icono" aria-hidden="true"><use href="#i-imprimir"></use></svg></a>
+                  <button class="boton" type="button" data-requiere="ventas.anular" data-abrir-modal="modal-anular" data-factura="116">Anular</button>
+                </div></td>
+              </tr>
+              <tr data-dia="2026-10-05" data-cajero="Jorge Rivero" data-metodo="efectivo" data-estado="pagada" data-factura="115" data-total="45">
+                <td><a class="tabla__principal enlace-fila" href="factura.html?n=115">N° 115</a><span class="tabla__secundario num">05/10/2026 · 13:10</span></td>
+                <td><span class="celda-cliente">S/N</span><span class="tabla__secundario">99002</span></td>
+                <td class="col-cajero">Jorge Rivero</td>
+                <td><span class="metodo metodo--efectivo">Efectivo</span></td>
+                <td class="col-num"><span class="monto"><span class="monto__moneda">Bs</span>45,00</span></td>
+                <td class="celda-estado"><span class="insignia insignia--ok">Pagada</span></td>
+                <td class="col-accion"><div class="acciones-fila">
+                  <a class="boton boton--icono" href="factura.html?n=115" aria-label="Reimprimir factura 115"><svg class="icono" aria-hidden="true"><use href="#i-imprimir"></use></svg></a>
+                  <button class="boton" type="button" data-requiere="ventas.anular" data-abrir-modal="modal-anular" data-factura="115">Anular</button>
+                </div></td>
+              </tr>
+              <tr data-dia="2026-10-05" data-cajero="Jorge Rivero" data-metodo="qr" data-estado="pagada" data-factura="114" data-total="0.5">
+                <td><a class="tabla__principal enlace-fila" href="factura.html?n=114">N° 114</a><span class="tabla__secundario num">05/10/2026 · 09:02</span></td>
+                <td><span class="celda-cliente">Saucedo Roca</span><span class="tabla__secundario">CI 3398217</span></td>
+                <td class="col-cajero">Jorge Rivero</td>
+                <td><span class="metodo metodo--qr">QR</span></td>
+                <td class="col-num"><span class="monto"><span class="monto__moneda">Bs</span>0,50</span></td>
+                <td class="celda-estado"><span class="insignia insignia--ok">Pagada</span></td>
+                <td class="col-accion"><div class="acciones-fila">
+                  <a class="boton boton--icono" href="factura.html?n=114" aria-label="Reimprimir factura 114"><svg class="icono" aria-hidden="true"><use href="#i-imprimir"></use></svg></a>
+                  <button class="boton" type="button" data-requiere="ventas.anular" data-abrir-modal="modal-anular" data-factura="114">Anular</button>
+                </div></td>
+              </tr>
+              <tr data-dia="2026-08-28" data-cajero="Jorge Rivero" data-metodo="efectivo" data-estado="pagada" data-factura="87" data-total="186">
+                <td><a class="tabla__principal enlace-fila" href="factura.html?n=87">N° 87</a><span class="tabla__secundario num">28/08/2026 · 12:15</span></td>
+                <td><span class="celda-cliente">Constructora Piraí S.R.L.</span><span class="tabla__secundario">NIT 1023987026</span></td>
+                <td class="col-cajero">Jorge Rivero</td>
+                <td><span class="metodo metodo--efectivo">Efectivo</span></td>
+                <td class="col-num"><span class="monto"><span class="monto__moneda">Bs</span>186,00</span></td>
+                <td class="celda-estado"><span class="insignia insignia--ok">Pagada</span></td>
+                <td class="col-accion"><div class="acciones-fila">
+                  <a class="boton boton--icono" href="factura.html?n=87" aria-label="Reimprimir factura 87"><svg class="icono" aria-hidden="true"><use href="#i-imprimir"></use></svg></a>
+                  <button class="boton" type="button" data-requiere="ventas.anular" data-abrir-modal="modal-anular" data-factura="87">Anular</button>
+                </div></td>
+              </tr>
+          </tbody>
+        </table>
+        <div class="vacio" data-vacio-de="filas-ventas" hidden>
+          <svg class="icono icono--lg vacio__icono" aria-hidden="true"><use href="#i-ventas"></use></svg>
+          <h2 class="vacio__titulo">No hay ventas con estos filtros</h2>
+          <p class="vacio__texto">Cambia el día o quita algún filtro.</p>
+          <button class="boton" type="button" data-limpiar-filtros="filas-ventas">Quitar filtros</button>
+        </div>
+      </div>
+
+      <dialog class="modal" id="modal-anular" aria-labelledby="anular-titulo">
+        <form method="dialog" id="form-anular">
+          <div class="modal__cuerpo">
+            <h2 class="modal__titulo" id="anular-titulo">Anular la factura N° 128</h2>
+            <p class="modal__texto" id="anular-texto">Puedes anularla directamente hasta el 9 de noviembre de 2026.</p>
+            <div class="alerta alerta--aviso" id="anular-tramite" hidden>
+              <svg class="icono" aria-hidden="true"><use href="#i-alerta"></use></svg>
+              <p class="alerta__titulo">Fuera de plazo</p>
+              <p class="alerta__texto">El plazo venció el 9 del mes siguiente. Quedará marcada como «requiere trámite ante el SIN».</p>
+            </div>
+            <div class="campo">
+              <label class="campo__etiqueta" for="motivo">Motivo de anulación</label>
+              <select class="control" id="motivo" aria-describedby="motivo-error">
+                <option value="">Elige el motivo</option>
+                <option value="1">1 · Factura mal emitida</option>
+                <option value="2">2 · Nota de crédito-débito mal emitida</option>
+                <option value="3">3 · Datos de emisión incorrectos</option>
+                <option value="4">4 · Factura o nota devuelta</option>
+              </select>
+              <p class="campo__error" id="motivo-error" hidden></p>
+            </div>
+          </div>
+          <div class="modal__acciones">
+            <button class="boton" type="submit" value="cancelar" formnovalidate>Cancelar</button>
+            <button class="boton boton--peligro" type="button" id="confirmar-anular">Anular factura</button>
+          </div>
+        </form>
+      </dialog>
+    </main>

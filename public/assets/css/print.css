@@ -25,8 +25,7 @@ body {
 .subnav,
 .acciones-fila,
 .col-accion,
-.formulario__acciones,
-.cinta {
+.formulario__acciones {
   display: none !important;
 }
 
