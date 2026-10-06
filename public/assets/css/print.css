@@ -1,0 +1,72 @@
+/* ==========================================================================
+   Pahuichi POS · Impresión base
+   Las plantillas de factura (rollo de 80 mm y media hoja) llegan en el
+   sprint 3 (HU-24) y se apoyarán en esta hoja.
+   ========================================================================== */
+
+@page {
+  margin: 12mm;
+}
+
+body {
+  background: #fff !important;
+  color: #000 !important;
+  font-size: 11pt;
+}
+
+.riel,
+.velo,
+.barra__menu,
+.barra__usuario,
+.demo-rol,
+.saltar-contenido,
+.herramientas,
+.pestanas,
+.subnav,
+.acciones-fila,
+.col-accion,
+.formulario__acciones,
+.cinta {
+  display: none !important;
+}
+
+.panel {
+  display: block !important;
+}
+
+.cabecera {
+  position: static !important;
+  border-bottom: 1pt solid #000;
+}
+
+.contenido {
+  max-width: none !important;
+  padding: 8mm 0 0 !important;
+}
+
+.tabla-contenedor {
+  border: 0 !important;
+  overflow: visible !important;
+}
+
+.tabla thead th {
+  position: static !important;
+  background: none !important;
+  color: #000 !important;
+  border-bottom: 1pt solid #000 !important;
+}
+
+.tabla tbody tr {
+  break-inside: avoid;
+}
+
+.insignia {
+  border: 0.75pt solid #000;
+  background: none !important;
+  color: #000 !important;
+}
+
+a {
+  color: #000 !important;
+  text-decoration: none !important;
+}
