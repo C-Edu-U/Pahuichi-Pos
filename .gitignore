@@ -1,17 +1,18 @@
-# Credenciales locales (sprint 1 en PHP)
+# Credenciales locales
 config/config.local.php
 
 # Base de datos local y registros
 storage/*.sqlite
 storage/logs/*
 
-# Ajustes y capturas locales de herramientas
-.claude/settings.local.json
-.impeccable/review/
-.impeccable/config.local.json
+# Configuración local del editor y de herramientas
+.claude/
+.impeccable/
+skills-lock.json
+PRODUCT.md
+.vscode/
 
 # Sistema
 Thumbs.db
 .DS_Store
 node_modules/
-.impeccable/hook.cache.json
