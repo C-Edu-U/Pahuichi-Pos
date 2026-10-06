@@ -1,0 +1,610 @@
+/* ==========================================================================
+   Pahuichi POS · Punto de venta
+   Móvil: grilla de 2 columnas y pedido como barra inferior desplegable.
+   Escritorio: grilla a la izquierda, pedido fijo a la derecha.
+   El total siempre visible.
+   ========================================================================== */
+
+.contenido--pos {
+  max-width: none;
+  padding: 0;
+}
+
+.pos {
+  display: grid;
+  min-height: calc(100dvh - var(--barra-alto) - 1px);
+}
+
+/* --------------------------------------------------------------------------
+   Catálogo
+   -------------------------------------------------------------------------- */
+.pos__catalogo {
+  min-width: 0;
+  padding: var(--esp-2) var(--esp-2) 7rem;
+}
+
+.pos__busqueda {
+  display: grid;
+  gap: var(--esp-1);
+  margin-bottom: var(--esp-1);
+}
+
+.pos__turno {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-1);
+  font-size: var(--texto-sm);
+  color: var(--color-texto-2);
+}
+
+.punto-estado {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--verde-500);
+  box-shadow: 0 0 0 3px var(--verde-100);
+}
+
+.pos__categorias {
+  margin-bottom: var(--esp-2);
+}
+
+.grilla-productos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--esp-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 600px) {
+  .grilla-productos {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 900px) {
+  .grilla-productos {
+    grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+    gap: var(--esp-2);
+  }
+}
+
+.producto-pos {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--esp-2);
+  width: 100%;
+  min-height: 7rem;
+  padding: var(--esp-2);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  background: var(--blanco);
+  color: var(--color-texto);
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    border-color var(--dur-corta) ease,
+    background-color var(--dur-corta) ease,
+    transform var(--dur-presion) var(--ease-out);
+}
+
+.producto-pos:hover {
+  border-color: var(--verde-300);
+  background: var(--verde-50);
+}
+
+.producto-pos:active {
+  transform: scale(0.97);
+}
+
+.producto-pos__nombre {
+  font-weight: var(--peso-semi);
+  line-height: var(--interlineado-titulo);
+}
+
+.producto-pos__pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-05);
+}
+
+.producto-pos__precio {
+  font-size: var(--texto-md);
+}
+
+.producto-pos__cuenta {
+  position: absolute;
+  top: var(--esp-1);
+  right: var(--esp-1);
+  min-width: 1.75rem;
+  height: 1.75rem;
+  padding: 0 6px;
+  border-radius: var(--radio-redondo);
+  background: var(--verde-600);
+  color: var(--blanco);
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-negrita);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.75rem;
+  text-align: center;
+}
+
+.producto-pos:has(.producto-pos__cuenta) {
+  border-color: var(--verde-600);
+  box-shadow: inset 0 0 0 1px var(--verde-600);
+}
+
+.producto-pos:has(.producto-pos__cuenta) .producto-pos__nombre {
+  padding-right: var(--esp-4);
+}
+
+.producto-pos--agotado {
+  background: var(--fondo-alterno);
+  cursor: not-allowed;
+}
+
+.producto-pos--agotado .producto-pos__nombre,
+.producto-pos--agotado .producto-pos__precio {
+  color: var(--color-texto-2);
+}
+
+.producto-pos--agotado:hover {
+  border-color: var(--color-borde);
+  background: var(--fondo-alterno);
+}
+
+/* --------------------------------------------------------------------------
+   Pedido: en móvil, barra fija abajo que se abre como hoja
+   -------------------------------------------------------------------------- */
+.pos__pedido {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-barra);
+  display: flex;
+  flex-direction: column;
+  max-height: 88dvh;
+  background: var(--blanco);
+  border-top: 1px solid var(--color-borde-fuerte);
+  box-shadow: 0 -8px 24px rgba(12, 59, 38, 0.1);
+}
+
+.pos__resumen-movil {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-2);
+  min-height: 4rem;
+  padding: 0 var(--esp-2);
+  border: 0;
+  background: var(--verde-700);
+  color: var(--blanco);
+  font-weight: var(--peso-semi);
+}
+
+.pos__resumen-movil .monto,
+.pos__resumen-movil .monto__moneda {
+  color: var(--blanco);
+}
+
+.pos__resumen-total {
+  font-size: var(--texto-lg);
+}
+
+.pos__pedido-cuerpo {
+  display: none;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.pos__pedido.esta-abierto .pos__pedido-cuerpo {
+  display: flex;
+}
+
+.pos__pedido-cabeza {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-1);
+  padding: var(--esp-1) var(--esp-1) 0 var(--esp-2);
+}
+
+.pos__pedido-titulo {
+  font-size: var(--texto-md);
+}
+
+/* Cliente */
+.cliente-pos {
+  display: grid;
+  gap: var(--esp-1);
+  padding: var(--esp-1) var(--esp-2) var(--esp-2);
+  border-bottom: 1px solid var(--color-borde);
+}
+
+.cliente-pos__fila {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: var(--esp-1);
+}
+
+.cliente-pos__fila .boton {
+  padding: 0 var(--esp-2);
+}
+
+.cliente-pos__dato {
+  font-size: var(--texto-sm);
+  color: var(--color-texto-2);
+}
+
+.cliente-pos__dato strong {
+  color: var(--color-texto);
+}
+
+/* Líneas */
+.lineas {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.linea {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "texto subtotal"
+    "paso paso";
+  gap: var(--esp-1) var(--esp-2);
+  padding: var(--esp-2);
+  border-bottom: 1px solid var(--linea-suave);
+}
+
+.linea__texto {
+  grid-area: texto;
+  display: grid;
+}
+
+.linea__nombre {
+  font-weight: var(--peso-semi);
+}
+
+.linea__unitario {
+  font-size: var(--texto-xs);
+  color: var(--color-texto-2);
+}
+
+.linea__subtotal {
+  grid-area: subtotal;
+  font-weight: var(--peso-semi);
+  text-align: right;
+}
+
+.paso {
+  grid-area: paso;
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  border: 1px solid var(--color-borde-fuerte);
+  border-radius: var(--radio);
+}
+
+.paso__boton {
+  border: 0;
+  border-radius: 0;
+}
+
+.paso__valor {
+  min-width: 2.5rem;
+  font-weight: var(--peso-semi);
+  text-align: center;
+}
+
+.lineas-vacio {
+  display: grid;
+  justify-items: center;
+  gap: var(--esp-1);
+  padding: var(--esp-5) var(--esp-3);
+  color: var(--color-texto-2);
+  text-align: center;
+}
+
+.lineas-vacio .icono {
+  color: var(--tinta-300);
+}
+
+/* Totales */
+.totales {
+  margin-top: auto;
+  padding: var(--esp-2);
+  border-top: 1px solid var(--color-borde);
+  background: var(--fondo-alterno);
+}
+
+.totales__lista {
+  display: grid;
+  gap: var(--esp-05);
+  font-size: var(--texto-sm);
+}
+
+.totales__lista div {
+  display: flex;
+  justify-content: space-between;
+}
+
+.totales__lista dt {
+  color: var(--color-texto-2);
+}
+
+.totales__total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--esp-2);
+  margin-top: var(--esp-1);
+  padding-top: var(--esp-1);
+  border-top: 1px solid var(--color-borde);
+}
+
+.totales__etiqueta {
+  font-size: var(--texto-md);
+  font-weight: var(--peso-semi);
+}
+
+.totales__monto {
+  font-size: var(--texto-2xl);
+  font-weight: var(--peso-negrita);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.totales__moneda {
+  margin-right: 0.2em;
+  font-size: 0.5em;
+  font-weight: var(--peso-semi);
+  color: var(--color-texto-2);
+  letter-spacing: 0;
+}
+
+.totales__menor,
+.totales__qr-vencido {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--esp-05);
+  margin-top: var(--esp-1);
+  font-size: var(--texto-sm);
+}
+
+.totales__menor {
+  color: var(--color-texto-2);
+}
+
+.totales__qr-vencido {
+  color: var(--terracota-700);
+  font-weight: var(--peso-semi);
+}
+
+.totales__menor .icono,
+.totales__qr-vencido .icono {
+  margin-top: 2px;
+}
+
+.totales__acciones {
+  display: grid;
+  gap: var(--esp-1);
+  margin-top: var(--esp-2);
+}
+
+.boton--grande {
+  min-height: 3.5rem;
+  font-size: var(--texto-md);
+}
+
+/* --------------------------------------------------------------------------
+   Escritorio y tableta horizontal: pedido fijo a la derecha
+   -------------------------------------------------------------------------- */
+@media (min-width: 1024px) {
+  .pos {
+    grid-template-columns: minmax(0, 1fr) 24rem;
+  }
+
+  .pos__catalogo {
+    padding: var(--esp-3);
+  }
+
+  .pos__busqueda {
+    grid-template-columns: minmax(0, 32rem) 1fr;
+    align-items: center;
+  }
+
+  .pos__turno {
+    justify-self: end;
+  }
+
+  .pos__pedido {
+    position: sticky;
+    top: calc(var(--barra-alto) + 1px);
+    height: calc(100dvh - var(--barra-alto) - 1px);
+    max-height: none;
+    border-top: 0;
+    border-left: 1px solid var(--color-borde);
+    box-shadow: none;
+  }
+
+  .pos__resumen-movil {
+    display: none;
+  }
+
+  .pos__pedido-cuerpo {
+    display: flex;
+    flex: 1;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Modal de cobro
+   -------------------------------------------------------------------------- */
+.modal--cobro {
+  width: min(30rem, calc(100vw - var(--esp-2)));
+  max-height: calc(100dvh - var(--esp-2));
+}
+
+.cobro {
+  display: grid;
+}
+
+.cobro__cabeza {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--esp-1) var(--esp-1) 0 var(--esp-3);
+}
+
+.cobro__total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--esp-2);
+  margin: var(--esp-1) var(--esp-3) 0;
+  padding: var(--esp-2) 0;
+  border-bottom: 1px solid var(--color-borde);
+}
+
+.cobro__etiqueta {
+  color: var(--color-texto-2);
+}
+
+.cobro__monto {
+  font-size: var(--texto-2xl);
+  font-weight: var(--peso-negrita);
+  letter-spacing: -0.02em;
+}
+
+.cobro__metodo {
+  display: grid;
+  gap: var(--esp-2);
+  padding: var(--esp-3);
+}
+
+.control--grande {
+  min-height: 3.5rem;
+  font-size: var(--texto-lg);
+  font-weight: var(--peso-semi);
+}
+
+.billetes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--esp-1);
+}
+
+.billete {
+  font-variant-numeric: tabular-nums;
+}
+
+.cambio {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: var(--esp-2);
+  border-radius: var(--radio);
+  background: var(--verde-50);
+}
+
+.cambio__etiqueta {
+  font-weight: var(--peso-semi);
+  color: var(--verde-900);
+}
+
+.cambio__monto {
+  font-size: var(--texto-xl);
+  font-weight: var(--peso-negrita);
+  color: var(--verde-800);
+  font-variant-numeric: tabular-nums;
+}
+
+.cambio__monto--falta {
+  color: var(--color-texto-3);
+}
+
+.cobro-qr {
+  display: grid;
+  justify-items: center;
+  gap: var(--esp-2);
+}
+
+.cobro-qr__imagen {
+  width: min(15rem, 70vw);
+  height: auto;
+  padding: var(--esp-1);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  background: var(--blanco);
+}
+
+.cobro-qr__datos {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  gap: var(--esp-3);
+  font-size: var(--texto-sm);
+}
+
+.cobro-qr__datos dt {
+  color: var(--color-texto-2);
+}
+
+.cobro-qr__datos dd {
+  font-weight: var(--peso-semi);
+}
+
+.cobro--listo {
+  justify-items: center;
+  gap: var(--esp-1);
+  padding-top: var(--esp-4);
+  text-align: center;
+}
+
+.cobro--listo .modal__titulo:focus {
+  outline: none;
+}
+
+.cobro--listo .modal__acciones {
+  width: 100%;
+  margin-top: var(--esp-3);
+}
+
+.cobro__ok {
+  display: grid;
+  place-items: center;
+  width: var(--esp-8);
+  height: var(--esp-8);
+  border-radius: 50%;
+  background: var(--verde-100);
+  color: var(--verde-700);
+}
+
+.cobro__ok .icono {
+  width: 2rem;
+  height: 2rem;
+  stroke-width: 2.25;
+}
+
+.cobro__cambio-final {
+  font-size: var(--texto-lg);
+  font-weight: var(--peso-semi);
+  font-variant-numeric: tabular-nums;
+}
+
+.modal__texto {
+  padding: 0 var(--esp-3);
+}
+
+.grilla-productos > li {
+  display: flex;
+}
