@@ -1,0 +1,621 @@
+/* ==========================================================================
+   Pahuichi POS · Layout del panel
+   Móvil (<768): riel como cajón con velo.
+   Tableta (768-1199): riel plegado a íconos.
+   Escritorio (>=1200): riel completo, plegable a íconos por el usuario.
+   ========================================================================== */
+
+.panel {
+  background: var(--blanco);
+}
+
+/* --------------------------------------------------------------------------
+   Riel lateral
+   -------------------------------------------------------------------------- */
+.riel {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: var(--z-riel);
+  display: flex;
+  flex-direction: column;
+  width: min(18rem, 86vw);
+  background: var(--color-riel);
+  color: var(--color-riel-texto);
+  transform: translateX(-100%);
+  visibility: hidden;
+  transition:
+    transform var(--dur-media) var(--ease-cajon),
+    visibility 0s linear var(--dur-media);
+}
+
+.riel.esta-abierto {
+  transform: none;
+  visibility: visible;
+  box-shadow: var(--sombra-2);
+  transition: transform var(--dur-media) var(--ease-cajon), visibility 0s;
+}
+
+.riel__marca {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-1);
+  height: var(--barra-alto);
+  padding: 0 var(--esp-1) 0 var(--esp-2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.marca {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-1);
+  min-height: var(--alto-control);
+  color: var(--blanco);
+  text-decoration: none;
+  font-family: var(--fuente-marca);
+  font-weight: 800;
+  font-stretch: 112%;
+  font-size: var(--texto-md);
+  letter-spacing: -0.005em;
+}
+
+.marca:hover {
+  color: var(--blanco);
+  text-decoration: none;
+}
+
+.marca__texto small {
+  display: block;
+  font-family: var(--fuente);
+  font-size: 0.6875rem;
+  font-weight: var(--peso-medio);
+  letter-spacing: 0.04em;
+  color: var(--color-riel-texto-2);
+}
+
+.riel__cerrar {
+  --boton-texto: var(--color-riel-texto);
+}
+
+.riel__cerrar:hover {
+  --boton-fondo: rgba(255, 255, 255, 0.08);
+}
+
+/* Menú */
+.menu {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--esp-1) 0;
+  scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+}
+
+.menu__lista {
+  position: relative;
+  display: grid;
+  gap: 2px;
+  padding: 0 var(--esp-1);
+}
+
+.menu__item {
+  position: relative;
+}
+
+.menu__enlace {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  min-height: var(--alto-control);
+  padding: 0 var(--esp-2);
+  border-radius: var(--radio);
+  color: var(--color-riel-texto);
+  font-weight: var(--peso-medio);
+  text-decoration: none;
+  transition: background-color var(--dur-corta) ease, color var(--dur-corta) ease;
+}
+
+.menu__enlace:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--blanco);
+  text-decoration: none;
+}
+
+.menu__enlace:focus-visible {
+  outline-color: var(--blanco);
+  outline-offset: -3px;
+}
+
+.menu__texto {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Módulo activo: queda atado con una cinta blanca cosida */
+.menu__enlace[aria-current="page"] {
+  background: var(--blanco);
+  color: var(--verde-800);
+  font-weight: var(--peso-semi);
+}
+
+.menu__enlace[aria-current="page"]::before,
+.menu__enlace[aria-current="page"]::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  height: 1px;
+  background: repeating-linear-gradient(90deg, var(--verde-300) 0 5px, transparent 5px 9px);
+}
+
+.menu__enlace[aria-current="page"]::before {
+  top: 4px;
+}
+
+.menu__enlace[aria-current="page"]::after {
+  bottom: 4px;
+}
+
+/* Con JS la cinta es una sola pieza que se desliza al módulo activo */
+.menu--cinta .menu__enlace[aria-current="page"] {
+  background: transparent;
+}
+
+.menu--cinta .menu__enlace[aria-current="page"]::before,
+.menu--cinta .menu__enlace[aria-current="page"]::after {
+  content: none;
+}
+
+.menu__cinta {
+  position: absolute;
+  left: var(--esp-1);
+  right: var(--esp-1);
+  top: 0;
+  height: var(--alto-control);
+  border-radius: var(--radio);
+  background: var(--blanco);
+  transform: translateY(var(--cinta-y, 0));
+  transition: transform 220ms var(--ease-in-out);
+  pointer-events: none;
+}
+
+.menu__cinta::before,
+.menu__cinta::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  height: 1px;
+  background: repeating-linear-gradient(90deg, var(--verde-300) 0 5px, transparent 5px 9px);
+}
+
+.menu__cinta::before {
+  top: 4px;
+}
+
+.menu__cinta::after {
+  bottom: 4px;
+}
+
+.menu__cinta.sin-transicion {
+  transition: none;
+}
+
+.menu__separador {
+  height: 1px;
+  margin: var(--esp-1) var(--esp-2);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* Aviso en el menú (p. ej. QR por vencer) */
+.menu__aviso {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.375rem;
+  padding: 0 6px;
+  border-radius: var(--radio-sm);
+  background: var(--ambar-200);
+  color: var(--ambar-800);
+  font-size: 0.75rem;
+  font-weight: var(--peso-negrita);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.riel__pie {
+  padding: var(--esp-1);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.riel__plegar {
+  display: none;
+  width: 100%;
+  justify-content: flex-start;
+  gap: var(--esp-2);
+  padding: 0 var(--esp-2);
+  --boton-texto: var(--color-riel-texto-2);
+  font-weight: var(--peso-medio);
+  text-align: left;
+}
+
+.riel__plegar:hover {
+  --boton-fondo: rgba(255, 255, 255, 0.08);
+  --boton-texto: var(--blanco);
+}
+
+.riel__plegar .icono-desplegar {
+  display: none;
+}
+
+/* Velo detrás del cajón en móvil */
+.velo {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-riel) - 1);
+  background: rgba(8, 42, 27, 0.48);
+  opacity: 0;
+  transition: opacity var(--dur-media) ease;
+}
+
+.velo.esta-visible {
+  opacity: 1;
+}
+
+/* --------------------------------------------------------------------------
+   Marco: barra superior + contenido
+   -------------------------------------------------------------------------- */
+.marco {
+  min-width: 0;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.cabecera {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-barra);
+  background: var(--blanco);
+}
+
+.barra {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-1);
+  height: var(--barra-alto);
+  padding: 0 var(--esp-1);
+}
+
+.barra__titulo {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--texto-md);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.barra__usuario {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-1);
+}
+
+.usuario {
+  display: none;
+  text-align: right;
+  line-height: 1.25;
+}
+
+.usuario__nombre {
+  display: block;
+  font-weight: var(--peso-semi);
+  font-size: var(--texto-sm);
+}
+
+.usuario__rol {
+  display: block;
+  font-size: var(--texto-xs);
+  color: var(--color-texto-2);
+}
+
+.boton-salir__texto {
+  display: none;
+}
+
+.contenido {
+  flex: 1;
+  width: 100%;
+  max-width: var(--contenido-max);
+  padding: var(--esp-3) var(--esp-2) var(--esp-10);
+}
+
+/* Fila de herramientas bajo la barra: descripción + acciones */
+.cabeza-pagina {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--esp-2);
+  margin-bottom: var(--esp-3);
+}
+
+.cabeza-pagina__texto {
+  max-width: 60ch;
+  color: var(--color-texto-2);
+}
+
+.cabeza-pagina__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-1);
+}
+
+.seccion + .seccion {
+  margin-top: var(--esp-5);
+}
+
+.seccion__titulo {
+  margin-bottom: var(--esp-2);
+}
+
+/* Selector de rol: solo existe en el prototipo; en PHP lo reemplaza la sesión */
+.demo-rol {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-1);
+  margin-right: var(--esp-1);
+  color: var(--ambar-800);
+  font-size: var(--texto-xs);
+  font-weight: var(--peso-semi);
+}
+
+.demo-rol__texto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.demo-rol select {
+  width: auto;
+  padding: 0 var(--esp-4) 0 var(--esp-1);
+  border: 1px dashed var(--ambar-500);
+  background-color: var(--ambar-50);
+  color: var(--ambar-800);
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-semi);
+}
+
+/* En móvil el selector se compacta para no comerse el título */
+@media (max-width: 767.98px) {
+  .demo-rol {
+    margin-right: 0;
+  }
+
+  .demo-rol select {
+    max-width: 6.5rem;
+    min-height: 2.75rem;
+    padding: 0 var(--esp-3) 0 var(--esp-1);
+    font-size: var(--texto-xs);
+    background-position:
+      calc(100% - 15px) 50%,
+      calc(100% - 10px) 50%;
+  }
+}
+
+@media (min-width: 1024px) {
+  .demo-rol__texto {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
+  }
+
+  .demo-rol {
+    margin-right: var(--esp-3);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Tableta: riel plegado a íconos, siempre visible
+   -------------------------------------------------------------------------- */
+@media (min-width: 768px) {
+  .panel {
+    display: grid;
+    grid-template-columns: var(--riel-plegado) minmax(0, 1fr);
+  }
+
+  .riel {
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    width: auto;
+    transform: none;
+    visibility: visible;
+    transition: none;
+  }
+
+  .riel__cerrar,
+  .barra__menu,
+  .velo {
+    display: none;
+  }
+
+  .barra {
+    padding: 0 var(--esp-3);
+  }
+
+  .barra__titulo {
+    font-size: var(--texto-lg);
+  }
+
+  .usuario {
+    display: block;
+  }
+
+  .contenido {
+    padding: var(--esp-4) var(--esp-3) var(--esp-10);
+  }
+
+  /* Modo íconos (se reutiliza en escritorio plegado) */
+  .panel:not(.riel-expandido) .marca__texto {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .panel:not(.riel-expandido) .riel__marca {
+    justify-content: center;
+    padding: 0;
+  }
+
+  .panel:not(.riel-expandido) .menu {
+    overflow: visible;
+  }
+
+  .panel:not(.riel-expandido) .menu__enlace {
+    justify-content: center;
+    padding: 0;
+  }
+
+  .panel:not(.riel-expandido) .menu__separador {
+    margin: var(--esp-1);
+  }
+
+  /* El aviso se reduce a un punto con su texto disponible en la etiqueta */
+  .panel:not(.riel-expandido) .menu__aviso {
+    position: absolute;
+    top: 9px;
+    right: 13px;
+    min-height: 0;
+    width: 10px;
+    height: 10px;
+    padding: 0;
+    border-radius: 50%;
+    background: var(--ambar-200);
+    box-shadow: 0 0 0 2px var(--color-riel);
+    font-size: 0;
+  }
+
+  .panel:not(.riel-expandido) .menu__enlace[aria-current="page"] ~ .menu__aviso,
+  .panel:not(.riel-expandido) .menu__item:has([aria-current="page"]) .menu__aviso {
+    box-shadow: 0 0 0 2px var(--blanco);
+  }
+
+  /* El texto del enlace pasa a ser la etiqueta flotante (sigue siendo
+     el nombre accesible del enlace) */
+  .panel:not(.riel-expandido) .menu__texto {
+    position: absolute;
+    left: calc(100% + var(--esp-1));
+    top: 50%;
+    z-index: 5;
+    flex: none;
+    padding: var(--esp-05) var(--esp-1);
+    border-radius: var(--radio-sm);
+    background: var(--tinta-900);
+    color: var(--blanco);
+    font-size: var(--texto-sm);
+    font-weight: var(--peso-medio);
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(-4px, -50%);
+    transition: opacity 125ms ease, transform 125ms var(--ease-out);
+  }
+
+  .panel:not(.riel-expandido) .menu__enlace:hover .menu__texto,
+  .panel:not(.riel-expandido) .menu__enlace:focus-visible .menu__texto {
+    opacity: 1;
+    transform: translate(0, -50%);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Escritorio: riel completo; el usuario puede plegarlo
+   -------------------------------------------------------------------------- */
+@media (min-width: 1200px) {
+  .panel {
+    grid-template-columns: var(--riel-ancho) minmax(0, 1fr);
+  }
+
+  .panel.riel-plegado {
+    grid-template-columns: var(--riel-plegado) minmax(0, 1fr);
+  }
+
+  .riel__plegar {
+    display: inline-flex;
+  }
+
+  .panel.riel-plegado .riel__plegar {
+    justify-content: center;
+    padding: 0;
+  }
+
+  .panel.riel-plegado .riel__plegar .icono-plegar {
+    display: none;
+  }
+
+  .panel.riel-plegado .riel__plegar .icono-desplegar {
+    display: block;
+  }
+
+  .boton-salir__texto {
+    display: inline;
+  }
+
+  .contenido {
+    padding: var(--esp-4) var(--esp-5) var(--esp-10);
+  }
+}
+
+@media print {
+  .riel,
+  .velo,
+  .barra__usuario,
+  .barra__menu,
+  .demo-rol {
+    display: none !important;
+  }
+
+  .panel {
+    display: block;
+  }
+
+  .cabecera {
+    position: static;
+  }
+}
+
+/* Movimiento reducido: el cajón aparece por fundido, la cinta salta sin
+   deslizarse y la etiqueta flotante no se desplaza. */
+@media (prefers-reduced-motion: reduce) {
+  .menu__cinta {
+    transition: none;
+  }
+
+  .panel:not(.riel-expandido) .menu__texto {
+    transform: translate(0, -50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) and (max-width: 767.98px) {
+  .riel {
+    transform: none;
+    opacity: 0;
+    transition: opacity var(--dur-corta) ease, visibility 0s linear var(--dur-corta);
+  }
+
+  .riel.esta-abierto {
+    opacity: 1;
+    transition: opacity var(--dur-corta) ease, visibility 0s;
+  }
+}

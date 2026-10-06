@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="es-BO">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Próximamente · Pahuichi POS</title>
+  <meta name="theme-color" content="#13603e">
+  <link rel="stylesheet" href="../assets/css/tokens.css">
+  <link rel="stylesheet" href="../assets/css/base.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <link rel="stylesheet" href="../assets/css/layout.css">
+  <link rel="stylesheet" href="../assets/css/pages.css">
+  <link rel="stylesheet" href="../assets/css/print.css" media="print">
+</head>
+<body class="panel" data-modulo="generico" data-pagina="proximamente">
+  <a class="saltar-contenido" href="#contenido">Saltar al contenido</a>
+
+  <aside class="riel" id="riel" aria-label="Menú principal">
+    <div class="riel__marca">
+      <a class="marca" href="escritorio.html">
+        <span class="marca__sello" aria-hidden="true"><span></span></span>
+        <span class="marca__texto">Pahuichi <small>Punto de venta</small></span>
+      </a>
+      <button class="boton boton--fantasma boton--icono riel__cerrar" type="button" data-cerrar-riel aria-label="Cerrar menú">
+        <svg class="icono" aria-hidden="true"><use href="#i-cerrar"></use></svg>
+      </button>
+    </div>
+    <nav class="menu" aria-label="Módulos">
+      <ul class="menu__lista" role="list">
+        <li class="menu__item" data-modulo="escritorio"><a class="menu__enlace" href="escritorio.html"><svg class="icono" aria-hidden="true"><use href="#i-escritorio"></use></svg><span class="menu__texto">Escritorio</span></a></li>
+        <li class="menu__item" data-modulo="pos"><a class="menu__enlace" href="proximamente.html?m=pos"><svg class="icono" aria-hidden="true"><use href="#i-pos"></use></svg><span class="menu__texto">Punto de venta</span></a></li>
+        <li class="menu__item" data-modulo="caja"><a class="menu__enlace" href="proximamente.html?m=caja"><svg class="icono" aria-hidden="true"><use href="#i-caja"></use></svg><span class="menu__texto">Caja</span></a></li>
+        <li class="menu__item" data-modulo="ventas"><a class="menu__enlace" href="proximamente.html?m=ventas"><svg class="icono" aria-hidden="true"><use href="#i-ventas"></use></svg><span class="menu__texto">Ventas y facturas</span></a></li>
+        <li class="menu__item" data-modulo="clientes"><a class="menu__enlace" href="proximamente.html?m=clientes"><svg class="icono" aria-hidden="true"><use href="#i-clientes"></use></svg><span class="menu__texto">Clientes</span></a></li>
+        <li class="menu__separador" role="separator"></li>
+        <li class="menu__item" data-modulo="productos"><a class="menu__enlace" href="productos.html"><svg class="icono" aria-hidden="true"><use href="#i-productos"></use></svg><span class="menu__texto">Productos y categorías</span></a></li>
+        <li class="menu__item" data-modulo="qr"><a class="menu__enlace" href="proximamente.html?m=qr"><svg class="icono" aria-hidden="true"><use href="#i-qr"></use></svg><span class="menu__texto">Pagos QR</span><span class="menu__aviso"><span class="visualmente-oculto">QR vence en </span>2 h</span></a></li>
+        <li class="menu__separador" role="separator"></li>
+        <li class="menu__item" data-modulo="reportes"><a class="menu__enlace" href="proximamente.html?m=reportes"><svg class="icono" aria-hidden="true"><use href="#i-reportes"></use></svg><span class="menu__texto">Reportes</span></a></li>
+        <li class="menu__item" data-modulo="bitacora"><a class="menu__enlace" href="proximamente.html?m=bitacora"><svg class="icono" aria-hidden="true"><use href="#i-bitacora"></use></svg><span class="menu__texto">Bitácora</span></a></li>
+        <li class="menu__separador" role="separator"></li>
+        <li class="menu__item" data-modulo="usuarios"><a class="menu__enlace" href="proximamente.html?m=usuarios"><svg class="icono" aria-hidden="true"><use href="#i-usuarios"></use></svg><span class="menu__texto">Usuarios</span></a></li>
+        <li class="menu__item" data-modulo="config"><a class="menu__enlace" href="proximamente.html?m=config"><svg class="icono" aria-hidden="true"><use href="#i-config"></use></svg><span class="menu__texto">Configuración</span></a></li>
+      </ul>
+    </nav>
+    <div class="riel__pie">
+      <button class="boton boton--fantasma riel__plegar" type="button" data-plegar-riel aria-controls="riel" aria-expanded="true">
+        <svg class="icono icono-plegar" aria-hidden="true"><use href="#i-plegar"></use></svg>
+        <svg class="icono icono-desplegar" aria-hidden="true"><use href="#i-desplegar"></use></svg>
+        <span class="menu__texto">Plegar menú</span>
+      </button>
+    </div>
+  </aside>
+  <div class="velo" hidden></div>
+
+  <div class="marco">
+    <header class="cabecera">
+      <div class="barra">
+        <button class="boton boton--fantasma boton--icono barra__menu" type="button" data-abrir-riel aria-controls="riel" aria-expanded="false" aria-label="Abrir menú">
+          <svg class="icono" aria-hidden="true"><use href="#i-menu"></use></svg>
+        </button>
+        <h1 class="barra__titulo" id="titulo-pagina">Próximamente</h1>
+        <div class="barra__usuario">
+          <label class="demo-rol">
+            <span class="demo-rol__texto">Prototipo: ver como</span>
+            <select class="control" id="demo-rol">
+              <option value="cajero">Cajero</option>
+              <option value="analista">Analista</option>
+              <option value="sysadmin">Administrador</option>
+            </select>
+          </label>
+          <p class="usuario"><span class="usuario__nombre" data-rol-nombre>Ana Lucía Vaca Saucedo</span><span class="usuario__rol" data-rol-etiqueta>Administrador</span></p>
+          <button class="boton boton--fantasma boton-salir" type="button" data-salir aria-label="Cerrar sesión">
+            <svg class="icono" aria-hidden="true"><use href="#i-salir"></use></svg>
+            <span class="boton-salir__texto">Salir</span>
+          </button>
+        </div>
+      </div>
+      <span class="cinta" aria-hidden="true"></span>
+    </header>
+
+    <main class="contenido" id="contenido">
+      <section class="aviso-pagina" aria-labelledby="t-proximo">
+        <span class="aviso-pagina__icono aviso-pagina__icono--obra" aria-hidden="true"><svg class="icono icono--lg"><use href="#i-obra"></use></svg></span>
+        <h2 class="aviso-pagina__titulo" id="t-proximo"><span id="proximo-modulo">Este módulo</span> llega en el sprint <span id="proximo-sprint">2</span></h2>
+        <p class="aviso-pagina__texto" id="proximo-texto">La ruta ya está preparada; la pantalla todavía no.</p>
+        <dl class="datos aviso-pagina__datos">
+          <dt>Historia</dt>
+          <dd id="proximo-hu">HU-09</dd>
+          <dt>Estado</dt>
+          <dd>Ruta y permisos listos, pantalla pendiente</dd>
+        </dl>
+        <div class="aviso-pagina__acciones">
+          <a class="boton" href="productos.html">Ir a Productos</a>
+        </div>
+      </section>
+    </main>
+  </div>
+
+
+  <script src="../assets/js/iconos.js"></script>
+  <script src="../assets/js/app.js"></script>
+  <script src="../assets/js/paginas.js"></script>
+</body>
+</html>
