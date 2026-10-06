@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="es-BO">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Iniciar sesión · Pahuichi POS</title>
+  <meta name="theme-color" content="#13603e">
+  <link rel="preload" href="assets/fonts/archivo-variable-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/css/tokens.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/pages.css">
+</head>
+<body class="acceso">
+  <a class="saltar-contenido" href="#form-acceso">Saltar al formulario</a>
+
+  <aside class="acceso__marca" aria-label="Pahuichi">
+    <a class="acceso__logo" href="index.html">
+      <span class="marca__sello marca__sello--grande" aria-hidden="true"><span></span></span>
+      <span>Pahuichi</span>
+    </a>
+    <p class="acceso__lema">Punto de venta del local. Ventas, caja y facturas en un solo lugar.</p>
+    <div class="acceso__bandera" aria-hidden="true"><span></span><span></span><span></span></div>
+  </aside>
+
+  <main class="acceso__panel" id="contenido">
+    <div class="acceso__caja">
+      <h1 class="acceso__titulo">Iniciar sesión</h1>
+      <p class="acceso__texto">Usa el usuario y la clave que te dio el administrador.</p>
+
+      <div class="alerta alerta--peligro" id="aviso-error" role="alert" hidden>
+        <svg class="icono" aria-hidden="true"><use href="#i-error"></use></svg>
+        <p class="alerta__titulo">Usuario o contraseña incorrectos</p>
+        <p class="alerta__texto" id="aviso-error-texto">Te quedan 4 intentos. Al quinto, la cuenta se bloquea 15 minutos.</p>
+      </div>
+
+      <div class="alerta alerta--aviso" id="aviso-bloqueo" role="alert" hidden>
+        <svg class="icono" aria-hidden="true"><use href="#i-candado"></use></svg>
+        <p class="alerta__titulo">Cuenta bloqueada por 15 minutos</p>
+        <p class="alerta__texto">Hubo 5 intentos fallidos seguidos. Podrás volver a intentar a las <strong class="num" id="hora-desbloqueo">10:47</strong>. Si no fuiste tú, avisa al administrador.</p>
+      </div>
+
+      <div class="alerta" id="aviso-salida" role="status" hidden>
+        <svg class="icono" aria-hidden="true"><use href="#i-ok"></use></svg>
+        <p class="alerta__titulo">Cerraste sesión</p>
+        <p class="alerta__texto">Hasta la próxima. Para volver, ingresa de nuevo.</p>
+      </div>
+
+      <form class="acceso__form" id="form-acceso" method="post" action="#" novalidate>
+        <input type="hidden" name="_csrf" value="">
+
+        <div class="campo">
+          <label class="campo__etiqueta" for="usuario">Usuario</label>
+          <input class="control" id="usuario" name="usuario" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required aria-describedby="usuario-error">
+          <p class="campo__error" id="usuario-error" hidden></p>
+        </div>
+
+        <div class="campo">
+          <label class="campo__etiqueta" for="clave">Contraseña</label>
+          <div class="control-grupo">
+            <input class="control" id="clave" name="clave" type="password" autocomplete="current-password" required aria-describedby="clave-mayus clave-error">
+            <button class="boton boton--fantasma boton--icono control-grupo__accion" type="button" id="ver-clave" aria-controls="clave" aria-pressed="false" aria-label="Mostrar contraseña">
+              <svg class="icono icono-ver" aria-hidden="true"><use href="#i-ver"></use></svg>
+              <svg class="icono icono-ocultar" aria-hidden="true"><use href="#i-ocultar"></use></svg>
+            </button>
+          </div>
+          <p class="campo__ayuda campo__ayuda--aviso" id="clave-mayus" hidden>Las mayúsculas están activadas.</p>
+          <p class="campo__error" id="clave-error" hidden></p>
+        </div>
+
+        <button class="boton boton--primario boton--bloque" type="submit" id="ingresar">Ingresar</button>
+      </form>
+
+      <p class="acceso__demo">
+        <span class="ejemplo">Prototipo</span>
+        Entra como <strong>cajero</strong>, <strong>analista</strong> o <strong>admin</strong> con cualquier clave. Cualquier otro usuario cuenta como intento fallido.
+      </p>
+
+      <a class="volver" href="index.html">
+        <svg class="icono icono--sm" aria-hidden="true"><use href="#i-volver"></use></svg>
+        Volver a la portada
+      </a>
+    </div>
+  </main>
+
+  <script src="assets/js/iconos.js"></script>
+  <script src="assets/js/app.js"></script>
+  <script src="assets/js/login.js"></script>
+</body>
+</html>
