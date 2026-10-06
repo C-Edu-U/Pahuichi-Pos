@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="es-BO">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pahuichi · Comida típica cruceña</title>
+  <meta name="description" content="Majadito, locro carretero, keperí, cuñapé y somó en Santa Cruz de la Sierra.">
+  <meta name="theme-color" content="#13603e">
+  <link rel="preload" href="assets/fonts/archivo-variable-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/css/tokens.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/pages.css">
+</head>
+<body class="portada">
+  <a class="saltar-contenido" href="#menu">Saltar al menú</a>
+
+  <header class="portada__banda portada__banda--verde portada__cabeza">
+    <div class="portada__ancho portada__nav">
+      <a class="portada__logo" href="index.html">
+        <span class="marca__sello" aria-hidden="true"><span></span></span>
+        Pahuichi
+      </a>
+      <a class="boton portada__ingresar" href="login.html">Iniciar sesión</a>
+    </div>
+
+    <div class="portada__ancho portada__hero">
+      <div class="portada__hero-texto">
+        <h1 class="portada__titulo">Comida típica cruceña, recién salida del horno</h1>
+        <p class="portada__bajada">Majadito, locro carretero, cuñapé y somó como se hacen en casa, en Santa Cruz de la Sierra.</p>
+        <dl class="portada__horario">
+          <div>
+            <dt>Abrimos</dt>
+            <dd>Lunes a sábado <span class="ejemplo ejemplo--claro">Dato de ejemplo</span></dd>
+          </div>
+          <div>
+            <dt>Horario</dt>
+            <dd class="num">7:00 a 15:00</dd>
+          </div>
+        </dl>
+      </div>
+      <figure class="portada__foto">
+        <div class="portada__foto-marco">
+          <svg class="icono portada__foto-icono" aria-hidden="true"><use href="#i-foto"></use></svg>
+          <p>Foto del local</p>
+        </div>
+        <figcaption>Pendiente: el local todavía no tiene fotos propias.</figcaption>
+      </figure>
+    </div>
+    <span class="cinta cinta--terracota" aria-hidden="true"></span>
+  </header>
+
+  <main class="portada__banda portada__banda--blanca" id="menu">
+    <div class="portada__ancho portada__menu">
+      <div class="portada__menu-cabeza">
+        <h2 class="portada__subtitulo">De la casa</h2>
+        <p class="portada__nota">Precios en bolivianos. <span class="ejemplo">Precios de referencia</span></p>
+      </div>
+      <ul class="platos" role="list">
+        <li class="plato">
+          <h3 class="plato__nombre">Majadito de charque</h3>
+          <p class="plato__precio monto"><span class="monto__moneda">Bs</span>30</p>
+          <p class="plato__texto">Arroz graneado con charque, huevo frito, plátano y yuca.</p>
+        </li>
+        <li class="plato">
+          <h3 class="plato__nombre">Locro carretero</h3>
+          <p class="plato__precio monto"><span class="monto__moneda">Bs</span>28</p>
+          <p class="plato__texto">Caldo espeso de arroz con charque y huevo.</p>
+        </li>
+        <li class="plato">
+          <h3 class="plato__nombre">Keperí al horno</h3>
+          <p class="plato__precio monto"><span class="monto__moneda">Bs</span>45</p>
+          <p class="plato__texto">Carne de res horneada despacio, con yuca y ensalada.</p>
+        </li>
+        <li class="plato">
+          <h3 class="plato__nombre">Cuñapé</h3>
+          <p class="plato__precio monto"><span class="monto__moneda">Bs</span>3</p>
+          <p class="plato__texto">De almidón de yuca y queso. Sale caliente toda la mañana.</p>
+        </li>
+      </ul>
+    </div>
+  </main>
+
+  <footer class="portada__banda portada__banda--verde portada__pie">
+    <span class="cinta cinta--terracota" aria-hidden="true"></span>
+    <div class="portada__ancho portada__visita">
+      <h2 class="portada__subtitulo">Visítanos</h2>
+      <dl class="portada__datos">
+        <div>
+          <dt><svg class="icono" aria-hidden="true"><use href="#i-lugar"></use></svg>Dirección</dt>
+          <dd>Por confirmar, Santa Cruz de la Sierra</dd>
+        </div>
+        <div>
+          <dt><svg class="icono" aria-hidden="true"><use href="#i-reloj"></use></svg>Horario</dt>
+          <dd>Lunes a sábado, <span class="num">7:00 a 15:00</span></dd>
+        </div>
+        <div>
+          <dt><svg class="icono" aria-hidden="true"><use href="#i-telefono"></use></svg>Teléfono</dt>
+          <dd>Por confirmar</dd>
+        </div>
+      </dl>
+      <p class="portada__personal">¿Trabajas en Pahuichi? <a href="login.html">Iniciar sesión</a></p>
+    </div>
+  </footer>
+
+  <script src="assets/js/iconos.js"></script>
+</body>
+</html>
