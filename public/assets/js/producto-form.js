@@ -1,193 +1,150 @@
-/* Formulario de producto (prototipo). La validación real ocurre en el
-   servidor: finfo para el tipo, 2 MB, nombre aleatorio y CSRF. Aquí se
-   adelanta en el cliente para dar el error junto al campo. */
+/* Producto (demo). La foto se recorta cuadrada y se comprime a 200 KB o
+   menos en el navegador (con servidor, se valida el tipo con finfo y se
+   guarda con nombre aleatorio). Los cambios de precio quedan en el historial. */
 (function () {
   'use strict';
 
-  var MAX_BYTES = 2 * 1024 * 1024;
-  var TIPOS = ['image/jpeg', 'image/png', 'image/webp'];
-
-  // Semillas del HANDOFF (sección 5) para el modo edición
-  var PRODUCTOS = {
-    'PL-01': ['Majadito de charque', 1, '30,00', '561011', '63111', '58'],
-    'PL-02': ['Locro carretero', 1, '28,00', '561011', '63111', '58'],
-    'PL-03': ['Keperí al horno', 1, '45,00', '561011', '63111', '58'],
-    'PL-04': ['Pacumutu', 1, '50,00', '561011', '63111', '58'],
-    'PL-05': ['Arroz con queso', 1, '20,00', '561011', '63111', '58'],
-    'HO-01': ['Cuñapé', 2, '3,00', '107100', '10712', '57'],
-    'HO-02': ['Pan de arroz', 2, '4,00', '107100', '10712', '57'],
-    'HO-03': ['Empanada de arroz', 2, '5,00', '107100', '10712', '57'],
-    'HO-04': ['Humintas al horno', 2, '6,00', '107100', '10712', '57'],
-    'HO-05': ['Sonso de yuca', 2, '10,00', '107100', '', '57'],
-    'HO-06': ['Masaco de plátano', 2, '15,00', '107100', '10712', '57'],
-    'BE-01': ['Somó', 3, '8,00', '110400', '11041', '57'],
-    'BE-02': ['Chicha cruceña', 3, '8,00', '110400', '11041', '57'],
-    'BE-03': ['Mocochinchi', 3, '7,00', '110400', '11041', '57'],
-    'PR-01': ['Producto de prueba QR', 5, '0,50', '561011', '99100', '58']
-  };
-
-  var form = document.getElementById('form-producto');
+  var P = window.Pahuichi;
+  var D = window.PahuichiDatos;
   var $ = function (id) { return document.getElementById(id); };
+  var MAX_BYTES = 200 * 1024;
+  var modificadores = [];
+
+  D.categorias.forEach(function (c) {
+    var o = document.createElement('option');
+    o.value = c.id;
+    o.textContent = c.nombre;
+    $('categoria').appendChild(o);
+  });
 
   /* Modo edición */
-  var id = window.Pahuichi.parametro('id');
-  if (id && PRODUCTOS[id]) {
-    var p = PRODUCTOS[id];
+  var id = P.parametro('id');
+  var original = id && D.productos.filter(function (p) { return p.id === id; })[0];
+  if (original) {
     $('titulo-form').textContent = 'Editar producto';
-    document.title = 'Editar ' + p[0] + ' · Pahuichi POS';
-    $('nombre').value = p[0];
-    $('codigo').value = id;
-    $('categoria').value = String(p[1]);
-    $('precio').value = p[2];
-    $('actividad').value = p[3];
-    $('codigo-sin').value = p[4];
-    $('unidad').value = p[5];
-    if (id === 'HO-06') $('disponible').checked = false;
-  }
-
-  /* Errores junto al campo */
-  function marcar(campo, mensaje) {
-    var control = $(campo);
-    var error = $(campo + '-error');
-    if (mensaje) {
-      error.innerHTML = '<svg class="icono icono--sm" aria-hidden="true"><use href="#i-error"></use></svg><span></span>';
-      error.querySelector('span').textContent = mensaje;
-      error.hidden = false;
-      if (control) control.setAttribute('aria-invalid', 'true');
-    } else {
-      error.hidden = true;
-      error.textContent = '';
-      if (control) control.removeAttribute('aria-invalid');
-    }
-  }
-
-  /* Precio: coma decimal, dos decimales, mayor que cero */
-  function leerPrecio(texto) {
-    var limpio = texto.trim().replace(/\s/g, '').replace(/\./g, '').replace(',', '.');
-    if (!/^\d+(\.\d{1,2})?$/.test(limpio)) return null;
-    return Math.round(parseFloat(limpio) * 100) / 100;
-  }
-
-  function formatearPrecio(valor) {
-    return valor.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-  }
-
-  $('precio').addEventListener('blur', function () {
-    var v = leerPrecio(this.value);
-    if (v !== null) this.value = formatearPrecio(v);
-  });
-
-  $('codigo').addEventListener('input', function () {
-    var pos = this.selectionStart;
-    this.value = this.value.toUpperCase();
-    this.setSelectionRange(pos, pos);
-  });
-
-  $('codigo-sin').addEventListener('input', function () {
-    this.value = this.value.replace(/\D/g, '');
-  });
-
-  var REGLAS = {
-    nombre: function (v) { return v.trim() ? '' : 'Escribe el nombre del producto.'; },
-    codigo: function (v) {
-      if (!v.trim()) return 'Escribe el código interno.';
-      return /^[A-Z0-9-]{2,12}$/.test(v.trim()) ? '' : 'Usa letras, números y guion, sin espacios.';
-    },
-    categoria: function (v) { return v ? '' : 'Elige una categoría.'; },
-    precio: function (v) {
-      if (!v.trim()) return 'Escribe el precio.';
-      var n = leerPrecio(v);
-      if (n === null) return 'Escribe un monto válido, por ejemplo 28,50.';
-      return n > 0 ? '' : 'El precio debe ser mayor que cero: no se emiten facturas en cero.';
-    },
-    actividad: function (v) { return v ? '' : 'Elige la actividad económica.'; },
-    'codigo-sin': function (v) { return v.trim() ? '' : 'Falta el código SIN: sin él el producto no queda homologado.'; },
-    unidad: function (v) { return v ? '' : 'Elige la unidad de medida.'; }
-  };
-
-  // Al corregir un campo marcado, el error se va en cuanto queda bien
-  Object.keys(REGLAS).forEach(function (campo) {
-    var el = $(campo);
-    el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', function () {
-      if (el.getAttribute('aria-invalid') === 'true') marcar(campo, REGLAS[campo](el.value));
+    document.title = 'Editar ' + original.nombre + ' · Pahuichi POS';
+    $('codigo').value = original.id;
+    $('nombre').value = original.nombre;
+    $('corto').value = original.corto;
+    $('categoria').value = original.categoria;
+    $('precio').value = P.bs(original.precio);
+    $('unidad').value = original.unidad;
+    $('favorito').checked = !!original.favorito;
+    $('cocina').checked = !!original.cocina;
+    $('agotado').checked = !!original.agotado;
+    if (original.categoria === 'platos') modificadores = [{ nombre: 'Sin cebolla', precio: 0 }, { nombre: 'Porción extra de arroz', precio: 5 }];
+    $('historial-precios').hidden = false;
+    [['01/09/2026', 'Ana Lucía Vaca', original.precio - 5, original.precio], ['15/06/2026', 'Ana Lucía Vaca', original.precio - 10, original.precio - 5]].forEach(function (h) {
+      var tr = $('filas-historial').insertRow();
+      tr.innerHTML = '<td class="num"></td><td></td><td class="col-num num"></td><td class="col-num num"></td>';
+      tr.cells[0].textContent = h[0];
+      tr.cells[1].textContent = h[1];
+      tr.cells[2].textContent = P.bs(Math.max(h[2], 1));
+      tr.cells[3].textContent = P.bs(h[3]);
     });
+  }
+
+  /* Modificadores */
+  function pintarModificadores() {
+    var ul = $('modificadores');
+    ul.innerHTML = '';
+    modificadores.forEach(function (m, i) {
+      var li = document.createElement('li');
+      li.className = 'modificador';
+      li.innerHTML = '<span class="modificador__nombre"></span><span class="modificador__precio num"></span><button class="boton boton--fantasma boton--icono" type="button"><svg class="icono" aria-hidden="true"><use href="#i-basura"></use></svg></button>';
+      li.children[0].textContent = m.nombre;
+      li.children[1].textContent = m.precio ? '+Bs ' + P.bs(m.precio) : 'Sin costo';
+      li.children[2].setAttribute('aria-label', 'Quitar ' + m.nombre);
+      li.children[2].addEventListener('click', function () { modificadores.splice(i, 1); pintarModificadores(); $('mod-nombre').focus(); });
+      ul.appendChild(li);
+    });
+  }
+
+  $('agregar-mod').addEventListener('click', function () {
+    var nombre = $('mod-nombre').value.trim();
+    var precio = $('mod-precio').value ? P.leerMonto($('mod-precio').value) : 0;
+    P.marcarCampo('mod-nombre', nombre ? '' : 'Escribe el modificador.');
+    if (!nombre) { $('mod-nombre').focus(); return; }
+    modificadores.push({ nombre: nombre, precio: precio || 0 });
+    $('mod-nombre').value = '';
+    $('mod-precio').value = '';
+    pintarModificadores();
+    $('mod-nombre').focus();
   });
 
-  /* Foto: tipo y tamaño */
-  var zona = $('zona-foto');
-  var entrada = $('foto');
-  var elegida = $('foto-elegida');
-  var urlVista = null;
-
-  function mb(bytes) {
-    return (bytes / 1024 / 1024).toFixed(1).replace('.', ',') + ' MB';
-  }
-
-  function quitarFoto() {
-    entrada.value = '';
-    elegida.hidden = true;
-    var img = elegida.querySelector('img');
-    if (img) img.remove();
-    if (urlVista) { URL.revokeObjectURL(urlVista); urlVista = null; }
-    zona.hidden = false;
-  }
-
-  function validarFoto(archivo) {
-    if (TIPOS.indexOf(archivo.type) === -1) {
-      return '«' + archivo.name + '» no es una imagen JPG, PNG o WebP.';
-    }
-    if (archivo.size > MAX_BYTES) {
-      return 'La foto pesa ' + mb(archivo.size) + '. El máximo es 2 MB.';
-    }
-    return '';
-  }
-
-  entrada.addEventListener('change', function () {
-    var archivo = entrada.files && entrada.files[0];
-    if (!archivo) return;
-    var error = validarFoto(archivo);
-    if (error) {
-      entrada.value = '';
-      zona.setAttribute('aria-invalid', 'true');
-      marcar('foto', error);
+  /* Foto: recorte cuadrado y compresión a 200 KB o menos */
+  function procesarFoto(file) {
+    P.marcarCampo('foto', '');
+    if (!file) return;
+    if (!/^image\//.test(file.type)) {
+      $('zona-foto').setAttribute('aria-invalid', 'true');
+      P.marcarCampo('foto', '«' + file.name + '» no es una imagen. Elige una foto JPG, PNG o WebP.');
       return;
     }
-    zona.removeAttribute('aria-invalid');
-    marcar('foto', '');
-    urlVista = URL.createObjectURL(archivo);
-    var img = document.createElement('img');
-    img.className = 'archivo__vista';
-    img.alt = 'Vista previa de la foto elegida';
-    img.src = urlVista;
-    elegida.insertBefore(img, elegida.firstChild);
-    $('foto-nombre').textContent = archivo.name + ' · ' + mb(archivo.size);
-    elegida.hidden = false;
-    zona.hidden = true;
-  });
+    var img = new Image();
+    img.onload = function () {
+      var lado = Math.min(img.naturalWidth, img.naturalHeight);
+      var lienzo = $('foto-lienzo');
+      var ctx = lienzo.getContext('2d');
+      ctx.drawImage(img, (img.naturalWidth - lado) / 2, (img.naturalHeight - lado) / 2, lado, lado, 0, 0, lienzo.width, lienzo.height);
+      URL.revokeObjectURL(img.src);
+      // Baja la calidad hasta que pese 200 KB o menos
+      var calidad = 0.85;
+      (function comprimir() {
+        lienzo.toBlob(function (blob) {
+          if (blob.size > MAX_BYTES && calidad > 0.4) { calidad -= 0.1; comprimir(); return; }
+          $('foto-peso').textContent = 'Recortada a 480 × 480 · ' + Math.max(1, Math.round(blob.size / 1024)) + ' KB';
+          $('foto-vista').hidden = false;
+          $('foto-quitar').hidden = false;
+          $('zona-foto').removeAttribute('aria-invalid');
+        }, 'image/jpeg', calidad);
+      })();
+    };
+    img.onerror = function () { P.marcarCampo('foto', 'No se pudo leer la imagen. Prueba con otra foto.'); };
+    img.src = URL.createObjectURL(file);
+  }
 
+  $('foto').addEventListener('change', function () { procesarFoto(this.files[0]); });
+  $('foto-camara').addEventListener('change', function () { procesarFoto(this.files[0]); });
   $('foto-quitar').addEventListener('click', function () {
-    quitarFoto();
-    entrada.focus();
+    $('foto-vista').hidden = true;
+    this.hidden = true;
+    $('foto').value = '';
+    $('foto-camara').value = '';
   });
 
-  ['dragenter', 'dragover'].forEach(function (t) {
-    zona.addEventListener(t, function () { zona.classList.add('es-arrastre'); });
-  });
-  ['dragleave', 'drop'].forEach(function (t) {
-    zona.addEventListener(t, function () { zona.classList.remove('es-arrastre'); });
-  });
+  ['dragenter', 'dragover'].forEach(function (t) { $('zona-foto').addEventListener(t, function () { $('zona-foto').classList.add('es-arrastre'); }); });
+  ['dragleave', 'drop'].forEach(function (t) { $('zona-foto').addEventListener(t, function () { $('zona-foto').classList.remove('es-arrastre'); }); });
 
-  /* Envío */
-  form.addEventListener('submit', function (e) {
+  /* Validación y guardado */
+  $('codigo').addEventListener('input', function () { this.value = this.value.toUpperCase(); });
+  $('precio').addEventListener('blur', function () { var v = P.leerMonto(this.value); if (v !== null) this.value = P.bs(v); });
+
+  var REGLAS = {
+    codigo: function (v) {
+      if (!v.trim()) return 'Escribe el código.';
+      if (!/^[A-Z0-9-]{2,12}$/.test(v.trim())) return 'Usa letras, números y guion, sin espacios.';
+      var repetido = D.productos.some(function (p) { return p.id === v.trim() && (!original || p.id !== original.id); });
+      return repetido ? 'Ese código ya lo usa otro producto.' : '';
+    },
+    nombre: function (v) { return v.trim() ? '' : 'Escribe el nombre del producto.'; },
+    corto: function (v) { return v.trim() ? '' : 'Escribe el nombre corto para el botón.'; },
+    precio: function (v) {
+      var n = P.leerMonto(v);
+      if (!v.trim()) return 'Escribe el precio.';
+      if (n === null) return 'Escribe un monto válido, por ejemplo 35,00.';
+      return n > 0 ? '' : 'El precio debe ser mayor que cero.';
+    }
+  };
+
+  $('form-producto').addEventListener('submit', function (e) {
     e.preventDefault();
     var errores = [];
     Object.keys(REGLAS).forEach(function (campo) {
       var mensaje = REGLAS[campo]($(campo).value);
-      marcar(campo, mensaje);
+      P.marcarCampo(campo, mensaje);
       if (mensaje) errores.push({ campo: campo, mensaje: mensaje });
     });
-
-    var resumen = $('resumen-errores');
     var lista = $('lista-errores');
     lista.innerHTML = '';
     if (errores.length) {
@@ -200,15 +157,15 @@
         li.appendChild(a);
         lista.appendChild(li);
       });
-      resumen.hidden = false;
-      resumen.focus();
+      $('resumen-errores').hidden = false;
+      $('resumen-errores').focus();
       return;
     }
-
-    resumen.hidden = true;
-    var boton = $('guardar');
-    boton.setAttribute('aria-busy', 'true');
-    boton.disabled = true;
-    window.setTimeout(function () { window.location.href = 'productos.html?guardado=1'; }, 500);
+    $('resumen-errores').hidden = true;
+    $('guardar').setAttribute('aria-busy', 'true');
+    $('guardar').disabled = true;
+    window.setTimeout(function () { window.location.href = 'productos.html?guardado=1'; }, 400);
   });
+
+  pintarModificadores();
 })();

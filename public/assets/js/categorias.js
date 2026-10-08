@@ -1,94 +1,105 @@
-/* Categorías (prototipo): alta en línea y desactivación con confirmación. */
+/* Categorías (demo): orden, color con contraste AA y activar/desactivar. */
 (function () {
   'use strict';
 
-  var modal = document.getElementById('modal-desactivar');
-  var anuncio = document.getElementById('anuncio');
-  var filaActual = null;
-  var nombreActual = '';
+  var P = window.Pahuichi;
+  var D = window.PahuichiDatos;
+  var $ = function (id) { return document.getElementById(id); };
 
-  // Al abrir: el texto del modal nombra la categoría y cuántos productos afecta
+  // Paleta cerrada: texto blanco con contraste 4,9:1 a 10,4:1
+  var PALETA = [
+    ['#8a5300', 'Ámbar'], ['#1062a8', 'Azul'], ['#8e2c7c', 'Ciruela'], ['#6e2a1e', 'Vino'],
+    ['#3f6f1f', 'Oliva'], ['#4f5a54', 'Gris'], ['#13603e', 'Verde'], ['#4a6fb5', 'Pizarra']
+  ];
+
+  PALETA.forEach(function (c, i) {
+    var label = document.createElement('label');
+    label.className = 'color-opcion';
+    label.innerHTML = '<input type="radio" name="color" value="' + c[0] + '"' + (i === 6 ? ' checked' : '') + '><span class="color-opcion__muestra" aria-hidden="true"></span><span class="visualmente-oculto"></span>';
+    label.querySelector('.color-opcion__muestra').style.setProperty('--muestra', c[0]);
+    label.querySelector('.visualmente-oculto').textContent = c[1];
+    $('colores').appendChild(label);
+  });
+
+  function vista() {
+    var color = document.querySelector('[name="color"]:checked').value;
+    $('vista-boton').style.setProperty('--cat', color);
+    $('vista-boton').textContent = $('cat-nombre').value.trim() || 'Nueva categoría';
+  }
+  $('colores').addEventListener('change', vista);
+  $('cat-nombre').addEventListener('input', vista);
+  vista();
+
+  function fila(c, cantidad, activa) {
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td class="col-num num"></td><td><span class="categoria-pos categoria-pos--tabla" aria-pressed="true"></span></td><td class="col-num num"></td>' +
+      '<td class="celda-estado"></td><td class="col-accion"><div class="acciones-fila" data-requiere="catalogo.editar"><button class="boton" type="button"></button></div></td>';
+    tr.cells[0].textContent = c.orden;
+    var boton = tr.querySelector('.categoria-pos');
+    boton.textContent = c.nombre;
+    boton.style.setProperty('--cat', c.color);
+    tr.cells[2].textContent = cantidad;
+    var accion = tr.querySelector('button');
+    accion.setAttribute('data-nombre', c.nombre);
+    accion.setAttribute('data-productos', cantidad);
+    estado(tr, activa);
+    accion.hidden = !P.puede('catalogo.editar');
+    return tr;
+  }
+
+  function estado(tr, activa) {
+    tr.querySelector('.celda-estado').innerHTML = activa ? '<span class="insignia insignia--ok">Activa</span>' : '<span class="insignia insignia--neutra">Inactiva</span>';
+    var b = tr.querySelector('.col-accion button');
+    b.textContent = activa ? 'Desactivar' : 'Activar';
+    if (activa) b.setAttribute('data-abrir-modal', 'modal-desactivar'); else b.removeAttribute('data-abrir-modal');
+    b.toggleAttribute('data-activar', !activa);
+  }
+
+  D.categorias.forEach(function (c) {
+    var n = D.productos.filter(function (p) { return p.categoria === c.id; }).length;
+    $('filas-categorias').appendChild(fila(c, n, true));
+  });
+
+  var modal = $('modal-desactivar');
+  var actual = null;
   modal.addEventListener('pahuichi:abrir', function (e) {
-    var b = e.detail.origen;
-    filaActual = b.closest('tr');
-    nombreActual = b.getAttribute('data-nombre');
-    var n = parseInt(b.getAttribute('data-productos'), 10);
-    document.getElementById('modal-desactivar-titulo').textContent = '¿Desactivar «' + nombreActual + '»?';
-    document.getElementById('modal-desactivar-texto').textContent = n === 0
-      ? 'No tiene productos. Dejará de aparecer en el punto de venta y puedes volver a activarla cuando quieras.'
-      : (n === 1 ? 'Su producto dejará' : 'Sus ' + n + ' productos dejarán') +
-        ' de verse en el punto de venta. Puedes volver a activarla cuando quieras.';
+    actual = e.detail.origen.closest('tr');
+    var nombre = e.detail.origen.getAttribute('data-nombre');
+    var n = parseInt(e.detail.origen.getAttribute('data-productos'), 10);
+    $('modal-desactivar-titulo').textContent = '¿Desactivar «' + nombre + '»?';
+    $('modal-desactivar-texto').textContent = (n === 1 ? 'Su producto dejará' : 'Sus ' + n + ' productos dejarán') + ' de verse en el punto de venta. Puedes volver a activarla cuando quieras.';
   });
-
   modal.addEventListener('close', function () {
-    if (modal.returnValue !== 'desactivar' || !filaActual) return;
-    var activa = filaActual.querySelector('.celda-estado .insignia--ok');
-    var boton = filaActual.querySelector('[data-abrir-modal]');
-    if (activa) {
-      filaActual.querySelector('.celda-estado').innerHTML = '<span class="insignia insignia--neutra">Inactiva</span>';
-      boton.textContent = 'Activar';
-      boton.removeAttribute('data-abrir-modal');
-      boton.setAttribute('data-activar', '');
-      anuncio.textContent = 'Categoría ' + nombreActual + ' desactivada.';
+    if (modal.returnValue === 'desactivar' && actual) {
+      estado(actual, false);
+      $('anuncio').textContent = 'Categoría desactivada.';
+      actual.querySelector('.col-accion button').focus();
     }
-    boton.focus();
   });
 
-  // Reactivar no necesita confirmación: no hay nada que perder
   document.addEventListener('click', function (e) {
     var b = e.target.closest('[data-activar]');
     if (!b) return;
-    var tr = b.closest('tr');
-    tr.querySelector('.celda-estado').innerHTML = '<span class="insignia insignia--ok">Activa</span>';
-    b.textContent = 'Desactivar';
-    b.removeAttribute('data-activar');
-    b.setAttribute('data-abrir-modal', 'modal-desactivar');
-    anuncio.textContent = 'Categoría ' + b.getAttribute('data-nombre') + ' activada.';
+    estado(b.closest('tr'), true);
+    $('anuncio').textContent = 'Categoría activada.';
   });
 
-  // Alta en línea
-  var form = document.getElementById('form-categoria');
-  var nombre = document.getElementById('cat-nombre');
-  var error = document.getElementById('cat-nombre-error');
-  var orden = document.getElementById('cat-orden');
-
-  function existe(texto) {
-    var t = texto.trim().toLowerCase();
-    return Array.prototype.some.call(document.querySelectorAll('#filas-categorias .tabla__principal'), function (el) {
-      return el.textContent.trim().toLowerCase() === t;
-    });
-  }
-
-  form.addEventListener('submit', function (e) {
+  $('form-categoria').addEventListener('submit', function (e) {
     e.preventDefault();
-    var v = nombre.value.trim();
-    var mensaje = !v ? 'Escribe el nombre de la categoría.' : (existe(v) ? 'Ya existe una categoría «' + v + '».' : '');
-    if (mensaje) {
-      error.innerHTML = '<svg class="icono icono--sm" aria-hidden="true"><use href="#i-error"></use></svg><span></span>';
-      error.querySelector('span').textContent = mensaje;
-      error.hidden = false;
-      nombre.setAttribute('aria-invalid', 'true');
-      nombre.focus();
-      return;
-    }
-    error.hidden = true;
-    nombre.removeAttribute('aria-invalid');
-
-    var tr = document.createElement('tr');
-    tr.innerHTML =
-      '<td class="col-num num"></td>' +
-      '<td><span class="tabla__principal"></span><span class="tabla__secundario">Todavía sin productos</span></td>' +
-      '<td class="col-num num">0</td>' +
-      '<td class="celda-estado"><span class="insignia insignia--ok">Activa</span></td>' +
-      '<td class="col-accion"><div class="acciones-fila"><button class="boton" type="button" data-abrir-modal="modal-desactivar" data-productos="0">Desactivar</button></div></td>';
-    tr.querySelector('.col-num').textContent = orden.value || '';
-    tr.querySelector('.tabla__principal').textContent = v;
-    tr.querySelector('button').setAttribute('data-nombre', v);
-    document.getElementById('filas-categorias').appendChild(tr);
+    var nombre = $('cat-nombre').value.trim();
+    var existe = D.categorias.some(function (c) { return c.nombre.toLowerCase() === nombre.toLowerCase(); });
+    var msg = !nombre ? 'Escribe el nombre de la categoría.' : existe ? 'Ya existe la categoría «' + nombre + '».' : '';
+    P.marcarCampo('cat-nombre', msg);
+    if (msg) { $('cat-nombre').focus(); return; }
+    var c = { nombre: nombre, orden: $('cat-orden').value || '', color: document.querySelector('[name="color"]:checked').value };
+    D.categorias.push(c);
+    var tr = fila(c, 0, true);
     tr.classList.add('fila-nueva');
-    anuncio.textContent = 'Categoría ' + v + ' agregada.';
-    nombre.value = '';
-    orden.value = String((parseInt(orden.value, 10) || 0) + 1);
-    nombre.focus();
+    $('filas-categorias').appendChild(tr);
+    P.aviso('Categoría ' + nombre + ' agregada.');
+    $('cat-nombre').value = '';
+    $('cat-orden').value = String((parseInt($('cat-orden').value, 10) || 0) + 1);
+    vista();
+    $('cat-nombre').focus();
   });
 })();

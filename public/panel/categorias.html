@@ -5,20 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Categorías · Pahuichi POS</title>
   <meta name="theme-color" content="#13603e">
+  <link rel="manifest" href="../manifest.json">
+  <link rel="icon" href="../assets/img/icono.svg" type="image/svg+xml">
   <link rel="preload" href="../assets/fonts/archivo-variable-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="../assets/css/tokens.css">
   <link rel="stylesheet" href="../assets/css/base.css">
   <link rel="stylesheet" href="../assets/css/components.css">
   <link rel="stylesheet" href="../assets/css/layout.css">
   <link rel="stylesheet" href="../assets/css/pages.css">
+  <link rel="stylesheet" href="../assets/css/modulos.css">
   <link rel="stylesheet" href="../assets/css/print.css" media="print">
 </head>
-<body class="panel" data-modulo="productos">
+<body class="panel" data-modulo="catalogo">
   <a class="saltar-contenido" href="#contenido">Saltar al contenido</a>
 
   <aside class="riel" id="riel" aria-label="Menú principal">
     <div class="riel__marca">
-      <a class="marca" href="escritorio.html">
+      <a class="marca" href="tablero.html">
         <span class="marca__sello" aria-hidden="true"><span></span></span>
         <span class="marca__texto">Pahuichi <small>Punto de venta</small></span>
       </a>
@@ -28,14 +31,18 @@
     </div>
     <nav class="menu" aria-label="Módulos">
       <ul class="menu__lista" role="list">
-        <li class="menu__item" data-modulo="escritorio"><a class="menu__enlace" href="escritorio.html"><svg class="icono" aria-hidden="true"><use href="#i-escritorio"></use></svg><span class="menu__texto">Escritorio</span></a></li>
+        <li class="menu__item" data-modulo="tablero"><a class="menu__enlace" href="tablero.html"><svg class="icono" aria-hidden="true"><use href="#i-escritorio"></use></svg><span class="menu__texto">Tablero</span></a></li>
         <li class="menu__item" data-modulo="pos"><a class="menu__enlace" href="pos.html"><svg class="icono" aria-hidden="true"><use href="#i-pos"></use></svg><span class="menu__texto">Punto de venta</span></a></li>
         <li class="menu__item" data-modulo="caja"><a class="menu__enlace" href="caja.html"><svg class="icono" aria-hidden="true"><use href="#i-caja"></use></svg><span class="menu__texto">Caja</span></a></li>
         <li class="menu__item" data-modulo="ventas"><a class="menu__enlace" href="ventas.html"><svg class="icono" aria-hidden="true"><use href="#i-ventas"></use></svg><span class="menu__texto">Ventas y facturas</span></a></li>
-        <li class="menu__item" data-modulo="clientes"><a class="menu__enlace" href="clientes.html"><svg class="icono" aria-hidden="true"><use href="#i-clientes"></use></svg><span class="menu__texto">Clientes</span></a></li>
+        <li class="menu__item" data-modulo="mesero"><a class="menu__enlace" href="mesero.html"><svg class="icono" aria-hidden="true"><use href="#i-mesa"></use></svg><span class="menu__texto">Pedidos</span></a></li>
         <li class="menu__separador" role="separator"></li>
-        <li class="menu__item" data-modulo="productos"><a class="menu__enlace" href="productos.html" aria-current="page"><svg class="icono" aria-hidden="true"><use href="#i-productos"></use></svg><span class="menu__texto">Productos y categorías</span></a></li>
-        <li class="menu__item" data-modulo="qr"><a class="menu__enlace" href="qr.html"><svg class="icono" aria-hidden="true"><use href="#i-qr"></use></svg><span class="menu__texto">Pagos QR</span><span class="menu__aviso"><span class="visualmente-oculto">QR vence en </span>2 h</span></a></li>
+        <li class="menu__item" data-modulo="conciliacion"><a class="menu__enlace" href="conciliacion.html"><svg class="icono" aria-hidden="true"><use href="#i-check"></use></svg><span class="menu__texto">Conciliación QR</span><span class="menu__aviso menu__aviso--cuenta"><span class="visualmente-oculto">Pagos por confirmar: </span>4</span></a></li>
+        <li class="menu__item" data-modulo="qr"><a class="menu__enlace" href="qr.html"><svg class="icono" aria-hidden="true"><use href="#i-qr"></use></svg><span class="menu__texto">QR del día</span><span class="menu__aviso menu__aviso--vencido" hidden>Sin QR</span></a></li>
+        <li class="menu__separador" role="separator"></li>
+        <li class="menu__item" data-modulo="clientes"><a class="menu__enlace" href="clientes.html"><svg class="icono" aria-hidden="true"><use href="#i-clientes"></use></svg><span class="menu__texto">Clientes</span></a></li>
+        <li class="menu__item" data-modulo="catalogo"><a class="menu__enlace" href="productos.html" aria-current="page"><svg class="icono" aria-hidden="true"><use href="#i-productos"></use></svg><span class="menu__texto">Catálogo</span></a></li>
+        <li class="menu__item" data-modulo="promociones"><a class="menu__enlace" href="promociones.html"><svg class="icono" aria-hidden="true"><use href="#i-promocion"></use></svg><span class="menu__texto">Promociones</span></a></li>
         <li class="menu__separador" role="separator"></li>
         <li class="menu__item" data-modulo="reportes"><a class="menu__enlace" href="reportes.html"><svg class="icono" aria-hidden="true"><use href="#i-reportes"></use></svg><span class="menu__texto">Reportes</span></a></li>
         <li class="menu__item" data-modulo="bitacora"><a class="menu__enlace" href="bitacora.html"><svg class="icono" aria-hidden="true"><use href="#i-bitacora"></use></svg><span class="menu__texto">Bitácora</span></a></li>
@@ -60,14 +67,24 @@
         <button class="boton boton--fantasma boton--icono barra__menu" type="button" data-abrir-riel aria-controls="riel" aria-expanded="false" aria-label="Abrir menú">
           <svg class="icono" aria-hidden="true"><use href="#i-menu"></use></svg>
         </button>
-        <h1 class="barra__titulo">Categorías</h1>
+        <h1 class="barra__titulo">Catálogo</h1>
+        <div class="barra__estado">
+          <p class="estado-sistema estado-sistema--red" id="estado-red" hidden>
+            <svg class="icono icono--sm" aria-hidden="true"><use href="#i-sinRed"></use></svg>
+            <span>Sin conexión: las ventas se guardan y se envían al volver</span>
+          </p>
+          <a class="estado-sistema" id="estado-impresora" href="impresion.html" data-requiere="modulo.impresion">
+            <svg class="icono icono--sm" aria-hidden="true"><use href="#i-imprimir"></use></svg>
+            <span class="estado-sistema__texto">Impresora lista</span>
+          </a>
+        </div>
         <div class="barra__usuario">
           <label class="demo-rol">
-            <span class="demo-rol__texto">Prototipo: ver como</span>
+            <span class="demo-rol__texto">Demo: ver como</span>
             <select class="control" id="demo-rol">
+              <option value="administrador">Administrador</option>
               <option value="cajero">Cajero</option>
-              <option value="analista">Analista</option>
-              <option value="sysadmin">Administrador</option>
+              <option value="mesero">Mesero</option>
             </select>
           </label>
           <p class="usuario"><span class="usuario__nombre" data-rol-nombre>Ana Lucía Vaca Saucedo</span><span class="usuario__rol" data-rol-etiqueta>Administrador</span></p>
@@ -80,25 +97,36 @@
     </header>
 
     <main class="contenido" id="contenido">
-      <nav class="subnav" aria-label="Catálogo">
-        <a class="subnav__enlace" href="productos.html">Productos</a>
-        <a class="subnav__enlace" href="categorias.html" aria-current="page">Categorías</a>
-      </nav>
+      <div class="catalogo-cabeza">
+        <nav class="subnav" aria-label="Catálogo">
+          <a class="subnav__enlace" href="productos.html">Productos</a>
+          <a class="subnav__enlace" href="categorias.html" aria-current="page">Categorías</a>
+        </nav>
+      </div>
 
       <div class="categorias">
-        <form class="nueva-categoria" id="form-categoria" method="post" action="#" novalidate data-requiere="productos.editar">
+        <form class="nueva-categoria" id="form-categoria" novalidate data-requiere="catalogo.editar">
           <input type="hidden" name="_csrf" value="">
           <h2 class="nueva-categoria__titulo">Nueva categoría</h2>
           <div class="campo">
             <label class="campo__etiqueta" for="cat-nombre">Nombre</label>
-            <input class="control" id="cat-nombre" name="nombre" type="text" maxlength="40" required aria-describedby="cat-nombre-error" autocomplete="off">
+            <input class="control" id="cat-nombre" type="text" maxlength="24" aria-describedby="cat-nombre-error" autocomplete="off">
             <p class="campo__error" id="cat-nombre-error" hidden></p>
           </div>
           <div class="campo">
             <label class="campo__etiqueta" for="cat-orden">Orden en el punto de venta</label>
-            <input class="control control--numero" id="cat-orden" name="orden" type="text" inputmode="numeric" maxlength="2" value="6" aria-describedby="cat-orden-ayuda">
-            <p class="campo__ayuda" id="cat-orden-ayuda">Las categorías se muestran de menor a mayor.</p>
+            <input class="control control--numero" id="cat-orden" type="text" inputmode="numeric" maxlength="2" value="7" aria-describedby="cat-orden-ayuda">
+            <p class="campo__ayuda" id="cat-orden-ayuda">Los botones se muestran de menor a mayor.</p>
           </div>
+          <fieldset class="colores">
+            <legend class="campo__etiqueta">Color del botón</legend>
+            <p class="campo__ayuda">Todos tienen contraste AA con texto blanco.</p>
+            <div class="colores__lista" id="colores"></div>
+          </fieldset>
+          <p class="vista-boton">
+            <span class="campo__etiqueta">Así se verá</span>
+            <span class="categoria-pos categoria-pos--vista" id="vista-boton" aria-pressed="true">Nueva categoría</span>
+          </p>
           <button class="boton boton--primario" type="submit">
             <svg class="icono" aria-hidden="true"><use href="#i-mas"></use></svg>
             Agregar categoría
@@ -106,7 +134,7 @@
         </form>
 
         <div class="tabla-contenedor">
-          <table class="tabla tabla--categorias">
+          <table class="tabla tabla--fichas">
             <caption class="visualmente-oculto">Categorías del menú</caption>
             <thead>
               <tr>
@@ -117,53 +145,7 @@
                 <th scope="col" class="col-accion"><span class="visualmente-oculto">Acciones</span></th>
               </tr>
             </thead>
-            <tbody id="filas-categorias">
-              <tr>
-                <td class="col-num num">1</td>
-                <td><span class="tabla__principal">Platos</span></td>
-                <td class="col-num num">5</td>
-                <td class="celda-estado"><span class="insignia insignia--ok">Activa</span></td>
-                <td class="col-accion"><div class="acciones-fila" data-requiere="productos.editar">
-                  <button class="boton" type="button" data-abrir-modal="modal-desactivar" data-nombre="Platos" data-productos="5">Desactivar</button>
-                </div></td>
-              </tr>
-              <tr>
-                <td class="col-num num">2</td>
-                <td><span class="tabla__principal">Horneados</span></td>
-                <td class="col-num num">6</td>
-                <td class="celda-estado"><span class="insignia insignia--ok">Activa</span></td>
-                <td class="col-accion"><div class="acciones-fila" data-requiere="productos.editar">
-                  <button class="boton" type="button" data-abrir-modal="modal-desactivar" data-nombre="Horneados" data-productos="6">Desactivar</button>
-                </div></td>
-              </tr>
-              <tr>
-                <td class="col-num num">3</td>
-                <td><span class="tabla__principal">Bebidas</span></td>
-                <td class="col-num num">3</td>
-                <td class="celda-estado"><span class="insignia insignia--ok">Activa</span></td>
-                <td class="col-accion"><div class="acciones-fila" data-requiere="productos.editar">
-                  <button class="boton" type="button" data-abrir-modal="modal-desactivar" data-nombre="Bebidas" data-productos="3">Desactivar</button>
-                </div></td>
-              </tr>
-              <tr>
-                <td class="col-num num">4</td>
-                <td><span class="tabla__principal">Postres</span><span class="tabla__secundario">Todavía sin productos</span></td>
-                <td class="col-num num">0</td>
-                <td class="celda-estado"><span class="insignia insignia--ok">Activa</span></td>
-                <td class="col-accion"><div class="acciones-fila" data-requiere="productos.editar">
-                  <button class="boton" type="button" data-abrir-modal="modal-desactivar" data-nombre="Postres" data-productos="0">Desactivar</button>
-                </div></td>
-              </tr>
-              <tr>
-                <td class="col-num num">5</td>
-                <td><span class="tabla__principal">Prueba</span><span class="tabla__secundario">Para probar el cobro con QR de Bs 0,50</span></td>
-                <td class="col-num num">1</td>
-                <td class="celda-estado"><span class="insignia insignia--ok">Activa</span></td>
-                <td class="col-accion"><div class="acciones-fila" data-requiere="productos.editar">
-                  <button class="boton" type="button" data-abrir-modal="modal-desactivar" data-nombre="Prueba" data-productos="1">Desactivar</button>
-                </div></td>
-              </tr>
-            </tbody>
+            <tbody id="filas-categorias"></tbody>
           </table>
         </div>
       </div>
@@ -172,7 +154,7 @@
         <form method="dialog">
           <div class="modal__cuerpo">
             <h2 class="modal__titulo" id="modal-desactivar-titulo">¿Desactivar la categoría?</h2>
-            <p class="modal__texto" id="modal-desactivar-texto">Sus productos dejarán de verse en el punto de venta. Puedes volver a activarla cuando quieras.</p>
+            <p class="modal__texto" id="modal-desactivar-texto">Sus productos dejarán de verse en el punto de venta.</p>
           </div>
           <div class="modal__acciones">
             <button class="boton" type="submit" value="cancelar" autofocus>Cancelar</button>
@@ -187,6 +169,7 @@
 
   <script src="../assets/js/iconos.js"></script>
   <script src="../assets/js/app.js"></script>
+  <script src="../assets/js/datos.js"></script>
   <script src="../assets/js/categorias.js"></script>
 </body>
 </html>

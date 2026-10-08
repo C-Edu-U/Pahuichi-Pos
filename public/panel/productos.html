@@ -3,22 +3,25 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Productos · Pahuichi POS</title>
+  <title>Catálogo · Pahuichi POS</title>
   <meta name="theme-color" content="#13603e">
+  <link rel="manifest" href="../manifest.json">
+  <link rel="icon" href="../assets/img/icono.svg" type="image/svg+xml">
   <link rel="preload" href="../assets/fonts/archivo-variable-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="../assets/css/tokens.css">
   <link rel="stylesheet" href="../assets/css/base.css">
   <link rel="stylesheet" href="../assets/css/components.css">
   <link rel="stylesheet" href="../assets/css/layout.css">
   <link rel="stylesheet" href="../assets/css/pages.css">
+  <link rel="stylesheet" href="../assets/css/modulos.css">
   <link rel="stylesheet" href="../assets/css/print.css" media="print">
 </head>
-<body class="panel" data-modulo="productos">
+<body class="panel" data-modulo="catalogo">
   <a class="saltar-contenido" href="#contenido">Saltar al contenido</a>
 
   <aside class="riel" id="riel" aria-label="Menú principal">
     <div class="riel__marca">
-      <a class="marca" href="escritorio.html">
+      <a class="marca" href="tablero.html">
         <span class="marca__sello" aria-hidden="true"><span></span></span>
         <span class="marca__texto">Pahuichi <small>Punto de venta</small></span>
       </a>
@@ -28,14 +31,18 @@
     </div>
     <nav class="menu" aria-label="Módulos">
       <ul class="menu__lista" role="list">
-        <li class="menu__item" data-modulo="escritorio"><a class="menu__enlace" href="escritorio.html"><svg class="icono" aria-hidden="true"><use href="#i-escritorio"></use></svg><span class="menu__texto">Escritorio</span></a></li>
+        <li class="menu__item" data-modulo="tablero"><a class="menu__enlace" href="tablero.html"><svg class="icono" aria-hidden="true"><use href="#i-escritorio"></use></svg><span class="menu__texto">Tablero</span></a></li>
         <li class="menu__item" data-modulo="pos"><a class="menu__enlace" href="pos.html"><svg class="icono" aria-hidden="true"><use href="#i-pos"></use></svg><span class="menu__texto">Punto de venta</span></a></li>
         <li class="menu__item" data-modulo="caja"><a class="menu__enlace" href="caja.html"><svg class="icono" aria-hidden="true"><use href="#i-caja"></use></svg><span class="menu__texto">Caja</span></a></li>
         <li class="menu__item" data-modulo="ventas"><a class="menu__enlace" href="ventas.html"><svg class="icono" aria-hidden="true"><use href="#i-ventas"></use></svg><span class="menu__texto">Ventas y facturas</span></a></li>
-        <li class="menu__item" data-modulo="clientes"><a class="menu__enlace" href="clientes.html"><svg class="icono" aria-hidden="true"><use href="#i-clientes"></use></svg><span class="menu__texto">Clientes</span></a></li>
+        <li class="menu__item" data-modulo="mesero"><a class="menu__enlace" href="mesero.html"><svg class="icono" aria-hidden="true"><use href="#i-mesa"></use></svg><span class="menu__texto">Pedidos</span></a></li>
         <li class="menu__separador" role="separator"></li>
-        <li class="menu__item" data-modulo="productos"><a class="menu__enlace" href="productos.html" aria-current="page"><svg class="icono" aria-hidden="true"><use href="#i-productos"></use></svg><span class="menu__texto">Productos y categorías</span></a></li>
-        <li class="menu__item" data-modulo="qr"><a class="menu__enlace" href="qr.html"><svg class="icono" aria-hidden="true"><use href="#i-qr"></use></svg><span class="menu__texto">Pagos QR</span><span class="menu__aviso"><span class="visualmente-oculto">QR vence en </span>2 h</span></a></li>
+        <li class="menu__item" data-modulo="conciliacion"><a class="menu__enlace" href="conciliacion.html"><svg class="icono" aria-hidden="true"><use href="#i-check"></use></svg><span class="menu__texto">Conciliación QR</span><span class="menu__aviso menu__aviso--cuenta"><span class="visualmente-oculto">Pagos por confirmar: </span>4</span></a></li>
+        <li class="menu__item" data-modulo="qr"><a class="menu__enlace" href="qr.html"><svg class="icono" aria-hidden="true"><use href="#i-qr"></use></svg><span class="menu__texto">QR del día</span><span class="menu__aviso menu__aviso--vencido" hidden>Sin QR</span></a></li>
+        <li class="menu__separador" role="separator"></li>
+        <li class="menu__item" data-modulo="clientes"><a class="menu__enlace" href="clientes.html"><svg class="icono" aria-hidden="true"><use href="#i-clientes"></use></svg><span class="menu__texto">Clientes</span></a></li>
+        <li class="menu__item" data-modulo="catalogo"><a class="menu__enlace" href="productos.html" aria-current="page"><svg class="icono" aria-hidden="true"><use href="#i-productos"></use></svg><span class="menu__texto">Catálogo</span></a></li>
+        <li class="menu__item" data-modulo="promociones"><a class="menu__enlace" href="promociones.html"><svg class="icono" aria-hidden="true"><use href="#i-promocion"></use></svg><span class="menu__texto">Promociones</span></a></li>
         <li class="menu__separador" role="separator"></li>
         <li class="menu__item" data-modulo="reportes"><a class="menu__enlace" href="reportes.html"><svg class="icono" aria-hidden="true"><use href="#i-reportes"></use></svg><span class="menu__texto">Reportes</span></a></li>
         <li class="menu__item" data-modulo="bitacora"><a class="menu__enlace" href="bitacora.html"><svg class="icono" aria-hidden="true"><use href="#i-bitacora"></use></svg><span class="menu__texto">Bitácora</span></a></li>
@@ -60,14 +67,24 @@
         <button class="boton boton--fantasma boton--icono barra__menu" type="button" data-abrir-riel aria-controls="riel" aria-expanded="false" aria-label="Abrir menú">
           <svg class="icono" aria-hidden="true"><use href="#i-menu"></use></svg>
         </button>
-        <h1 class="barra__titulo">Productos</h1>
+        <h1 class="barra__titulo">Catálogo</h1>
+        <div class="barra__estado">
+          <p class="estado-sistema estado-sistema--red" id="estado-red" hidden>
+            <svg class="icono icono--sm" aria-hidden="true"><use href="#i-sinRed"></use></svg>
+            <span>Sin conexión: las ventas se guardan y se envían al volver</span>
+          </p>
+          <a class="estado-sistema" id="estado-impresora" href="impresion.html" data-requiere="modulo.impresion">
+            <svg class="icono icono--sm" aria-hidden="true"><use href="#i-imprimir"></use></svg>
+            <span class="estado-sistema__texto">Impresora lista</span>
+          </a>
+        </div>
         <div class="barra__usuario">
           <label class="demo-rol">
-            <span class="demo-rol__texto">Prototipo: ver como</span>
+            <span class="demo-rol__texto">Demo: ver como</span>
             <select class="control" id="demo-rol">
+              <option value="administrador">Administrador</option>
               <option value="cajero">Cajero</option>
-              <option value="analista">Analista</option>
-              <option value="sysadmin">Administrador</option>
+              <option value="mesero">Mesero</option>
             </select>
           </label>
           <p class="usuario"><span class="usuario__nombre" data-rol-nombre>Ana Lucía Vaca Saucedo</span><span class="usuario__rol" data-rol-etiqueta>Administrador</span></p>
@@ -80,237 +97,65 @@
     </header>
 
     <main class="contenido" id="contenido">
-      <nav class="subnav" aria-label="Catálogo">
-        <a class="subnav__enlace" href="productos.html" aria-current="page">Productos</a>
-        <a class="subnav__enlace" href="categorias.html">Categorías</a>
-      </nav>
+      <div class="catalogo-cabeza">
+        <nav class="subnav" aria-label="Catálogo">
+          <a class="subnav__enlace" href="productos.html" aria-current="page">Productos</a>
+          <a class="subnav__enlace" href="categorias.html">Categorías</a>
+        </nav>
+        <a class="boton boton--primario" href="producto-form.html" data-requiere="catalogo.editar">
+          <svg class="icono" aria-hidden="true"><use href="#i-mas"></use></svg>
+          Nuevo producto
+        </a>
+      </div>
 
-      <div class="alerta alerta--ok aviso-guardado" role="status" hidden>
+      <div class="alerta aviso-guardado" role="status" hidden>
         <svg class="icono" aria-hidden="true"><use href="#i-ok"></use></svg>
         <p class="alerta__titulo">Producto guardado</p>
-        <p class="alerta__texto">Los cambios ya se ven en el catálogo. En el prototipo no se guardan de verdad.</p>
+        <p class="alerta__texto">Ya aparece en el punto de venta.</p>
       </div>
 
       <div class="herramientas">
         <div class="herramientas__busqueda control-grupo">
           <svg class="icono control-grupo__icono" aria-hidden="true"><use href="#i-buscar"></use></svg>
           <label class="visualmente-oculto" for="buscar">Buscar producto</label>
-          <input class="control" id="buscar" type="search" placeholder="Buscar por nombre o código" autocomplete="off">
+          <input class="control" id="buscar" type="search" placeholder="Nombre o código" autocomplete="off">
         </div>
         <div class="herramientas__filtro">
           <label class="visualmente-oculto" for="estado">Estado</label>
           <select class="control" id="estado">
-            <option value="">Todos los estados</option>
-            <option value="disponible">Disponibles</option>
-            <option value="agotado">Agotados hoy</option>
-            <option value="sin-sin">Sin código SIN</option>
+            <option value="">Todos</option>
+            <option value="favorito">Favoritos</option>
+            <option value="agotado">Agotados</option>
+            <option value="cocina">Van a cocina</option>
           </select>
         </div>
-        <a class="boton boton--primario herramientas__nuevo" href="producto-form.html" data-requiere="productos.editar">
-          <svg class="icono" aria-hidden="true"><use href="#i-mas"></use></svg>
-          Nuevo producto
-        </a>
       </div>
 
-      <div class="pestanas" role="group" aria-label="Categoría">
-        <button class="pestana" type="button" data-categoria="" aria-pressed="true">Todas <span class="pestana__cuenta">15</span></button>
-        <button class="pestana" type="button" data-categoria="platos" aria-pressed="false">Platos <span class="pestana__cuenta">5</span></button>
-        <button class="pestana" type="button" data-categoria="horneados" aria-pressed="false">Horneados <span class="pestana__cuenta">6</span></button>
-        <button class="pestana" type="button" data-categoria="bebidas" aria-pressed="false">Bebidas <span class="pestana__cuenta">3</span></button>
-        <button class="pestana" type="button" data-categoria="prueba" aria-pressed="false">Prueba <span class="pestana__cuenta">1</span></button>
+      <div class="pestanas pestanas--categorias" id="pestanas" role="group" aria-label="Categoría">
+        <button class="pestana" type="button" data-categoria="" aria-pressed="true">Todas <span class="pestana__cuenta">25</span></button>
       </div>
 
-      <p class="resultado">
-        <span class="resultado__cuenta" id="cuenta">15 productos</span>
-        <span class="ejemplo">Códigos SIN de ejemplo</span>
-      </p>
+      <p class="resultado"><span class="resultado__cuenta" id="cuenta">25 productos</span></p>
 
       <div class="tabla-contenedor">
-        <table class="tabla tabla--productos">
+        <table class="tabla tabla--catalogo tabla--fichas">
           <caption class="visualmente-oculto">Productos del catálogo</caption>
           <thead>
             <tr>
               <th scope="col">Producto</th>
               <th scope="col">Categoría</th>
-              <th scope="col">Código SIN</th>
               <th scope="col" class="col-num">Precio</th>
+              <th scope="col">Marcas</th>
               <th scope="col">Estado</th>
               <th scope="col" class="col-accion"><span class="visualmente-oculto">Acciones</span></th>
             </tr>
           </thead>
-          <tbody id="filas">
-            <tr data-categoria="platos" data-estado="disponible">
-              <td><span class="tabla__principal">Majadito de charque</span><span class="tabla__secundario codigo">PL-01</span></td>
-              <td class="celda-categoria">Platos</td>
-              <td class="celda-sin"><span class="codigo">63111</span></td>
-              <td class="col-num"><span class="monto"><span class="monto__moneda">Bs</span>30,00</span></td>
-              <td class="celda-estado"><span class="insignia insignia--ok">Disponible</span></td>
-              <td class="col-accion"><div class="acciones-fila">
-                <button class="boton boton-agotado" type="button" aria-pressed="false" data-requiere="productos.agotado">Agotado hoy</button>
-                <a class="boton boton--icono" href="producto-form.html?id=PL-01" data-requiere="productos.editar" aria-label="Editar Majadito de charque"><svg class="icono" aria-hidden="true"><use href="#i-editar"></use></svg></a>
-              </div></td>
-            </tr>
-            <tr data-categoria="platos" data-estado="disponible">
-              <td><span class="tabla__principal">Locro carretero</span><span class="tabla__secundario codigo">PL-02</span></td>
-              <td class="celda-categoria">Platos</td>
-              <td class="celda-sin"><span class="codigo">63111</span></td>
-              <td class="col-num"><span class="monto"><span class="monto__moneda">Bs</span>28,00</span></td>
-              <td class="celda-estado"><span class="insignia insignia--ok">Disponible</span></td>
-              <td class="col-accion"><div class="acciones-fila">
-                <button class="boton boton-agotado" type="button" aria-pressed="false" data-requiere="productos.agotado">Agotado hoy</button>
-                <a class="boton boton--icono" href="producto-form.html?id=PL-02" data-requiere="productos.editar" aria-label="Editar Locro carretero"><svg class="icono" aria-hidden="true"><use href="#i-editar"></use></svg></a>
-              </div></td>
-            </tr>
-            <tr data-categoria="platos" data-estado="disponible">
-              <td><span class="tabla__principal">Keperí al horno</span><span class="tabla__secundario codigo">PL-03</span></td>
-              <td class="celda-categoria">Platos</td>
-              <td class="celda-sin"><span class="codigo">63111</span></td>
-              <td class="col-num"><span class="monto"><span class="monto__moneda">Bs</span>45,00</span></td>
-              <td class="celda-estado"><span class="insignia insignia--ok">Disponible</span></td>
-              <td class="col-accion"><div class="acciones-fila">
-                <button class="boton boton-agotado" type="button" aria-pressed="false" data-requiere="productos.agotado">Agotado hoy</button>
-                <a class="boton boton--icono" href="producto-form.html?id=PL-03" data-requiere="productos.editar" aria-label="Editar Keperí al horno"><svg class="icono" aria-hidden="true"><use href="#i-editar"></use></svg></a>
-              </div></td>
-            </tr>
-            <tr data-categoria="platos" data-estado="disponible">
-              <td><span class="tabla__principal">Pacumutu</span><span class="tabla__secundario codigo">PL-04</span></td>
-              <td class="celda-categoria">Platos</td>
-              <td class="celda-sin"><span class="codigo">63111</span></td>
-              <td class="col-num"><span class="monto"><span class="monto__moneda">Bs</span>50,00</span></td>
-              <td class="celda-estado"><span class="insignia insignia--ok">Disponible</span></td>
-              <td class="col-accion"><div class="acciones-fila">
-                <button class="boton boton-agotado" type="button" aria-pressed="false" data-requiere="productos.agotado">Agotado hoy</button>
-                <a class="boton boton--icono" href="producto-form.html?id=PL-04" data-requiere="productos.editar" aria-label="Editar Pacumutu"><svg class="icono" aria-hidden="true"><use href="#i-editar"></use></svg></a>
-              </div></td>
-            </tr>
-            <tr data-categoria="platos" data-estado="disponible">
-              <td><span class="tabla__principal">Arroz con queso</span><span class="tabla__secundario codigo">PL-05</span></td>
-              <td class="celda-categoria">Platos</td>
-              <td class="celda-sin"><span class="codigo">63111</span></td>
-              <td class="col-num"><span class="monto"><span class="monto__moneda">Bs</span>20,00</span></td>
-              <td class="celda-estado"><span class="insignia insignia--ok">Disponible</span></td>
-              <td class="col-accion"><div class="acciones-fila">
-                <button class="boton boton-agotado" type="button" aria-pressed="false" data-requiere="productos.agotado">Agotado hoy</button>
-                <a class="boton boton--icono" href="producto-form.html?id=PL-05" data-requiere="productos.editar" aria-label="Editar Arroz con queso"><svg class="icono" aria-hidden="true"><use href="#i-editar"></use></svg></a>
-              </div></td>
-            </tr>
-            <tr data-categoria="horneados" data-estado="disponible">
-              <td><span class="tabla__principal">Cuñapé</span><span class="tabla__secundario codigo">HO-01</span></td>
-              <td class="celda-categoria">Horneados</td>
-              <td class="celda-sin"><span class="codigo">10712</span></td>
-              <td class="col-num"><span class="monto"><span class="monto__moneda">Bs</span>3,00</span></td>
-              <td class="celda-estado"><span class="insignia insignia--ok">Disponible</span></td>
-              <td class="col-accion"><div class="acciones-fila">
-                <button class="boton boton-agotado" type="button" aria-pressed="false" data-requiere="productos.agotado">Agotado hoy</button>
-                <a class="boton boton--icono" href="producto-form.html?id=HO-01" data-requiere="productos.editar" aria-label="Editar Cuñapé"><svg class="icono" aria-hidden="true"><use href="#i-editar"></use></svg></a>
-              </div></td>
-            </tr>
-            <tr data-categoria="horneados" data-estado="disponible">
-              <td><span class="tabla__principal">Pan de arroz</span><span class="tabla__secundario codigo">HO-02</span></td>
-              <td class="celda-categoria">Horneados</td>
-              <td class="celda-sin"><span class="codigo">10712</span></td>
-              <td class="col-num"><span class="monto"><span class="monto__moneda">Bs</span>4,00</span></td>
-              <td class="celda-estado"><span class="insignia insignia--ok">Disponible</span></td>
-              <td class="col-accion"><div class="acciones-fila">
-                <button class="boton boton-agotado" type="button" aria-pressed="false" data-requiere="productos.agotado">Agotado hoy</button>
-                <a class="boton boton--icono" href="producto-form.html?id=HO-02" data-requiere="productos.editar" aria-label="Editar Pan de arroz"><svg class="icono" aria-hidden="true"><use href="#i-editar"></use></svg></a>
-              </div></td>
-            </tr>
-            <tr data-categoria="horneados" data-estado="disponible">
-              <td><span class="tabla__principal">Empanada de arroz</span><span class="tabla__secundario codigo">HO-03</span></td>
-              <td class="celda-categoria">Horneados</td>
-              <td class="celda-sin"><span class="codigo">10712</span></td>
-              <td class="col-num"><span class="monto"><span class="monto__moneda">Bs</span>5,00</span></td>
-              <td class="celda-estado"><span class="insignia insignia--ok">Disponible</span></td>
-              <td class="col-accion"><div class="acciones-fila">
-                <button class="boton boton-agotado" type="button" aria-pressed="false" data-requiere="productos.agotado">Agotado hoy</button>
-                <a class="boton boton--icono" href="producto-form.html?id=HO-03" data-requiere="productos.editar" aria-label="Editar Empanada de arroz"><svg class="icono" aria-hidden="true"><use href="#i-editar"></use></svg></a>
-              </div></td>
-            </tr>
-            <tr data-categoria="horneados" data-estado="disponible">
-              <td><span class="tabla__principal">Humintas al horno</span><span class="tabla__secundario codigo">HO-04</span></td>
-              <td class="celda-categoria">Horneados</td>
-              <td class="celda-sin"><span class="codigo">10712</span></td>
-              <td class="col-num"><span class="monto"><span class="monto__moneda">Bs</span>6,00</span></td>
-              <td class="celda-estado"><span class="insignia insignia--ok">Disponible</span></td>
-              <td class="col-accion"><div class="acciones-fila">
-                <button class="boton boton-agotado" type="button" aria-pressed="false" data-requiere="productos.agotado">Agotado hoy</button>
-                <a class="boton boton--icono" href="producto-form.html?id=HO-04" data-requiere="productos.editar" aria-label="Editar Humintas al horno"><svg class="icono" aria-hidden="true"><use href="#i-editar"></use></svg></a>
-              </div></td>
-            </tr>
-            <tr data-categoria="horneados" data-estado="disponible" data-sin-codigo>
-              <td><span class="tabla__principal">Sonso de yuca</span><span class="tabla__secundario codigo">HO-05</span></td>
-              <td class="celda-categoria">Horneados</td>
-              <td class="celda-sin"><span class="insignia insignia--aviso"><svg class="icono icono--sm" aria-hidden="true"><use href="#i-alerta"></use></svg>Falta</span></td>
-              <td class="col-num"><span class="monto"><span class="monto__moneda">Bs</span>10,00</span></td>
-              <td class="celda-estado"><span class="insignia insignia--ok">Disponible</span></td>
-              <td class="col-accion"><div class="acciones-fila">
-                <button class="boton boton-agotado" type="button" aria-pressed="false" data-requiere="productos.agotado">Agotado hoy</button>
-                <a class="boton boton--icono" href="producto-form.html?id=HO-05" data-requiere="productos.editar" aria-label="Editar Sonso de yuca"><svg class="icono" aria-hidden="true"><use href="#i-editar"></use></svg></a>
-              </div></td>
-            </tr>
-            <tr data-categoria="horneados" data-estado="agotado">
-              <td><span class="tabla__principal">Masaco de plátano</span><span class="tabla__secundario codigo">HO-06</span></td>
-              <td class="celda-categoria">Horneados</td>
-              <td class="celda-sin"><span class="codigo">10712</span></td>
-              <td class="col-num"><span class="monto"><span class="monto__moneda">Bs</span>15,00</span></td>
-              <td class="celda-estado"><span class="insignia insignia--aviso">Agotado hoy</span></td>
-              <td class="col-accion"><div class="acciones-fila">
-                <button class="boton boton-agotado" type="button" aria-pressed="true" data-requiere="productos.agotado">Agotado hoy</button>
-                <a class="boton boton--icono" href="producto-form.html?id=HO-06" data-requiere="productos.editar" aria-label="Editar Masaco de plátano"><svg class="icono" aria-hidden="true"><use href="#i-editar"></use></svg></a>
-              </div></td>
-            </tr>
-            <tr data-categoria="bebidas" data-estado="disponible">
-              <td><span class="tabla__principal">Somó</span><span class="tabla__secundario codigo">BE-01</span></td>
-              <td class="celda-categoria">Bebidas</td>
-              <td class="celda-sin"><span class="codigo">11041</span></td>
-              <td class="col-num"><span class="monto"><span class="monto__moneda">Bs</span>8,00</span></td>
-              <td class="celda-estado"><span class="insignia insignia--ok">Disponible</span></td>
-              <td class="col-accion"><div class="acciones-fila">
-                <button class="boton boton-agotado" type="button" aria-pressed="false" data-requiere="productos.agotado">Agotado hoy</button>
-                <a class="boton boton--icono" href="producto-form.html?id=BE-01" data-requiere="productos.editar" aria-label="Editar Somó"><svg class="icono" aria-hidden="true"><use href="#i-editar"></use></svg></a>
-              </div></td>
-            </tr>
-            <tr data-categoria="bebidas" data-estado="disponible">
-              <td><span class="tabla__principal">Chicha cruceña</span><span class="tabla__secundario codigo">BE-02</span></td>
-              <td class="celda-categoria">Bebidas</td>
-              <td class="celda-sin"><span class="codigo">11041</span></td>
-              <td class="col-num"><span class="monto"><span class="monto__moneda">Bs</span>8,00</span></td>
-              <td class="celda-estado"><span class="insignia insignia--ok">Disponible</span></td>
-              <td class="col-accion"><div class="acciones-fila">
-                <button class="boton boton-agotado" type="button" aria-pressed="false" data-requiere="productos.agotado">Agotado hoy</button>
-                <a class="boton boton--icono" href="producto-form.html?id=BE-02" data-requiere="productos.editar" aria-label="Editar Chicha cruceña"><svg class="icono" aria-hidden="true"><use href="#i-editar"></use></svg></a>
-              </div></td>
-            </tr>
-            <tr data-categoria="bebidas" data-estado="disponible">
-              <td><span class="tabla__principal">Mocochinchi</span><span class="tabla__secundario codigo">BE-03</span></td>
-              <td class="celda-categoria">Bebidas</td>
-              <td class="celda-sin"><span class="codigo">11041</span></td>
-              <td class="col-num"><span class="monto"><span class="monto__moneda">Bs</span>7,00</span></td>
-              <td class="celda-estado"><span class="insignia insignia--ok">Disponible</span></td>
-              <td class="col-accion"><div class="acciones-fila">
-                <button class="boton boton-agotado" type="button" aria-pressed="false" data-requiere="productos.agotado">Agotado hoy</button>
-                <a class="boton boton--icono" href="producto-form.html?id=BE-03" data-requiere="productos.editar" aria-label="Editar Mocochinchi"><svg class="icono" aria-hidden="true"><use href="#i-editar"></use></svg></a>
-              </div></td>
-            </tr>
-            <tr data-categoria="prueba" data-estado="disponible">
-              <td><span class="tabla__principal">Producto de prueba QR</span><span class="tabla__secundario codigo">PR-01</span></td>
-              <td class="celda-categoria">Prueba</td>
-              <td class="celda-sin"><span class="codigo">99100</span></td>
-              <td class="col-num"><span class="monto"><span class="monto__moneda">Bs</span>0,50</span></td>
-              <td class="celda-estado"><span class="insignia insignia--ok">Disponible</span></td>
-              <td class="col-accion"><div class="acciones-fila">
-                <button class="boton boton-agotado" type="button" aria-pressed="false" data-requiere="productos.agotado">Agotado hoy</button>
-                <a class="boton boton--icono" href="producto-form.html?id=PR-01" data-requiere="productos.editar" aria-label="Editar Producto de prueba QR"><svg class="icono" aria-hidden="true"><use href="#i-editar"></use></svg></a>
-              </div></td>
-            </tr>
-          </tbody>
+          <tbody id="filas"></tbody>
         </table>
-
         <div class="vacio" id="vacio" hidden>
           <svg class="icono icono--lg vacio__icono" aria-hidden="true"><use href="#i-buscar"></use></svg>
           <h2 class="vacio__titulo">Ningún producto coincide</h2>
-          <p class="vacio__texto" id="vacio-texto">Prueba con otro nombre o código, o quita los filtros.</p>
+          <p class="vacio__texto" id="vacio-texto">Prueba con otro nombre o código.</p>
           <button class="boton" type="button" id="limpiar">Quitar filtros</button>
         </div>
       </div>
@@ -321,6 +166,7 @@
 
   <script src="../assets/js/iconos.js"></script>
   <script src="../assets/js/app.js"></script>
+  <script src="../assets/js/datos.js"></script>
   <script src="../assets/js/productos.js"></script>
 </body>
 </html>
