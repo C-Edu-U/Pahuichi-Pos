@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="es-BO">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Verificar factura · Pahuichi POS</title>
+  <meta name="theme-color" content="#13603e">
+  <link rel="icon" href="assets/img/icono.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/css/tokens.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/pages.css">
+</head>
+<body class="verificacion">
+  <header class="verificacion__cabeza">
+    <p class="acceso__logo">
+      <span class="marca__sello" aria-hidden="true"><span></span></span>
+      <span>Pahuichi</span>
+    </p>
+  </header>
+
+  <main class="verificacion__cuerpo" id="contenido">
+    <p class="verificacion__academica">DOCUMENTO SIN VALOR FISCAL - PROYECTO ACADÉMICO</p>
+
+    <section class="verificacion__tarjeta" id="resultado" aria-labelledby="t-resultado" hidden>
+      <div class="verificacion__estado">
+        <span class="verificacion__icono" aria-hidden="true"><svg class="icono icono--lg"><use href="#i-verificado"></use></svg></span>
+        <div>
+          <h1 id="t-resultado">Factura registrada en el sistema</h1>
+          <p class="verificacion__sub">Los datos coinciden con una factura emitida por Pahuichi.</p>
+        </div>
+      </div>
+      <dl class="datos verificacion__datos">
+        <dt>Emisor</dt><dd>PAHUICHI S.R.L.</dd>
+        <dt>NIT del emisor</dt><dd class="num" id="v-nit">1023456021</dd>
+        <dt>Factura N°</dt><dd class="num" id="v-numero">128</dd>
+        <dt>Código de autorización</dt><dd class="codigo" id="v-cuf">4A1F6E2B9C0D37E5A8B1C46F2D90</dd>
+        <dt>Monto total</dt><dd class="num" id="v-monto">Bs 93,80</dd>
+        <dt>Estado</dt><dd><span class="insignia insignia--ok">Vigente</span></dd>
+      </dl>
+    </section>
+
+    <section class="verificacion__tarjeta" id="formulario" aria-labelledby="t-buscar">
+      <h1 id="t-buscar">Verificar una factura</h1>
+      <p class="verificacion__sub">Escanea el QR de la factura o escribe sus datos.</p>
+      <form class="verificacion__form" id="form-verificar" novalidate>
+        <div class="campo">
+          <label class="campo__etiqueta" for="f-numero">Número de factura</label>
+          <input class="control" id="f-numero" type="text" inputmode="numeric" aria-describedby="f-numero-error">
+          <p class="campo__error" id="f-numero-error" hidden></p>
+        </div>
+        <div class="campo">
+          <label class="campo__etiqueta" for="f-cuf">Código de autorización (CUF)</label>
+          <input class="control codigo-entrada" id="f-cuf" type="text" maxlength="28" aria-describedby="f-cuf-ayuda f-cuf-error">
+          <p class="campo__ayuda" id="f-cuf-ayuda">28 caracteres, letras de la A a la F y números.</p>
+          <p class="campo__error" id="f-cuf-error" hidden></p>
+        </div>
+        <button class="boton boton--primario" type="submit">Verificar</button>
+      </form>
+    </section>
+
+    <p class="verificacion__academica">DOCUMENTO SIN VALOR FISCAL - PROYECTO ACADÉMICO</p>
+  </main>
+
+  <script src="assets/js/iconos.js"></script>
+  <script src="assets/js/app.js"></script>
+  <script>
+    /* Verificación (demo): con servidor, busca la factura por NIT, CUF y número. */
+    (function () {
+      var P = window.Pahuichi;
+      var $ = function (id) { return document.getElementById(id); };
+      function mostrar(numero, cuf, monto) {
+        $('v-numero').textContent = numero;
+        $('v-cuf').textContent = cuf;
+        if (monto) $('v-monto').textContent = 'Bs ' + P.bs(parseFloat(monto));
+        $('resultado').hidden = false;
+        $('formulario').hidden = true;
+      }
+      var cuf = P.parametro('cuf');
+      if (cuf && P.parametro('numero')) mostrar(P.parametro('numero'), cuf, P.parametro('monto'));
+      $('form-verificar').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var numero = $('f-numero').value.trim();
+        var c = $('f-cuf').value.trim().toUpperCase();
+        P.marcarCampo('f-numero', /^\d+$/.test(numero) ? '' : 'Escribe el número que aparece en la factura.');
+        P.marcarCampo('f-cuf', /^[0-9A-F]{28}$/.test(c) ? '' : 'El código tiene 28 caracteres: números y letras de la A a la F.');
+        if (/^\d+$/.test(numero) && /^[0-9A-F]{28}$/.test(c)) mostrar(numero, c);
+      });
+    })();
+  </script>
+</body>
+</html>

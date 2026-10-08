@@ -1,0 +1,106 @@
+<!-- {"titulo":"Tickets","modulo":"ventas","h1":"Tickets del pedido","h1id":"titulo-tickets","js":["datos.js","vendor/qrcode.js","numero-letras.js","tickets.js"],"cssExtra":["tickets.css"],"claseBody":"panel--tickets"} -->
+    <main class="contenido contenido--tickets" id="contenido">
+      <div class="tickets-herramientas">
+        <a class="volver" href="ventas.html">
+          <svg class="icono icono--sm" aria-hidden="true"><use href="#i-volver"></use></svg>
+          Ventas y facturas
+        </a>
+        <div class="tickets-herramientas__acciones">
+          <div class="subnav subnav--botones" role="group" aria-label="Ancho del papel">
+            <button class="subnav__enlace" type="button" data-ancho="76" aria-pressed="true">76 mm</button>
+            <button class="subnav__enlace" type="button" data-ancho="58" aria-pressed="false">58 mm</button>
+          </div>
+          <button class="boton" type="button" id="descargar-pdf">
+            <svg class="icono" aria-hidden="true"><use href="#i-pdf"></use></svg>
+            Factura en PDF
+          </button>
+          <button class="boton boton--primario" type="button" id="reimprimir">
+            <svg class="icono" aria-hidden="true"><use href="#i-imprimir"></use></svg>
+            Reimprimir los tres
+          </button>
+        </div>
+      </div>
+
+      <p class="tickets-aviso" id="aviso-reimpresion" hidden>
+        <svg class="icono icono--sm" aria-hidden="true"><use href="#i-info"></use></svg>
+        Las copias salen con la marca REIMPRESIÓN y quedan registradas en la bitácora.
+      </p>
+
+      <div class="tickets" id="tickets">
+        <!-- Comanda -->
+        <section class="ticket-col" aria-labelledby="t-comanda">
+          <h2 class="ticket-col__titulo" id="t-comanda">Comanda <span>para cocina</span></h2>
+          <article class="ticket ticket--comanda" id="ticket-comanda">
+            <p class="ticket__reimpresion" hidden>REIMPRESIÓN</p>
+            <p class="comanda__pedido">N° <span data-campo="pedido">042</span></p>
+            <p class="comanda__destino" data-campo="destino">MESA 4</p>
+            <p class="comanda__hora" data-campo="hora-larga">08/10/2026 12:38</p>
+            <ul class="comanda__items" data-campo="items-cocina"></ul>
+          </article>
+        </section>
+
+        <!-- Copia de caja -->
+        <section class="ticket-col" aria-labelledby="t-copia">
+          <h2 class="ticket-col__titulo" id="t-copia">Copia de caja</h2>
+          <article class="ticket ticket--copia" id="ticket-copia">
+            <p class="ticket__reimpresion" hidden>REIMPRESIÓN</p>
+            <p class="ticket__centro ticket__fuerte">PAHUICHI</p>
+            <p class="ticket__centro">COPIA DE CAJA</p>
+            <div class="ticket__separador"></div>
+            <dl class="ticket__datos">
+              <div><dt>Pedido</dt><dd data-campo="pedido">042</dd></div>
+              <div><dt>Factura</dt><dd data-campo="factura">128</dd></div>
+              <div><dt>Fecha</dt><dd data-campo="hora-larga">08/10/2026 12:38</dd></div>
+              <div><dt>Cajero</dt><dd data-campo="cajero">Mariela Suárez</dd></div>
+              <div><dt>Tipo</dt><dd data-campo="destino-corto">Mesa 4</dd></div>
+            </dl>
+            <div class="ticket__separador"></div>
+            <ul class="ticket__lineas" data-campo="lineas-precio"></ul>
+            <div class="ticket__separador"></div>
+            <dl class="ticket__totales" data-campo="totales"></dl>
+            <div class="ticket__separador"></div>
+            <dl class="ticket__totales" data-campo="pagos"></dl>
+          </article>
+        </section>
+
+        <!-- Factura -->
+        <section class="ticket-col" aria-labelledby="t-factura">
+          <h2 class="ticket-col__titulo" id="t-factura">Factura</h2>
+          <article class="ticket ticket--factura" id="ticket-factura">
+            <p class="ticket__reimpresion" hidden>REIMPRESIÓN</p>
+            <p class="factura__academica">DOCUMENTO SIN VALOR FISCAL - PROYECTO ACADÉMICO</p>
+            <p class="ticket__centro ticket__fuerte">FACTURA</p>
+            <p class="ticket__centro">(Con Derecho a Crédito Fiscal)</p>
+            <p class="ticket__centro ticket__fuerte" data-campo="razon">PAHUICHI S.R.L.</p>
+            <p class="ticket__centro">Casa matriz · Punto de venta 0</p>
+            <p class="ticket__centro">Calle por confirmar · Tel. por confirmar</p>
+            <p class="ticket__centro">Santa Cruz de la Sierra</p>
+            <div class="ticket__separador"></div>
+            <dl class="ticket__datos ticket__datos--apilado">
+              <div><dt>NIT</dt><dd>1023456021</dd></div>
+              <div><dt>FACTURA N°</dt><dd data-campo="factura">128</dd></div>
+              <div><dt>CÓD. AUTORIZACIÓN (CUF)</dt><dd class="ticket__cuf" data-campo="cuf">calculando…</dd></div>
+            </dl>
+            <div class="ticket__separador"></div>
+            <dl class="ticket__datos">
+              <div><dt>Nombre/Razón social</dt><dd data-campo="cliente">S/N</dd></div>
+              <div><dt>NIT/CI/CEX</dt><dd data-campo="doc">0</dd></div>
+              <div><dt>Fecha de emisión</dt><dd data-campo="hora-larga">08/10/2026 12:38</dd></div>
+            </dl>
+            <div class="ticket__separador"></div>
+            <p class="ticket__fuerte">DETALLE</p>
+            <ul class="ticket__lineas ticket__lineas--factura" data-campo="lineas-factura"></ul>
+            <div class="ticket__separador"></div>
+            <dl class="ticket__totales" data-campo="totales-factura"></dl>
+            <p class="ticket__literal" data-campo="literal">Son: Noventa y cinco 00/100 Bolivianos</p>
+            <div class="ticket__separador"></div>
+            <p class="ticket__centro ticket__fuerte ticket__chico">ESTA FACTURA CONTRIBUYE AL DESARROLLO DEL PAÍS, EL USO ILÍCITO SERÁ SANCIONADO PENALMENTE DE ACUERDO A LEY</p>
+            <p class="ticket__centro ticket__chico" data-campo="leyenda">Ley N° 453: El proveedor deberá entregar el producto en las modalidades y términos ofertados o convenidos.</p>
+            <p class="ticket__centro ticket__chico">“Este documento es la Representación Gráfica de un Documento Fiscal Digital emitido en una modalidad de facturación en línea”</p>
+            <div class="ticket__qr" data-campo="qr" role="img" aria-label="Código QR para verificar la factura"></div>
+            <p class="ticket__centro ticket__chico"><a data-campo="enlace-verificar" href="../verificar.html">Verificar esta factura</a></p>
+            <p class="factura__academica">DOCUMENTO SIN VALOR FISCAL - PROYECTO ACADÉMICO</p>
+          </article>
+        </section>
+      </div>
+    </main>
