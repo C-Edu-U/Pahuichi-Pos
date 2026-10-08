@@ -1,37 +1,41 @@
-<!-- {"titulo":"Punto de venta","modulo":"pos","h1":"Punto de venta","js":["datos.js","pos.js"],"cssExtra":["pos.css"],"rielPlegado":true,"claseBody":"panel--pos"} -->
+<!-- {"titulo":"Punto de venta","modulo":"pos","h1":"Punto de venta","js":["datos.js","promociones-motor.js","pos.js"],"cssExtra":["pos.css"],"rielPlegado":true,"claseBody":"panel--pos"} -->
     <main class="contenido contenido--pos" id="contenido">
-      <div class="pos">
+
+      <!-- Sin caja abierta no se vende -->
+      <section class="pos-sin-caja" id="pos-sin-caja" aria-labelledby="t-sin-caja" hidden>
+        <span class="pos-sin-caja__icono" aria-hidden="true"><svg class="icono icono--lg"><use href="#i-candado"></use></svg></span>
+        <h2 id="t-sin-caja">No hay una caja abierta</h2>
+        <p>Para vender, abre la caja del turno con su fondo inicial.</p>
+        <a class="boton boton--primario boton--grande" href="caja.html">
+          <svg class="icono" aria-hidden="true"><use href="#i-abrir"></use></svg>
+          Abrir caja
+        </a>
+      </section>
+
+      <div class="pos" id="pos">
         <section class="pos__catalogo" aria-labelledby="t-catalogo">
           <h2 class="visualmente-oculto" id="t-catalogo">Productos</h2>
           <div class="pos__busqueda">
             <div class="control-grupo">
               <svg class="icono control-grupo__icono" aria-hidden="true"><use href="#i-buscar"></use></svg>
-              <label class="visualmente-oculto" for="pos-buscar">Buscar producto</label>
-              <input class="control" id="pos-buscar" type="search" placeholder="Buscar plato, bebida o código" autocomplete="off">
+              <label class="visualmente-oculto" for="pos-buscar">Buscar producto por nombre o código</label>
+              <input class="control" id="pos-buscar" type="search" placeholder="Buscar plato o código" autocomplete="off" aria-describedby="atajo-buscar">
+              <kbd class="atajo control-grupo__atajo" id="atajo-buscar" aria-label="Atajo F2">F2</kbd>
             </div>
-            <p class="pos__turno"><span class="punto-estado" aria-hidden="true"></span>Caja abierta desde las 07:02</p>
+            <p class="pos__turno" id="pos-turno"><span class="punto-estado" aria-hidden="true"></span>Caja abierta · medio día desde las 11:02 · <a href="../cliente.html" target="_blank" rel="noopener">Pantalla del cliente</a></p>
           </div>
 
-          <div class="alerta alerta--peligro pos__cerrada" id="caja-cerrada" hidden>
-            <svg class="icono" aria-hidden="true"><use href="#i-candado"></use></svg>
-            <p class="alerta__titulo">La caja está cerrada</p>
-            <p class="alerta__texto">No se puede vender sin un turno abierto.</p>
-            <div class="alerta__acciones"><a class="boton" href="caja.html">Abrir caja</a></div>
-          </div>
-
-          <div class="pestanas pos__categorias" role="group" aria-label="Categoría">
-            <button class="pestana" type="button" data-categoria="" aria-pressed="true">Todo</button>
-            <button class="pestana" type="button" data-categoria="platos" aria-pressed="false">Platos</button>
-            <button class="pestana" type="button" data-categoria="horneados" aria-pressed="false">Horneados</button>
-            <button class="pestana" type="button" data-categoria="bebidas" aria-pressed="false">Bebidas</button>
-            <button class="pestana" type="button" data-categoria="prueba" aria-pressed="false">Prueba</button>
+          <div class="categorias-pos" role="group" aria-label="Categorías">
+            <button class="categoria-pos categoria-pos--favoritos" type="button" data-categoria="favoritos" aria-pressed="true">
+              <svg class="icono" aria-hidden="true"><use href="#i-estrella"></use></svg>Favoritos
+            </button>
           </div>
 
           <ul class="grilla-productos" id="grilla" role="list"></ul>
           <div class="vacio" id="pos-vacio" hidden>
             <svg class="icono icono--lg vacio__icono" aria-hidden="true"><use href="#i-buscar"></use></svg>
             <h3 class="vacio__titulo">Ningún producto coincide</h3>
-            <p class="vacio__texto">Prueba con otro nombre o vuelve a «Todo».</p>
+            <p class="vacio__texto">Prueba con otro nombre o código, o vuelve a «Favoritos».</p>
           </div>
         </section>
 
@@ -42,53 +46,86 @@
           </button>
 
           <div class="pos__pedido-cuerpo" id="pedido-cuerpo">
+            <div class="venta-lista" id="venta-lista" role="status" hidden>
+              <svg class="icono" aria-hidden="true"><use href="#i-check"></use></svg>
+              <div class="venta-lista__texto">
+                <p class="venta-lista__titulo" id="venta-lista-titulo">Pedido 042 cobrado</p>
+                <p class="venta-lista__detalle" id="venta-lista-detalle">Factura N° 128 · imprimiendo comanda, copia y factura</p>
+              </div>
+              <a class="boton boton--fantasma venta-lista__ver" id="venta-lista-ver" href="tickets.html?n=128">Ver tickets</a>
+            </div>
+
             <div class="pos__pedido-cabeza">
-              <h2 class="pos__pedido-titulo" id="t-pedido">Pedido</h2>
-              <button class="boton boton--fantasma" type="button" id="vaciar" disabled>Vaciar</button>
+              <h2 class="pos__pedido-titulo" id="t-pedido">Pedido <span class="num" id="numero-pedido">043</span></h2>
+              <div class="tipo-pedido" role="group" aria-label="Tipo de pedido">
+                <button class="tipo-pedido__opcion" type="button" data-tipo="mesa" aria-pressed="true">
+                  <svg class="icono icono--sm" aria-hidden="true"><use href="#i-mesa"></use></svg>Mesa
+                </button>
+                <button class="tipo-pedido__opcion" type="button" data-tipo="llevar" aria-pressed="false">
+                  <svg class="icono icono--sm" aria-hidden="true"><use href="#i-llevar"></use></svg>Llevar
+                </button>
+                <label class="visualmente-oculto" for="mesa">Número de mesa</label>
+                <input class="control control--numero tipo-pedido__mesa" id="mesa" type="text" inputmode="numeric" maxlength="2" value="4">
+              </div>
             </div>
 
             <div class="cliente-pos">
-              <div class="cliente-pos__fila">
+              <button class="cliente-pos__resumen" type="button" id="cliente-cambiar" aria-expanded="false" aria-controls="cliente-buscador">
+                <svg class="icono icono--sm" aria-hidden="true"><use href="#i-persona"></use></svg>
+                <span id="cliente-dato">S/N · NIT 0</span>
+                <span class="cliente-pos__accion">Cambiar</span>
+              </button>
+              <div class="cliente-pos__buscador" id="cliente-buscador" hidden>
                 <label class="visualmente-oculto" for="doc-cliente">NIT o CI del cliente</label>
-                <input class="control" id="doc-cliente" type="text" inputmode="numeric" placeholder="NIT o CI" autocomplete="off" aria-describedby="cliente-dato">
-                <button class="boton" type="button" id="buscar-cliente">Buscar</button>
-                <button class="boton boton--fantasma" type="button" id="sin-datos">Sin datos</button>
+                <input class="control" id="doc-cliente" type="text" inputmode="numeric" placeholder="NIT o CI" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="cliente-sugerencias" aria-autocomplete="list">
+                <ul class="cliente-pos__sugerencias" id="cliente-sugerencias" role="listbox" aria-label="Clientes encontrados" hidden></ul>
+                <button class="boton boton--fantasma" type="button" id="sin-datos">S/N</button>
               </div>
-              <p class="cliente-pos__dato" id="cliente-dato" aria-live="polite">Factura a nombre de <strong>S/N</strong> · 99002</p>
+              <p class="cliente-pos__cumple" id="cliente-cumple" hidden>
+                <svg class="icono icono--sm" aria-hidden="true"><use href="#i-pastel"></use></svg>
+                Hoy cumple años: un postre va de regalo.
+              </p>
             </div>
 
-            <ul class="lineas" id="lineas" role="list"></ul>
+            <ul class="lineas" id="lineas" role="list" aria-label="Ítems del pedido"></ul>
             <div class="lineas-vacio" id="lineas-vacio">
               <svg class="icono icono--lg" aria-hidden="true"><use href="#i-carrito"></use></svg>
-              <p>Toca un producto para agregarlo al pedido.</p>
+              <p>Toca un producto para agregarlo. Otro toque suma una unidad.</p>
             </div>
 
             <div class="totales">
               <dl class="totales__lista">
                 <div><dt>Subtotal</dt><dd class="num" id="t-subtotal">0,00</dd></div>
-                <div><dt>Descuento</dt><dd class="num" id="t-descuento">0,00</dd></div>
+                <div class="totales__descuento"><dt>Descuentos</dt><dd class="num" id="t-descuento">0,00</dd></div>
               </dl>
               <p class="totales__total">
                 <span class="totales__etiqueta">Total</span>
                 <span class="totales__monto"><span class="totales__moneda">Bs</span><span id="t-total">0,00</span></span>
               </p>
-              <p class="totales__menor" id="aviso-menor" hidden>
-                <svg class="icono icono--sm" aria-hidden="true"><use href="#i-info"></use></svg>
-                Venta menor a Bs 5: va a la factura resumen del día (99003) salvo que el cliente pida factura.
-              </p>
               <div class="totales__acciones">
-                <button class="boton boton--primario boton--grande" type="button" id="cobrar-efectivo" disabled>
+                <button class="boton boton--primario boton--grande boton-cobro" type="button" id="cobrar-exacto" disabled>
                   <svg class="icono" aria-hidden="true"><use href="#i-billete"></use></svg>
-                  Cobrar en efectivo
+                  Efectivo exacto
+                  <kbd class="atajo atajo--claro">F8</kbd>
                 </button>
-                <button class="boton boton--grande" type="button" id="cobrar-qr" disabled>
-                  <svg class="icono" aria-hidden="true"><use href="#i-qr"></use></svg>
-                  Cobrar con QR
+                <button class="boton boton--grande boton-cobro" type="button" id="cobrar" disabled>
+                  Cobrar
+                  <kbd class="atajo">F4</kbd>
                 </button>
+              </div>
+              <div class="totales__secundarias">
+                <button class="boton boton--fantasma" type="button" id="poner-espera" disabled>
+                  <svg class="icono icono--sm" aria-hidden="true"><use href="#i-pausa"></use></svg>En espera
+                </button>
+                <button class="boton boton--fantasma" type="button" id="ver-espera" data-abrir-modal="modal-espera">
+                  Retomar <span class="pestana__cuenta" id="cuenta-espera">0</span>
+                </button>
+                <button class="boton boton--fantasma" type="button" id="descuento-manual" disabled data-abrir-modal="modal-descuento">Descuento</button>
+                <button class="boton boton--fantasma" type="button" id="vaciar" disabled>Vaciar</button>
               </div>
               <p class="totales__qr-vencido" id="qr-vencido" hidden>
                 <svg class="icono icono--sm" aria-hidden="true"><use href="#i-qrOff"></use></svg>
-                QR vencido: pide al administrador uno nuevo.
+                No hay QR del día vigente: el cobro con QR está deshabilitado.
               </p>
             </div>
           </div>
@@ -97,10 +134,10 @@
 
       <!-- Cobro -->
       <dialog class="modal modal--cobro" id="modal-cobro" aria-labelledby="cobro-titulo">
-        <div class="cobro" id="cobro-paso">
+        <div class="cobro">
           <div class="cobro__cabeza">
-            <h2 class="modal__titulo" id="cobro-titulo">Cobrar en efectivo</h2>
-            <button class="boton boton--fantasma boton--icono" type="button" data-cerrar-modal aria-label="Cerrar">
+            <h2 class="modal__titulo" id="cobro-titulo">Cobrar pedido</h2>
+            <button class="boton boton--fantasma boton--icono" type="button" data-cerrar-modal aria-label="Cerrar (Esc)">
               <svg class="icono" aria-hidden="true"><use href="#i-cerrar"></use></svg>
             </button>
           </div>
@@ -110,8 +147,15 @@
             <span class="cobro__monto"><span class="totales__moneda">Bs</span><span id="cobro-total">0,00</span></span>
           </p>
 
-          <!-- Efectivo -->
-          <div class="cobro__metodo" id="cobro-efectivo">
+          <div class="metodos" role="tablist" aria-label="Medio de pago">
+            <button class="metodos__opcion" type="button" role="tab" id="tab-efectivo" aria-selected="true" aria-controls="cobro-efectivo" data-metodo="efectivo">Efectivo</button>
+            <button class="metodos__opcion" type="button" role="tab" id="tab-qr" aria-selected="false" aria-controls="cobro-qr" data-metodo="qr">QR</button>
+            <button class="metodos__opcion" type="button" role="tab" id="tab-mixto" aria-selected="false" aria-controls="cobro-qr" data-metodo="mixto">Mixto</button>
+          </div>
+
+          <!-- Efectivo (también la parte en efectivo del mixto) -->
+          <div class="cobro__metodo" id="cobro-efectivo" role="tabpanel" aria-labelledby="tab-efectivo">
+            <p class="cobro__parte" id="parte-efectivo" hidden>Resto en efectivo: <strong class="num" id="resto-efectivo">Bs 0,00</strong></p>
             <div class="campo">
               <label class="campo__etiqueta" for="recibido">Monto recibido</label>
               <div class="control-grupo">
@@ -122,8 +166,6 @@
             </div>
             <div class="billetes" role="group" aria-label="Billetes rápidos">
               <button class="boton billete" type="button" data-billete="exacto">Exacto</button>
-              <button class="boton billete" type="button" data-billete="10">10</button>
-              <button class="boton billete" type="button" data-billete="20">20</button>
               <button class="boton billete" type="button" data-billete="50">50</button>
               <button class="boton billete" type="button" data-billete="100">100</button>
               <button class="boton billete" type="button" data-billete="200">200</button>
@@ -134,49 +176,90 @@
             </p>
           </div>
 
-          <!-- QR -->
-          <div class="cobro__metodo" id="cobro-qr" hidden>
+          <!-- QR del día -->
+          <div class="cobro__metodo" id="cobro-qr" role="tabpanel" aria-labelledby="tab-qr" hidden>
             <div class="cobro-qr">
-              <img class="cobro-qr__imagen" src="../assets/img/qr-cobro-demo.svg" alt="Código QR de cobro de ejemplo" width="240" height="240">
+              <img class="cobro-qr__imagen" src="../assets/img/qr-cobro-demo.svg" alt="QR del día para cobrar Bs 0,50 (ejemplo)" width="200" height="200">
               <dl class="cobro-qr__datos">
-                <div><dt>Monto del QR</dt><dd class="num">Bs 0,50</dd></div>
-                <div><dt>Vence</dt><dd>Hoy a las 16:40</dd></div>
-                <div><dt>Banco</dt><dd>BNB <span class="ejemplo">Ejemplo</span></dd></div>
+                <div><dt>Monto fijo</dt><dd class="num">Bs 0,50</dd></div>
+                <div><dt>Vigente</dt><dd>Hasta las 23:59</dd></div>
               </dl>
             </div>
             <div class="alerta alerta--aviso" id="qr-diferencia" hidden>
               <svg class="icono" aria-hidden="true"><use href="#i-alerta"></use></svg>
-              <p class="alerta__titulo">El total no coincide con el monto del QR</p>
-              <p class="alerta__texto" id="qr-diferencia-texto">El QR cobra Bs 0,50 fijo.</p>
+              <p class="alerta__titulo">El QR solo cobra Bs 0,50</p>
+              <p class="alerta__texto" id="qr-diferencia-texto">Usa «Mixto» para cobrar el resto en efectivo.</p>
             </div>
             <div class="campo">
-              <label class="campo__etiqueta" for="referencia">Referencia del pago</label>
-              <input class="control" id="referencia" type="text" autocomplete="off" aria-describedby="referencia-ayuda referencia-error">
-              <p class="campo__ayuda" id="referencia-ayuda">Cópiala de la notificación del banco antes de confirmar.</p>
-              <p class="campo__error" id="referencia-error" hidden></p>
+              <label class="campo__etiqueta" for="comprobante">N° de comprobante del banco</label>
+              <input class="control codigo-entrada" id="comprobante" type="text" autocomplete="off" aria-describedby="comprobante-ayuda comprobante-error">
+              <p class="campo__ayuda" id="comprobante-ayuda">Cópialo de la notificación del cliente. El pago queda pendiente hasta que el administrador lo confirme.</p>
+              <p class="campo__error" id="comprobante-error" hidden></p>
+            </div>
+            <details class="cobro__opcional">
+              <summary>Pagador y foto del comprobante (opcional)</summary>
+              <div class="campo">
+                <label class="campo__etiqueta" for="pagador">Nombre del pagador</label>
+                <input class="control" id="pagador" type="text" autocomplete="off">
+              </div>
+              <div class="campo">
+                <label class="campo__etiqueta" for="foto-comprobante">Foto del comprobante</label>
+                <input class="control control--archivo" id="foto-comprobante" type="file" accept="image/*" capture="environment">
+              </div>
+            </details>
+          </div>
+
+          <div class="modal__acciones">
+            <button class="boton" type="button" data-cerrar-modal>Cancelar <kbd class="atajo">Esc</kbd></button>
+            <button class="boton boton--primario" type="button" id="confirmar-cobro">Confirmar venta <kbd class="atajo atajo--claro">Enter</kbd></button>
+          </div>
+        </div>
+      </dialog>
+
+      <!-- Ventas en espera -->
+      <dialog class="modal" id="modal-espera" aria-labelledby="espera-titulo">
+        <div class="modal__cuerpo">
+          <h2 class="modal__titulo" id="espera-titulo">Ventas en espera</h2>
+          <p class="modal__texto">Hasta 10 pedidos guardados para retomarlos.</p>
+          <ul class="espera" id="lista-espera" role="list"></ul>
+          <p class="espera__vacio" id="espera-vacio">No hay ventas en espera.</p>
+        </div>
+        <div class="modal__acciones">
+          <button class="boton" type="button" data-cerrar-modal>Cerrar</button>
+        </div>
+      </dialog>
+
+      <!-- Descuento manual con PIN del administrador -->
+      <dialog class="modal" id="modal-descuento" aria-labelledby="descuento-titulo">
+        <form method="dialog" id="form-descuento" novalidate>
+          <div class="modal__cuerpo">
+            <h2 class="modal__titulo" id="descuento-titulo">Descuento manual</h2>
+            <p class="modal__texto">Requiere el PIN del administrador y queda en la bitácora.</p>
+            <div class="campo">
+              <label class="campo__etiqueta" for="descuento-monto">Monto del descuento</label>
+              <div class="control-grupo">
+                <span class="control-grupo__prefijo" aria-hidden="true">Bs</span>
+                <input class="control control--numero" id="descuento-monto" type="text" inputmode="decimal" aria-describedby="descuento-monto-error">
+              </div>
+              <p class="campo__error" id="descuento-monto-error" hidden></p>
+            </div>
+            <div class="campo">
+              <label class="campo__etiqueta" for="descuento-motivo">Motivo</label>
+              <input class="control" id="descuento-motivo" type="text" placeholder="Por ejemplo, demora en cocina" aria-describedby="descuento-motivo-error">
+              <p class="campo__error" id="descuento-motivo-error" hidden></p>
+            </div>
+            <div class="campo">
+              <label class="campo__etiqueta" for="descuento-pin">PIN del administrador</label>
+              <input class="control" id="descuento-pin" type="password" inputmode="numeric" maxlength="6" autocomplete="off" aria-describedby="descuento-pin-ayuda descuento-pin-error">
+              <p class="campo__ayuda" id="descuento-pin-ayuda">Demo: 1234.</p>
+              <p class="campo__error" id="descuento-pin-error" hidden></p>
             </div>
           </div>
-
           <div class="modal__acciones">
-            <button class="boton" type="button" data-cerrar-modal>Cancelar</button>
-            <button class="boton boton--primario" type="button" id="confirmar-cobro">Confirmar venta</button>
+            <button class="boton" type="submit" value="cancelar" formnovalidate>Cancelar</button>
+            <button class="boton boton--primario" type="button" id="aplicar-descuento">Autorizar descuento</button>
           </div>
-        </div>
-
-        <!-- Venta registrada -->
-        <div class="cobro cobro--listo" id="cobro-listo" hidden>
-          <span class="cobro__ok" aria-hidden="true"><svg class="icono icono--lg"><use href="#i-check"></use></svg></span>
-          <h2 class="modal__titulo" id="listo-titulo" tabindex="-1">Venta registrada</h2>
-          <p class="modal__texto" id="listo-texto">Factura N° 129 emitida.</p>
-          <p class="cobro__cambio-final" id="listo-cambio" hidden></p>
-          <div class="modal__acciones">
-            <a class="boton" id="ver-factura" href="factura.html?n=129">
-              <svg class="icono" aria-hidden="true"><use href="#i-imprimir"></use></svg>
-              Imprimir factura
-            </a>
-            <button class="boton boton--primario" type="button" id="nueva-venta">Nueva venta</button>
-          </div>
-        </div>
+        </form>
       </dialog>
 
       <p class="visualmente-oculto" aria-live="polite" id="anuncio"></p>
