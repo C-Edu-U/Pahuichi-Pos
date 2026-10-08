@@ -1,7 +1,7 @@
-/* Reportes (prototipo). Contrato: ReporteService entrega arreglos (ventas por
-   hora, por producto, por método); el tablero solo pinta. Aquí los arreglos
-   salen de un conjunto de ejemplo escalado por periodo, cajero y método.
-   Gráficos en SVG/HTML propios, sin librerías. */
+/* Reportes (demo, solo Administrador). Contrato: ReporteService entrega
+   arreglos por fecha y turno (ventas por hora, producto, categoría, medio de
+   pago, cajero, promociones y anulaciones); la pantalla solo pinta. Las
+   ventas usan el precio guardado en cada línea, nunca el precio actual. */
 (function () {
   'use strict';
 
@@ -9,48 +9,46 @@
   var $ = function (id) { return document.getElementById(id); };
   var SVGNS = 'http://www.w3.org/2000/svg';
 
+  // Día de ejemplo: medio día hasta las 12:41 y el turno de noche de ayer
   var BASE = {
-    horas: [7, 8, 9, 10, 11, 12, 13, 14],
-    ventasHora: [42, 118, 96, 152, 233, 289, 128, 28],
-    tickets: 41,
-    anuladas: 1,
-    platos: [['Cuñapé', 46], ['Pan de arroz', 22], ['Empanada de arroz', 18], ['Majadito de charque', 14], ['Somó', 13], ['Chicha cruceña', 11], ['Locro carretero', 9], ['Keperí al horno', 5]],
-    metodo: { efectivo: 1084.5, qr: 1.5 }
+    horas: [11, 12, 13, 14, 15, 18, 19, 20, 21, 22, 23],
+    turnoHora: ['mediodia', 'mediodia', 'mediodia', 'mediodia', 'mediodia', 'noche', 'noche', 'noche', 'noche', 'noche', 'noche'],
+    ventasHora: [318.5, 970, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    platos: [['Majadito de charque', 14], ['Mocochinchi', 13], ['Picante de pollo', 9], ['Sonso de yuca', 8], ['Locro carretero', 6], ['Soda cola 500 ml', 6], ['Chicha cruceña', 4], ['Keperí al horno', 3]],
+    metodo: { efectivo: 1285.5, qr: 0.5 }, // QR: solo confirmados
+    tickets: 42,
+    descuentos: 35
   };
+  // La noche de ayer completa la semana y el mes
+  var NOCHE = [0, 0, 0, 0, 0, 142, 388, 512.5, 466, 290, 113.5];
   var PERIODOS = {
-    hoy: { factor: 1, delta: '+8,4 % frente a ayer' },
-    ayer: { factor: 0.922, delta: '−3,1 % frente al día anterior' },
-    semana: { factor: 6.87, delta: '+5,2 % frente a la semana anterior' },
-    mes: { factor: 5.91, delta: 'Del 1 al 6 de octubre' }
+    hoy: { f: 1, noche: 0, delta: 'Medio día en curso · +6,2 % frente al mismo horario de ayer' },
+    ayer: { f: 1.32, noche: 1, delta: 'Medio día y noche completos' },
+    semana: { f: 6.9, noche: 6, delta: '+4,8 % frente a la semana anterior' },
+    mes: { f: 7.8, noche: 7, delta: 'Del 1 al 8 de octubre' }
   };
-  var CAJERO = { '': 1, mariela: 0.58, jorge: 0.42 };
-  var CAJERO_HOY = { '': 1, mariela: 1, jorge: 0 }; // hoy solo atendió Mariela
 
   function datos() {
-    var periodo = $('r-periodo').value;
-    var cajero = $('r-cajero').value;
-    var metodo = $('r-metodo').value;
-    var f = PERIODOS[periodo].factor * (periodo === 'hoy' ? CAJERO_HOY[cajero] : CAJERO[cajero]);
-    var total = BASE.metodo.efectivo + BASE.metodo.qr;
-    var partes = {
-      efectivo: BASE.metodo.efectivo * f,
-      qr: periodo === 'hoy' ? BASE.metodo.qr * f : total * f * 0.004
-    };
-    var fm = metodo ? partes[metodo] / (partes.efectivo + partes.qr || 1) : 1;
-    var ventasHora = BASE.ventasHora.map(function (v) { return Math.round(v * f * fm * 100) / 100; });
-    var ventas = ventasHora.reduce(function (s, v) { return s + v; }, 0);
-    var tickets = Math.round(BASE.tickets * f * fm);
+    var per = PERIODOS[$('r-periodo').value];
+    var turno = $('r-turno').value;
+    var horas = BASE.ventasHora.map(function (v, i) {
+      var valor = v * per.f + NOCHE[i] * per.noche;
+      if (turno && BASE.turnoHora[i] !== turno) valor = 0;
+      return Math.round(valor * 100) / 100;
+    });
+    var ventas = horas.reduce(function (s, v) { return s + v; }, 0);
+    var escala = ventas / (BASE.metodo.efectivo + BASE.metodo.qr) || 0;
+    var tickets = Math.round(BASE.tickets * escala);
     return {
-      periodo: periodo,
-      ventasHora: ventasHora,
+      horas: horas,
       ventas: ventas,
       tickets: tickets,
       promedio: tickets ? ventas / tickets : 0,
-      anuladas: Math.round(BASE.anuladas * f),
-      platos: BASE.platos.map(function (p) { return [p[0], Math.round(p[1] * f * fm)]; })
-        .sort(function (a, b) { return b[1] - a[1]; }),
-      metodo: metodo ? (function () { var o = { efectivo: 0, qr: 0 }; o[metodo] = partes[metodo]; return o; })() : partes,
-      delta: PERIODOS[periodo].delta
+      descuentos: Math.round(BASE.descuentos * escala * 100) / 100,
+      platos: BASE.platos.map(function (p) { return [p[0], Math.round(p[1] * escala)]; }),
+      metodo: { efectivo: Math.round(BASE.metodo.efectivo * escala * 100) / 100, qr: Math.round(BASE.metodo.qr * escala * 100) / 100 },
+      escala: escala,
+      delta: per.delta
     };
   }
 
@@ -111,7 +109,7 @@
     var m = { arriba: 24, derecha: 8, abajo: 28, izquierda: 52 };
     var aw = W - m.izquierda - m.derecha;
     var ah = H - m.arriba - m.abajo;
-    var max = techo(Math.max.apply(null, d.ventasHora));
+    var max = techo(Math.max.apply(null, d.horas));
     var s = svg('svg', { viewBox: '0 0 ' + W + ' ' + H, width: W, height: H, 'aria-hidden': 'true', focusable: 'false' });
 
     for (var i = 0; i <= 4; i++) {
@@ -123,10 +121,10 @@
       s.appendChild(t);
     }
 
-    var banda = aw / d.ventasHora.length;
+    var banda = aw / d.horas.length;
     var ancho = Math.min(24, banda * 0.6);
-    var iMax = d.ventasHora.indexOf(Math.max.apply(null, d.ventasHora));
-    d.ventasHora.forEach(function (valor, i) {
+    var iMax = d.horas.indexOf(Math.max.apply(null, d.horas));
+    d.horas.forEach(function (valor, i) {
       var h = valor / max * ah;
       var x = m.izquierda + banda * i + (banda - ancho) / 2;
       var y = m.arriba + ah - h;
@@ -150,7 +148,7 @@
     // Acceso por teclado: botones invisibles sobre cada columna
     var capa = document.createElement('div');
     capa.className = 'grafico__teclado';
-    d.ventasHora.forEach(function (valor, i) {
+    d.horas.forEach(function (valor, i) {
       var b = document.createElement('button');
       b.type = 'button';
       b.className = 'grafico__foco';
@@ -163,7 +161,7 @@
     });
     cont.appendChild(capa);
 
-    tablaSimple($('t-hora'), ['Hora', 'Ventas (Bs)'], d.ventasHora.map(function (v, i) { return [BASE.horas[i] + ':00', P.bs(v)]; }));
+    tablaSimple($('t-hora'), ['Hora', 'Ventas (Bs)'], d.horas.map(function (v, i) { return [BASE.horas[i] + ':00', P.bs(v)]; }));
   }
 
   /* ------------------------------------------------------------------
@@ -256,106 +254,149 @@
   }
 
   /* ------------------------------------------------------------------
-     Cifras y repintado
+     Resumen
      ------------------------------------------------------------------ */
   var ultimo = null;
-  function pintar() {
+  function pintarResumen() {
     var d = datos();
     ultimo = d;
     $('c-ventas').textContent = P.bs(d.ventas);
     $('c-tickets').textContent = d.tickets;
     $('c-promedio').textContent = P.bs(d.promedio);
-    $('c-anuladas').textContent = d.anuladas;
+    $('c-descuentos').textContent = P.bs(d.descuentos);
     $('c-delta').textContent = d.delta;
     pintarHoras(d);
     pintarPlatos(d);
     pintarMetodo(d);
   }
 
-  ['r-periodo', 'r-cajero', 'r-metodo'].forEach(function (id) { $(id).addEventListener('change', pintar); });
-  var espera;
-  window.addEventListener('resize', function () {
-    window.clearTimeout(espera);
-    espera = window.setTimeout(function () { if (!$('vista-tablero').hidden) pintarHoras(ultimo); }, 150);
-  });
+  /* ------------------------------------------------------------------
+     Detalle: tablas por producto, categoría, pago, cajero, promociones
+     y anulaciones (todas escalan con el periodo elegido)
+     ------------------------------------------------------------------ */
+  function escalar(n, e) { return Math.round(n * e); }
+  function monto(n, e) { return P.bs(Math.round(n * e * 100) / 100); }
+
+  function pintarDetalle() {
+    var e = datos().escala;
+    tablaSimple($('d-producto'), ['Producto', 'Unidades', 'Bs'], [
+      ['Majadito de charque', 14, 560], ['Picante de pollo', 9, 405], ['Locro carretero', 6, 210], ['Keperí al horno', 3, 165],
+      ['Sonso de yuca', 8, 120], ['Mocochinchi', 13, 130], ['Soda cola 500 ml', 6, 48], ['Chicha cruceña', 4, 40]
+    ].map(function (f) { return [f[0], String(escalar(f[1], e)), monto(f[2], e)]; }));
+    tablaSimple($('d-categoria'), ['Categoría', 'Unidades', 'Bs'], [
+      ['Platos', 40, 1460], ['Refrescos', 19, 190], ['Sodas', 8, 64], ['Postres', 3, 36], ['Vinos', 0, 0]
+    ].map(function (f) { return [f[0], String(escalar(f[1], e)), monto(f[2], e)]; }));
+    tablaSimple($('d-pago'), ['Medio de pago', 'Pagos', 'Bs'], [
+      ['Efectivo', 38, 1285.5], ['QR confirmados', 1, 0.5], ['QR pendientes', 4, 2], ['QR rechazados', 1, 0.5]
+    ].map(function (f) { return [f[0], String(escalar(f[1], e)), monto(f[2], e)]; }));
+    tablaSimple($('d-cajero'), ['Cajero', 'Ventas', 'Bs'], [
+      ['Mariela Suárez', 42, 1288.5], ['Jorge Rivero', 0, 0]
+    ].map(function (f) { return [f[0], String(escalar(f[1], e)), monto(f[2], e)]; }));
+    tablaSimple($('d-promo'), ['Promoción', 'Usos', 'Bs descontados'], [
+      ['Combo majadito + mocochinchi', 5, 25], ['2 picantes, mocochinchi de regalo', 1, 10], ['Postres 10 % de lunes a viernes', 3, 3.6], ['Postre gratis en tu cumpleaños', 0, 0]
+    ].map(function (f) { return [f[0], String(escalar(f[1], e)), monto(f[2], e)]; }));
+    tablaSimple($('d-anuladas'), ['Pedido', 'Motivo', 'Bs'], e ? [['037 · factura 123', 'Error en el pedido · autorizó Ana Lucía Vaca', '45,00']] : []);
+  }
 
   /* ------------------------------------------------------------------
-     Libro de Ventas (columnas del SIN)
+     Libro de Ventas (simulado)
      ------------------------------------------------------------------ */
   var LIBRO = [
-    [114, '05/10/2026', '3398217', '', 'Saucedo Roca', 0.5, 'V'],
-    [115, '05/10/2026', '99002', '', 'S/N', 45, 'V'],
-    [116, '05/10/2026', '4567891', '', 'Rodríguez Peña', 60, 'V'],
-    [117, '06/10/2026', '99002', '', 'S/N', 24, 'V'],
-    [118, '06/10/2026', '99002', '', 'S/N', 0.5, 'V'],
-    [119, '06/10/2026', '99002', '', 'S/N', 18, 'V'],
-    [120, '06/10/2026', '1987654013', '', 'Distribuidora El Trompillo', 142, 'V'],
-    [121, '06/10/2026', '99002', '', 'S/N', 0.5, 'V'],
-    [122, '06/10/2026', '3398217', '', 'Saucedo Roca', 95, 'V'],
-    [123, '06/10/2026', '99002', '', 'S/N', 30, 'A'],
-    [124, '06/10/2026', '6234510', '1F', 'Gutiérrez Añez', 53, 'V'],
-    [125, '06/10/2026', '99002', '', 'S/N', 0.5, 'V'],
-    [126, '06/10/2026', '1023987026', '', 'Constructora Piraí S.R.L.', 214, 'V'],
-    [127, '06/10/2026', '99002', '', 'S/N', 38, 'V'],
-    [128, '06/10/2026', '4567891', '', 'Rodríguez Peña', 76, 'V']
+    [114, '07/10/2026', '3398217', '', 'Saucedo Roca', 0.5, 0, 'V'],
+    [115, '07/10/2026', '0', '', 'S/N', 45, 0, 'V'],
+    [116, '07/10/2026', '4567891', '', 'Rodríguez Peña', 160, 10, 'V'],
+    [117, '08/10/2026', '0', '', 'S/N', 35, 0, 'V'],
+    [118, '08/10/2026', '0', '', 'S/N', 60, 5, 'V'],
+    [119, '08/10/2026', '0', '', 'S/N', 28, 0, 'V'],
+    [120, '08/10/2026', '1987654013', '', 'Distribuidora El Trompillo', 142, 0, 'V'],
+    [121, '08/10/2026', '0', '', 'S/N', 0.5, 0, 'V'],
+    [122, '08/10/2026', '3398217', '', 'Saucedo Roca', 70, 0, 'V'],
+    [123, '08/10/2026', '0', '', 'S/N', 45, 0, 'A'],
+    [124, '08/10/2026', '6234510', '1F', 'Gutiérrez Añez', 53, 12, 'V'],
+    [125, '08/10/2026', '0', '', 'S/N', 0.5, 0, 'V'],
+    [126, '08/10/2026', '1023987026', '', 'Constructora Piraí S.R.L.', 214, 5, 'V'],
+    [127, '08/10/2026', '0', '', 'S/N', 45, 0, 'V'],
+    [128, '08/10/2026', '4567891', '', 'Rodríguez Peña', 93.8, 6.2, 'V']
   ];
 
   function filasLibro() {
     return LIBRO.map(function (r, i) {
-      var anulada = r[6] === 'A';
+      var anulada = r[7] === 'A';
       var base = anulada ? 0 : r[5];
-      var cuf = (r[0] * 7919).toString(16).toUpperCase().padStart(8, '0') + '9C0D37E5A8B1C46F2D90E3B7A1C5F08D';
-      return [String(i + 1), '2', r[1], String(r[0]), cuf, r[2], r[3], r[4],
-        P.bs(anulada ? 0 : r[5]), '0,00', '0,00', '0,00', '0,00', '0,00', '0,00', '0,00',
-        P.bs(anulada ? 0 : r[5]), '0,00', '0,00', P.bs(base), P.bs(Math.round(base * 13) / 100), r[6], '0', '0'];
+      var cuf = ((r[0] * 7919) >>> 0).toString(16).toUpperCase().padStart(8, '0') + '9C0D37E5A8B1C46F2D90';
+      return [String(i + 1), r[1], String(r[0]), cuf, r[2], r[3], r[4], P.bs(anulada ? 0 : r[5]), P.bs(r[6]), '0,00', P.bs(base), P.bs(Math.round(base * 13) / 100), anulada ? 'Anulada' : 'Válida'];
     });
   }
 
   function pintarLibro() {
     var tbody = $('filas-libro');
     tbody.innerHTML = '';
-    var numericas = [0, 3, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+    var numericas = [0, 2, 7, 8, 9, 10, 11];
     filasLibro().forEach(function (f) {
       var tr = tbody.insertRow();
       f.forEach(function (c, i) {
         var td = tr.insertCell();
         td.textContent = c;
         if (numericas.indexOf(i) !== -1) td.className = 'col-num num';
-        if (i === 4) td.className = 'codigo celda-cuf';
+        if (i === 3) td.className = 'codigo';
       });
     });
   }
 
-  /* Vistas */
+  /* ------------------------------------------------------------------
+     Vistas, filtros y exportación
+     ------------------------------------------------------------------ */
+  var vista = 'tablero';
+  function pintar() {
+    if (vista === 'tablero') pintarResumen();
+    else if (vista === 'detalle') pintarDetalle();
+    else pintarLibro();
+  }
+
   document.querySelectorAll('[data-vista]').forEach(function (b) {
     b.addEventListener('click', function () {
-      var v = b.getAttribute('data-vista');
+      vista = b.getAttribute('data-vista');
       document.querySelectorAll('[data-vista]').forEach(function (o) { o.setAttribute('aria-pressed', String(o === b)); });
-      $('vista-tablero').hidden = v !== 'tablero';
-      $('vista-libro').hidden = v !== 'libro';
-      document.querySelector('.filtros').hidden = v !== 'tablero';
-      if (v === 'tablero') pintar(); else pintarLibro();
+      ['tablero', 'detalle', 'libro'].forEach(function (v) { $('vista-' + v).hidden = v !== vista; });
+      $('filtros').hidden = vista === 'libro';
+      pintar();
     });
   });
 
-  /* Exportar CSV (separador «;» para Excel en español) */
+  ['r-periodo', 'r-turno'].forEach(function (id) { $(id).addEventListener('change', pintar); });
+
+  var espera;
+  window.addEventListener('resize', function () {
+    window.clearTimeout(espera);
+    espera = window.setTimeout(function () { if (vista === 'tablero' && ultimo) pintarHoras(ultimo); }, 150);
+  });
+
+  // Excel: CSV con separador «;» que Excel abre directo (con servidor, PhpSpreadsheet)
   function csv(cabeza, filas) {
     var esc = function (c) { return /[;"\n]/.test(c) ? '"' + String(c).replace(/"/g, '""') + '"' : c; };
     return '﻿' + [cabeza].concat(filas).map(function (f) { return f.map(esc).join(';'); }).join('\r\n');
   }
 
+  function tablaACsv(tabla) {
+    var filas = Array.prototype.map.call(tabla.rows, function (tr) {
+      return Array.prototype.map.call(tr.cells, function (c) { return c.textContent.trim(); });
+    });
+    return csv(filas[0], filas.slice(1));
+  }
+
   $('exportar').addEventListener('click', function () {
-    var libro = !$('vista-libro').hidden;
     var contenido;
     var nombre;
-    if (libro) {
+    if (vista === 'libro') {
       var cab = Array.prototype.map.call(document.querySelectorAll('#tabla-libro thead th'), function (th) { return th.textContent; });
       contenido = csv(cab, filasLibro());
-      nombre = 'libro-ventas-2026-10.csv';
+      nombre = 'libro-de-ventas-2026-10.csv';
+    } else if (vista === 'detalle') {
+      contenido = ['d-producto', 'd-categoria', 'd-pago', 'd-cajero', 'd-promo', 'd-anuladas'].map(function (id) { return tablaACsv($(id)); }).join('\r\n\r\n');
+      nombre = 'reporte-detalle-' + $('r-periodo').value + '.csv';
     } else {
-      var d = ultimo;
-      contenido = csv(['Hora', 'Ventas (Bs)'], d.ventasHora.map(function (v, i) { return [BASE.horas[i] + ':00', P.bs(v)]; }));
-      nombre = 'ventas-por-hora-' + d.periodo + '.csv';
+      contenido = csv(['Hora', 'Ventas (Bs)'], ultimo.horas.map(function (v, i) { return [BASE.horas[i] + ':00', P.bs(v)]; }));
+      nombre = 'ventas-por-hora-' + $('r-periodo').value + '.csv';
     }
     var a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([contenido], { type: 'text/csv;charset=utf-8' }));
@@ -365,6 +406,9 @@
     window.setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
     P.aviso('Descargado ' + nombre + '.');
   });
+
+  // PDF: la vista actual por la impresión del navegador (con servidor, dompdf)
+  $('exportar-pdf').addEventListener('click', function () { window.print(); });
 
   pintar();
 })();
