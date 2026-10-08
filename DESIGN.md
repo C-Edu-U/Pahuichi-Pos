@@ -1,78 +1,78 @@
 # Design
 
-Sistema visual de Pahuichi POS. Lo que dice este archivo está construido en `public/assets/css/`. Si el código y este documento difieren, se corrige el que esté mal y se avisa a Carlos, dueño del sistema de diseño.
+Sistema visual de Pahuichi POS. Todo lo que dice este archivo está en `public/assets/css/`.
 
-## Dirección
+## Principios
 
-Sobria y confiable, pensada para leer números rápido. Fondo blanco, el **riel verde** de la bandera cruceña como única superficie de color grande, y color solo donde comunica algo:
-
-- **Dónde estás:** el módulo activo del riel va en blanco con texto verde.
-- **Estado:** verde (correcto), ámbar (aviso, por vencer, agotado hoy), terracota (peligro, error, anular).
-- **Datos:** dos series validadas para daltonismo (efectivo y QR).
-
-Sin decoración: nada de costuras, texturas ni bandas que no tengan una función.
+1. **La velocidad del cajero manda.** Favoritos en la primera pantalla, un toque por ítem, total siempre visible, cobro exacto con un toque (F8).
+2. **Los números son el contenido.** Cifras tabulares en columnas, alineadas a la derecha, con «Bs» más chico que la cifra.
+3. **Color solo con función.** Ubicación (módulo activo), estado (verde, ámbar, terracota), categoría y datos. Sin adornos.
+4. **La venta nunca espera.** Avisos de cobro, QR pendiente e impresora en cola sin ventanas que bloqueen.
 
 ## Color
 
 | Rol | Token | Valor | Uso |
 |---|---|---|---|
-| Riel | `--verde-700` | #13603e | Menú lateral, barra del pedido en móvil, portada |
-| Primario | `--verde-600` | #177448 | Botón primario, enlaces (5,7:1 sobre blanco) |
+| Riel | `--verde-700` | #13603e | Menú lateral, barra del pedido en móvil |
+| Primario | `--verde-600` | #177448 | Botón primario, enlaces (5,7:1) |
 | Texto | `--tinta-900` | #16201b | Texto principal |
-| Texto secundario | `--tinta-600` | #55615a | Ayudas, metadatos, botones deshabilitados (6,4:1) |
-| Placeholder | `--tinta-500` | #69756e | Solo placeholder (4,8:1) |
-| Peligro | `--terracota-600` | #b2431e | Error, anular, marca de prueba de la factura |
-| Aviso | `--ambar-800` sobre `--ambar-100` | #6e4700 / #fcefcf | Por vencer, agotado hoy, sobrante |
-| Serie efectivo | `--serie-efectivo` | #177448 | Gráficos |
-| Serie QR | `--serie-qr` | #4a6fb5 | Gráficos (ΔE 16,2 con efectivo para daltonismo) |
-| Foco | `--color-foco` | #1c6fd1 | Anillo de foco de 3 px, distinto de cualquier estado |
+| Texto secundario | `--tinta-600` | #55615a | Ayudas, botones deshabilitados (6,4:1) |
+| Peligro | `--terracota-600` | #b2431e | Error, anular, rechazar |
+| Aviso | `--ambar-800` sobre `--ambar-100` | #6e4700 / #fcefcf | Por confirmar, agotado, sobrante |
+| Foco | `--color-foco` | #1c6fd1 | Anillo de 3 px |
 
-El estado nunca se comunica solo con color: toda insignia lleva texto y todo gráfico tiene leyenda y vista de tabla.
+### Categorías
+
+Botones de color propio con texto blanco (contraste de 6,0 a 10,4:1), separados entre sí también para daltonismo. Siempre llevan el nombre escrito.
+
+| Categoría | Token | Valor |
+|---|---|---|
+| Platos | `--cat-platos` | #8a5300 |
+| Refrescos | `--cat-refrescos` | #1062a8 |
+| Sodas | `--cat-sodas` | #8e2c7c |
+| Vinos | `--cat-vinos` | #6e2a1e |
+| Postres | `--cat-postres` | #3f6f1f |
+| Prueba | `--cat-prueba` | #4f5a54 |
+
+Las categorías nuevas eligen de una paleta cerrada de 8 colores, todos con contraste AA.
+
+### Series de datos
+
+`--serie-efectivo` #177448 y `--serie-qr` #4a6fb5, validadas para daltonismo.
 
 ## Tipografía
 
-- **Trabajo:** fuente del sistema (`Segoe UI Variable` en Windows). Una sola familia para títulos, etiquetas, datos y botones.
-- **Marca:** Archivo (variable, SIL OFL), servida desde `assets/fonts/`. Solo en el logotipo, el login y la portada.
-- **Cifras:** `tabular-nums` en columnas y tablas. Los montos grandes (total del POS, cifra principal de reportes) usan cifras proporcionales y «Bs» más chico y más claro.
-- **Escala fija en rem (relación ≈1,2):** 13, 14, 16, 18, 22, 28, 36, 48 (cifra principal) y 56 (portada).
+- **Trabajo:** fuente del sistema. Una sola familia.
+- **Marca:** Archivo (variable, servida desde el sitio), solo en el logotipo, el login y la pantalla del cliente.
+- **Tickets:** monoespaciada, en negro, como el papel térmico.
+- **Escala en rem:** 13, 14, 16, 18, 22, 28, 36, 48. Texto base de 16 px.
 
 ## Espacio y forma
 
-- Espaciado en múltiplos de 8 (`--esp-1` = 8 px … `--esp-10` = 80 px). 4 px solo para separaciones internas.
-- Un solo radio: 6 px en controles y paneles, 4 px en insignias.
-- Dos sombras teñidas de verde: `--sombra-1` (casi plana) y `--sombra-2` (cajón, modal, aviso flotante, hoja de factura).
-- Jerarquía por filetes y rótulos, no por tamaños gigantes.
+- Múltiplos de 8; 4 px solo dentro de un grupo.
+- Radio de 6 px en controles y paneles, 4 px en insignias.
+- Dos sombras teñidas de verde, solo para lo que flota (modal, cajón, aviso, desplegable).
 
 ## Componentes
 
-| Componente | Clase | Reglas |
-|---|---|---|
-| Botón | `.boton` + `--primario`, `--peligro`, `--fantasma`, `--icono`, `--grande` | 48 px de alto (56 px los de cobro). Responde al presionar. Estados: hover, foco, deshabilitado, ocupado. |
-| Campo | `.campo`, `.control`, `.control-grupo` (prefijo «Bs», sufijo, ícono) | Etiqueta arriba, error debajo con ícono, `aria-invalid`. Nunca un placeholder como etiqueta. |
-| Archivo | `.archivo` | Zona de arrastre sobre el input nativo; error en terracota. |
-| Tabla | `.tabla-contenedor` > `.tabla` (`--fichas`, `--compacta`) | Encabezado fijo, una línea entre filas, `.col-num` a la derecha. Con `--fichas`, en móvil cada fila pasa a ficha con la etiqueta de su columna. |
-| Filtros | `.filtros` | Una fila sobre lo que filtran; filtran por atributos `data-filtra` y `data-campo`. |
-| Formulario rápido | `.formulario-rapido` + `[data-alternar]` | «Nuevo cliente», «Nuevo usuario», «Subir QR nuevo», «Agregar leyenda»: se despliegan en la página, sin modal. |
-| Insignia | `.insignia--ok`, `--aviso`, `--peligro`, `--neutra` | Siempre con texto. |
-| Alerta | `.alerta--aviso`, `--peligro`, `--info` | Borde fino y fondo tenue; nunca un borde lateral grueso. |
-| Pestañas | `.pestana[aria-pressed]` | Filtros por categoría; la activa con subrayado verde. |
-| Control segmentado | `.subnav`, `.subnav--botones` | Vistas hermanas: Productos/Categorías, Tablero/Libro, Rollo/Media hoja. |
-| Modal | `dialog.modal` | Solo para cobrar, confirmar algo destructivo (anular, cerrar turno, retirar QR) o mostrar una clave temporal. |
-| Aviso flotante | `.aviso-flotante` | Confirma una acción por 3 s sin interrumpir. Nunca lleva datos que haya que copiar. |
-| Riel | `.riel`, `.menu__enlace[aria-current]` | 248 px en escritorio (plegable), 72 px con íconos en tableta, cajón en móvil con foco atrapado y Esc. En el POS empieza plegado. |
-| Gráficos | `.grafico`, `.barras-h`, `.apilada`, `.leyenda` | Columnas ≤ 24 px con punta redondeada de 4 px, rejilla de 1 px, valor solo en el máximo, tooltip al pasar y con teclado, tabla en «Ver como tabla». |
-
-Íconos: Tabler Icons (MIT), trazo de 1,75, sprite en `assets/img/iconos.svg`.
-
-## Pantallas clave
-
-- **Punto de venta:** grilla de productos (2 columnas en móvil, de 3 a 6 según el ancho) y pedido fijo a la derecha en escritorio. En móvil el pedido es una barra inferior con el total siempre visible que se despliega como hoja. El total va a 36 px.
-- **Factura:** un solo marcado con dos formatos (`.factura--rollo` y `.factura--media`) y páginas de impresión con nombre (`@page rollo`, `@page media`). Lleva la marca «DOCUMENTO DE PRUEBA, SIN VALIDEZ FISCAL» y el QR de verificación al dominio piloto del SIN.
+| Componente | Reglas |
+|---|---|
+| Botón (`.boton`) | 48 px de alto (56 px los de cobro). Responde al presionar. Puede mostrar su atajo (`.atajo`). |
+| Botón de categoría (`.categoria-pos`) | Borde y texto del color de la categoría; relleno cuando está activo. |
+| Tarjeta de producto (`.producto-pos`) | Zona de foto (sin foto: ícono de su categoría), nombre corto, precio, insignia de promo o agotado, contador del pedido. |
+| Campo (`.campo`, `.control`) | Etiqueta arriba, error debajo con ícono, `aria-invalid`. |
+| Teclado de PIN (`.pin`) | Teclas de 64 px; también acepta el teclado físico. |
+| Tabla (`.tabla`, `--fichas`) | En móvil cada fila pasa a ficha con la etiqueta de su columna. |
+| Bandeja (`.bandeja`) | Lista de pagos para el celular, con confirmar y rechazar de un toque. |
+| Interruptor (`.interruptor-boton`) | `role="switch"`, área de 44 px. |
+| Insignia, alerta, modal, aviso flotante | Estado con texto, nunca solo con color. Modal solo para cobrar, autorizar o confirmar algo destructivo. |
+| Riel | Completo en escritorio, íconos en tableta, cajón en móvil. En el POS empieza plegado. |
+| Tickets (`.ticket`) | 76 o 58 mm. Comanda con número grande; factura con la leyenda académica arriba y abajo y QR propio. |
 
 ## Movimiento
 
-Entre 120 y 240 ms, `ease-out` fuerte para lo que entra y `ease-in-out` para lo que se mueve en pantalla. Nada anima al cargar la página. Con movimiento reducido no hay desplazamientos ni escalas; se mantienen los fundidos de color y opacidad.
+De 120 a 240 ms, `ease-out` para lo que entra. Nada anima al cargar la página. El PIN incorrecto sacude los puntos una vez. Con movimiento reducido no hay desplazamientos ni escalas.
 
 ## Responsive
 
-360 px (cajón, fichas, pedido como hoja), 768 px (riel de íconos), 1024 px (pedido lateral en el POS, dos columnas en el escritorio y en reportes) y 1200 px (riel completo). Áreas táctiles de al menos 44 px; los botones, 48 px.
+360 px (cajón, fichas, pedido como hoja inferior), 768 px (riel de íconos), 1024 px (pedido lateral en el POS) y 1200 px (riel completo). Áreas táctiles de 44 px o más.
