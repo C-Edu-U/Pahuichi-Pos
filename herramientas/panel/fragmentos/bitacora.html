@@ -1,6 +1,6 @@
 <!-- {"titulo":"Bitácora","modulo":"bitacora","h1":"Bitácora","js":[],"cssExtra":["modulos.css"]} -->
     <main class="contenido" id="contenido">
-      <p class="cabeza-pagina__texto bitacora__intro">Registro de quién hizo qué y cuándo. No se puede editar ni borrar.</p>
+      <p class="cabeza-pagina__texto bitacora__intro">Quién hizo qué y cuándo. Solo se agregan registros: no se pueden editar ni borrar.</p>
       <div class="filtros" role="search" aria-label="Filtrar bitácora">
         <div class="campo filtros__busqueda">
           <label class="campo__etiqueta" for="b-buscar">Buscar</label>
@@ -15,6 +15,7 @@
             <option value="">Todos</option>
             <option>Ana Lucía Vaca</option>
             <option>Mariela Suárez</option>
+            <option>Jorge Rivero</option>
             <option>Sistema</option>
           </select>
         </div>
@@ -22,30 +23,30 @@
           <label class="campo__etiqueta" for="b-accion">Acción</label>
           <select class="control" id="b-accion" data-filtra="filas-bitacora" data-campo="accion">
             <option value="">Todas</option>
-            <option value="venta">Ventas</option>
             <option value="anulacion">Anulaciones</option>
-            <option value="caja">Caja</option>
-            <option value="qr">Pagos QR</option>
-            <option value="usuario">Usuarios</option>
+            <option value="descuento">Descuentos manuales</option>
+            <option value="reimpresion">Reimpresiones</option>
+            <option value="qr">Pagos y QR</option>
+            <option value="precio">Cambios de precio</option>
+            <option value="caja">Apertura y cierre de caja</option>
             <option value="denegado">Accesos denegados</option>
-            <option value="config">Configuración</option>
+            <option value="bloqueo">Bloqueos</option>
             <option value="producto">Productos</option>
-            <option value="sesion">Inicios de sesión</option>
           </select>
         </div>
         <div class="campo">
           <label class="campo__etiqueta" for="b-dia">Día</label>
           <select class="control" id="b-dia" data-filtra="filas-bitacora" data-campo="dia">
             <option value="">Todos</option>
-            <option value="06/10/2026">Hoy, 06/10</option>
-            <option value="05/10/2026">Ayer, 05/10</option>
+            <option value="08/10/2026">Hoy, 08/10</option>
+            <option value="07/10/2026">Ayer, 07/10</option>
           </select>
         </div>
       </div>
       <p class="resultado"><span class="resultado__cuenta" data-cuenta="filas-bitacora" data-singular="registro" data-plural="registros">0 registros</span></p>
       <div class="tabla-contenedor">
         <table class="tabla tabla--bitacora tabla--fichas">
-          <caption class="visualmente-oculto">Bitácora de auditoría</caption>
+          <caption class="visualmente-oculto">Bitácora</caption>
           <thead>
             <tr>
               <th scope="col">Fecha y hora</th>
@@ -57,93 +58,109 @@
             </tr>
           </thead>
           <tbody id="filas-bitacora">
-            <tr data-usuario="Ana Lucía Vaca" data-accion="config" data-dia="06/10/2026">
-              <td class="num">06/10/2026 14:31</td>
-              <td>Ana Lucía Vaca</td>
-              <td><span class="insignia insignia--neutra">Configuración</span></td>
-              <td>Empresa</td>
-              <td>Cambió la modalidad a computarizada en línea</td>
-              <td class="codigo">190.181.24.10</td>
-            </tr>
-            <tr data-usuario="Mariela Suárez" data-accion="denegado" data-dia="06/10/2026">
-              <td class="num">06/10/2026 12:58</td>
+            <tr data-usuario="Mariela Suárez" data-accion="denegado" data-dia="08/10/2026">
+              <td class="num">08/10/2026 12:40</td>
               <td>Mariela Suárez</td>
               <td><span class="insignia insignia--peligro">Acceso denegado</span></td>
               <td>Usuarios</td>
               <td>Intentó abrir /usuarios con rol Cajero</td>
-              <td class="codigo">190.181.24.37</td>
+              <td class="codigo">192.168.1.20</td>
             </tr>
-            <tr data-usuario="Mariela Suárez" data-accion="venta" data-dia="06/10/2026">
-              <td class="num">06/10/2026 12:41</td>
-              <td>Mariela Suárez</td>
-              <td><span class="insignia insignia--ok">Venta</span></td>
-              <td>Factura N° 128</td>
-              <td>Bs 76,00 en efectivo a Rodríguez Peña</td>
-              <td class="codigo">190.181.24.37</td>
-            </tr>
-            <tr data-usuario="Mariela Suárez" data-accion="producto" data-dia="06/10/2026">
-              <td class="num">06/10/2026 11:52</td>
-              <td>Mariela Suárez</td>
-              <td><span class="insignia insignia--neutra">Producto</span></td>
-              <td>HO-06 Masaco de plátano</td>
-              <td>Marcado como agotado hoy</td>
-              <td class="codigo">190.181.24.37</td>
-            </tr>
-            <tr data-usuario="Ana Lucía Vaca" data-accion="anulacion" data-dia="06/10/2026">
-              <td class="num">06/10/2026 11:34</td>
+            <tr data-usuario="Ana Lucía Vaca" data-accion="anulacion" data-dia="08/10/2026">
+              <td class="num">08/10/2026 12:24</td>
               <td>Ana Lucía Vaca</td>
               <td><span class="insignia insignia--peligro">Anulación</span></td>
-              <td>Factura N° 123</td>
-              <td>Motivo 1: factura mal emitida</td>
-              <td class="codigo">190.181.24.10</td>
+              <td>Factura 123</td>
+              <td>Autorizó con PIN. Motivo: error en el pedido</td>
+              <td class="codigo">192.168.1.20</td>
             </tr>
-            <tr data-usuario="Sistema" data-accion="usuario" data-dia="06/10/2026">
-              <td class="num">06/10/2026 10:47</td>
-              <td>Sistema</td>
-              <td><span class="insignia insignia--aviso">Usuario</span></td>
-              <td>jorge</td>
-              <td>Bloqueado 15 minutos tras 5 intentos fallidos</td>
-              <td class="codigo">181.115.60.92</td>
-            </tr>
-            <tr data-usuario="Ana Lucía Vaca" data-accion="sesion" data-dia="06/10/2026">
-              <td class="num">06/10/2026 07:40</td>
-              <td>Ana Lucía Vaca</td>
-              <td><span class="insignia insignia--neutra">Inicio de sesión</span></td>
-              <td>admin</td>
-              <td>Ingreso correcto</td>
-              <td class="codigo">190.181.24.10</td>
-            </tr>
-            <tr data-usuario="Mariela Suárez" data-accion="caja" data-dia="06/10/2026">
-              <td class="num">06/10/2026 07:02</td>
-              <td>Mariela Suárez</td>
-              <td><span class="insignia insignia--ok">Caja</span></td>
-              <td>Turno 214</td>
-              <td>Abrió caja con Bs 200,00</td>
-              <td class="codigo">190.181.24.37</td>
-            </tr>
-            <tr data-usuario="Ana Lucía Vaca" data-accion="qr" data-dia="05/10/2026">
-              <td class="num">05/10/2026 16:40</td>
+            <tr data-usuario="Ana Lucía Vaca" data-accion="qr" data-dia="08/10/2026">
+              <td class="num">08/10/2026 12:22</td>
               <td>Ana Lucía Vaca</td>
               <td><span class="insignia insignia--neutra">Pago QR</span></td>
-              <td>QR 32</td>
-              <td>Subió un QR nuevo de Bs 0,50 (BNB)</td>
-              <td class="codigo">190.181.24.10</td>
+              <td>BNB-55098</td>
+              <td>Rechazado: no aparece en el banco. Pedido 036 con saldo</td>
+              <td class="codigo">192.168.1.31</td>
             </tr>
-            <tr data-usuario="Mariela Suárez" data-accion="caja" data-dia="05/10/2026">
-              <td class="num">05/10/2026 15:12</td>
+            <tr data-usuario="Mariela Suárez" data-accion="reimpresion" data-dia="08/10/2026">
+              <td class="num">08/10/2026 12:15</td>
+              <td>Mariela Suárez</td>
+              <td><span class="insignia insignia--neutra">Reimpresión</span></td>
+              <td>Factura 118</td>
+              <td>Reimprimió los tres tickets</td>
+              <td class="codigo">192.168.1.20</td>
+            </tr>
+            <tr data-usuario="Ana Lucía Vaca" data-accion="descuento" data-dia="08/10/2026">
+              <td class="num">08/10/2026 12:10</td>
+              <td>Ana Lucía Vaca</td>
+              <td><span class="insignia insignia--aviso">Descuento manual</span></td>
+              <td>Pedido 033</td>
+              <td>Bs 10,00 por demora en cocina, autorizado con PIN</td>
+              <td class="codigo">192.168.1.20</td>
+            </tr>
+            <tr data-usuario="Mariela Suárez" data-accion="producto" data-dia="08/10/2026">
+              <td class="num">08/10/2026 12:05</td>
+              <td>Mariela Suárez</td>
+              <td><span class="insignia insignia--neutra">Producto</span></td>
+              <td>PL-07 Fricasé de cerdo</td>
+              <td>Marcado como agotado</td>
+              <td class="codigo">192.168.1.20</td>
+            </tr>
+            <tr data-usuario="Ana Lucía Vaca" data-accion="qr" data-dia="08/10/2026">
+              <td class="num">08/10/2026 11:52</td>
+              <td>Ana Lucía Vaca</td>
+              <td><span class="insignia insignia--neutra">Pago QR</span></td>
+              <td>BNB-55120</td>
+              <td>Confirmado desde el celular</td>
+              <td class="codigo">192.168.1.31</td>
+            </tr>
+            <tr data-usuario="Sistema" data-accion="bloqueo" data-dia="08/10/2026">
+              <td class="num">08/10/2026 11:30</td>
+              <td>Sistema</td>
+              <td><span class="insignia insignia--aviso">Bloqueo</span></td>
+              <td>jorge</td>
+              <td>5 PIN incorrectos seguidos: bloqueado 15 minutos</td>
+              <td class="codigo">192.168.1.20</td>
+            </tr>
+            <tr data-usuario="Mariela Suárez" data-accion="caja" data-dia="08/10/2026">
+              <td class="num">08/10/2026 11:02</td>
               <td>Mariela Suárez</td>
               <td><span class="insignia insignia--ok">Caja</span></td>
-              <td>Turno 213</td>
-              <td>Cerró caja. Arqueo cuadra</td>
-              <td class="codigo">190.181.24.37</td>
+              <td>Medio día</td>
+              <td>Abrió caja con un fondo de Bs 300,00</td>
+              <td class="codigo">192.168.1.20</td>
             </tr>
-            <tr data-usuario="Ana Lucía Vaca" data-accion="usuario" data-dia="05/10/2026">
-              <td class="num">05/10/2026 09:20</td>
+            <tr data-usuario="Ana Lucía Vaca" data-accion="qr" data-dia="08/10/2026">
+              <td class="num">08/10/2026 10:52</td>
               <td>Ana Lucía Vaca</td>
-              <td><span class="insignia insignia--aviso">Usuario</span></td>
-              <td>fabiola</td>
-              <td>Desactivó la cuenta</td>
-              <td class="codigo">190.181.24.10</td>
+              <td><span class="insignia insignia--neutra">QR del día</span></td>
+              <td>08/10/2026</td>
+              <td>Subió el QR del día de Bs 0,50 (BNB)</td>
+              <td class="codigo">192.168.1.31</td>
+            </tr>
+            <tr data-usuario="Ana Lucía Vaca" data-accion="precio" data-dia="08/10/2026">
+              <td class="num">08/10/2026 10:40</td>
+              <td>Ana Lucía Vaca</td>
+              <td><span class="insignia insignia--neutra">Cambio de precio</span></td>
+              <td>PL-03 Picante de pollo</td>
+              <td>De Bs 40,00 a Bs 45,00</td>
+              <td class="codigo">192.168.1.31</td>
+            </tr>
+            <tr data-usuario="Jorge Rivero" data-accion="caja" data-dia="07/10/2026">
+              <td class="num">07/10/2026 23:48</td>
+              <td>Jorge Rivero</td>
+              <td><span class="insignia insignia--ok">Caja</span></td>
+              <td>Noche</td>
+              <td>Cerró caja. Arqueo cuadra</td>
+              <td class="codigo">192.168.1.20</td>
+            </tr>
+            <tr data-usuario="Mariela Suárez" data-accion="caja" data-dia="07/10/2026">
+              <td class="num">07/10/2026 16:10</td>
+              <td>Mariela Suárez</td>
+              <td><span class="insignia insignia--ok">Caja</span></td>
+              <td>Medio día</td>
+              <td>Cerró caja con faltante de Bs 10,00. Observación: cambio mal entregado</td>
+              <td class="codigo">192.168.1.20</td>
             </tr>
           </tbody>
         </table>
