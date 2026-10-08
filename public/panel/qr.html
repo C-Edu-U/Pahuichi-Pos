@@ -3,8 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Pagos QR · Pahuichi POS</title>
+  <title>QR del día · Pahuichi POS</title>
   <meta name="theme-color" content="#13603e">
+  <link rel="manifest" href="../manifest.json">
+  <link rel="icon" href="../assets/img/icono.svg" type="image/svg+xml">
   <link rel="preload" href="../assets/fonts/archivo-variable-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="../assets/css/tokens.css">
   <link rel="stylesheet" href="../assets/css/base.css">
@@ -19,7 +21,7 @@
 
   <aside class="riel" id="riel" aria-label="Menú principal">
     <div class="riel__marca">
-      <a class="marca" href="escritorio.html">
+      <a class="marca" href="tablero.html">
         <span class="marca__sello" aria-hidden="true"><span></span></span>
         <span class="marca__texto">Pahuichi <small>Punto de venta</small></span>
       </a>
@@ -29,14 +31,18 @@
     </div>
     <nav class="menu" aria-label="Módulos">
       <ul class="menu__lista" role="list">
-        <li class="menu__item" data-modulo="escritorio"><a class="menu__enlace" href="escritorio.html"><svg class="icono" aria-hidden="true"><use href="#i-escritorio"></use></svg><span class="menu__texto">Escritorio</span></a></li>
+        <li class="menu__item" data-modulo="tablero"><a class="menu__enlace" href="tablero.html"><svg class="icono" aria-hidden="true"><use href="#i-escritorio"></use></svg><span class="menu__texto">Tablero</span></a></li>
         <li class="menu__item" data-modulo="pos"><a class="menu__enlace" href="pos.html"><svg class="icono" aria-hidden="true"><use href="#i-pos"></use></svg><span class="menu__texto">Punto de venta</span></a></li>
         <li class="menu__item" data-modulo="caja"><a class="menu__enlace" href="caja.html"><svg class="icono" aria-hidden="true"><use href="#i-caja"></use></svg><span class="menu__texto">Caja</span></a></li>
         <li class="menu__item" data-modulo="ventas"><a class="menu__enlace" href="ventas.html"><svg class="icono" aria-hidden="true"><use href="#i-ventas"></use></svg><span class="menu__texto">Ventas y facturas</span></a></li>
-        <li class="menu__item" data-modulo="clientes"><a class="menu__enlace" href="clientes.html"><svg class="icono" aria-hidden="true"><use href="#i-clientes"></use></svg><span class="menu__texto">Clientes</span></a></li>
+        <li class="menu__item" data-modulo="mesero"><a class="menu__enlace" href="mesero.html"><svg class="icono" aria-hidden="true"><use href="#i-mesa"></use></svg><span class="menu__texto">Pedidos</span></a></li>
         <li class="menu__separador" role="separator"></li>
-        <li class="menu__item" data-modulo="productos"><a class="menu__enlace" href="productos.html"><svg class="icono" aria-hidden="true"><use href="#i-productos"></use></svg><span class="menu__texto">Productos y categorías</span></a></li>
-        <li class="menu__item" data-modulo="qr"><a class="menu__enlace" href="qr.html" aria-current="page"><svg class="icono" aria-hidden="true"><use href="#i-qr"></use></svg><span class="menu__texto">Pagos QR</span><span class="menu__aviso"><span class="visualmente-oculto">QR vence en </span>2 h</span></a></li>
+        <li class="menu__item" data-modulo="conciliacion"><a class="menu__enlace" href="conciliacion.html"><svg class="icono" aria-hidden="true"><use href="#i-check"></use></svg><span class="menu__texto">Conciliación QR</span><span class="menu__aviso menu__aviso--cuenta"><span class="visualmente-oculto">Pagos por confirmar: </span>4</span></a></li>
+        <li class="menu__item" data-modulo="qr"><a class="menu__enlace" href="qr.html" aria-current="page"><svg class="icono" aria-hidden="true"><use href="#i-qr"></use></svg><span class="menu__texto">QR del día</span><span class="menu__aviso menu__aviso--vencido" hidden>Sin QR</span></a></li>
+        <li class="menu__separador" role="separator"></li>
+        <li class="menu__item" data-modulo="clientes"><a class="menu__enlace" href="clientes.html"><svg class="icono" aria-hidden="true"><use href="#i-clientes"></use></svg><span class="menu__texto">Clientes</span></a></li>
+        <li class="menu__item" data-modulo="catalogo"><a class="menu__enlace" href="productos.html"><svg class="icono" aria-hidden="true"><use href="#i-productos"></use></svg><span class="menu__texto">Catálogo</span></a></li>
+        <li class="menu__item" data-modulo="promociones"><a class="menu__enlace" href="promociones.html"><svg class="icono" aria-hidden="true"><use href="#i-promocion"></use></svg><span class="menu__texto">Promociones</span></a></li>
         <li class="menu__separador" role="separator"></li>
         <li class="menu__item" data-modulo="reportes"><a class="menu__enlace" href="reportes.html"><svg class="icono" aria-hidden="true"><use href="#i-reportes"></use></svg><span class="menu__texto">Reportes</span></a></li>
         <li class="menu__item" data-modulo="bitacora"><a class="menu__enlace" href="bitacora.html"><svg class="icono" aria-hidden="true"><use href="#i-bitacora"></use></svg><span class="menu__texto">Bitácora</span></a></li>
@@ -61,14 +67,24 @@
         <button class="boton boton--fantasma boton--icono barra__menu" type="button" data-abrir-riel aria-controls="riel" aria-expanded="false" aria-label="Abrir menú">
           <svg class="icono" aria-hidden="true"><use href="#i-menu"></use></svg>
         </button>
-        <h1 class="barra__titulo">Pagos QR</h1>
+        <h1 class="barra__titulo">QR del día</h1>
+        <div class="barra__estado">
+          <p class="estado-sistema estado-sistema--red" id="estado-red" hidden>
+            <svg class="icono icono--sm" aria-hidden="true"><use href="#i-sinRed"></use></svg>
+            <span>Sin conexión: las ventas se guardan y se envían al volver</span>
+          </p>
+          <a class="estado-sistema" id="estado-impresora" href="impresion.html" data-requiere="modulo.impresion">
+            <svg class="icono icono--sm" aria-hidden="true"><use href="#i-imprimir"></use></svg>
+            <span class="estado-sistema__texto">Impresora lista</span>
+          </a>
+        </div>
         <div class="barra__usuario">
           <label class="demo-rol">
-            <span class="demo-rol__texto">Prototipo: ver como</span>
+            <span class="demo-rol__texto">Demo: ver como</span>
             <select class="control" id="demo-rol">
+              <option value="administrador">Administrador</option>
               <option value="cajero">Cajero</option>
-              <option value="analista">Analista</option>
-              <option value="sysadmin">Administrador</option>
+              <option value="mesero">Mesero</option>
             </select>
           </label>
           <p class="usuario"><span class="usuario__nombre" data-rol-nombre>Ana Lucía Vaca Saucedo</span><span class="usuario__rol" data-rol-etiqueta>Administrador</span></p>
@@ -81,65 +97,54 @@
     </header>
 
     <main class="contenido" id="contenido">
-      <div class="alerta alerta--aviso" id="qr-por-vencer">
-        <svg class="icono" aria-hidden="true"><use href="#i-reloj"></use></svg>
-        <p class="alerta__titulo">El QR vence hoy a las 16:40</p>
-        <p class="alerta__texto">Quedan 2 h 05 min. Cuando venza, el punto de venta deshabilita el cobro con QR hasta que se suba uno nuevo.</p>
-      </div>
-      <div class="alerta alerta--peligro" id="qr-vencido" hidden>
+      <div class="alerta alerta--peligro" id="qr-sin" role="status" hidden>
         <svg class="icono" aria-hidden="true"><use href="#i-qrOff"></use></svg>
-        <p class="alerta__titulo">QR vencido</p>
-        <p class="alerta__texto" data-requiere="qr.subir">El cobro con QR está bloqueado en el punto de venta. Sube un QR nuevo para seguir cobrando así.</p>
-        <p class="alerta__texto" data-sin-permiso="qr.subir">El cobro con QR está bloqueado. Pide al administrador un QR nuevo.</p>
+        <p class="alerta__titulo">No hay QR del día vigente</p>
+        <p class="alerta__texto" data-requiere="qr.subir">La caja no puede cobrar con QR. Sube el QR de hoy para habilitarlo.</p>
+        <p class="alerta__texto" data-sin-permiso="qr.subir">El cobro con QR está deshabilitado hasta que el administrador suba el QR de hoy.</p>
       </div>
 
-      <section class="qr-actual panel-bloque" aria-labelledby="t-qr-actual">
+      <section class="qr-actual panel-bloque" id="qr-vigente" aria-labelledby="t-qr-actual">
         <div class="qr-actual__imagen">
-          <img id="qr-img" src="../assets/img/qr-cobro-demo.svg" alt="QR de cobro vigente (ejemplo)" width="200" height="200">
+          <img id="qr-img" src="../assets/img/qr-cobro-demo.svg" alt="QR del día para cobrar Bs 0,50 (ejemplo)" width="200" height="200">
         </div>
         <div class="qr-actual__datos">
           <div class="seccion__cabeza">
-            <h2 id="t-qr-actual">QR vigente</h2>
-            <span class="insignia insignia--ok" id="qr-estado">Activo</span>
+            <h2 id="t-qr-actual">QR de hoy</h2>
+            <span class="insignia insignia--ok" id="qr-estado">Vigente</span>
           </div>
           <dl class="datos">
+            <dt>Fecha</dt><dd class="num">Jueves 08/10/2026</dd>
+            <dt>Vigente hasta</dt><dd class="num" id="qr-vence">Hoy, 23:59:59</dd>
             <dt>Monto fijo</dt><dd class="num">Bs 0,50</dd>
             <dt>Banco</dt><dd>BNB <span class="ejemplo">Ejemplo</span></dd>
-            <dt>Subido</dt><dd>05/10/2026, 16:40 por Ana Lucía Vaca</dd>
-            <dt>Vence</dt><dd id="qr-vence">Hoy, 16:40 (dura 24 horas)</dd>
-            <dt>Ventas cobradas</dt><dd class="num">3 · Bs 1,50</dd>
+            <dt>Subido</dt><dd>08/10/2026, 10:52 por Ana Lucía Vaca</dd>
+            <dt>Pagos recibidos</dt><dd class="num">8 · 4 por confirmar</dd>
           </dl>
           <div class="qr-actual__acciones" data-requiere="qr.subir">
-            <button class="boton boton--primario" type="button" data-alternar="form-qr" aria-expanded="false" aria-controls="form-qr">
-              <svg class="icono" aria-hidden="true"><use href="#i-subir2"></use></svg>
-              Subir QR nuevo
-            </button>
             <button class="boton" type="button" id="btn-retirar" data-abrir-modal="modal-retirar">
               <svg class="icono" aria-hidden="true"><use href="#i-qrOff"></use></svg>
               Retirar ahora
             </button>
           </div>
           <p class="qr-actual__demo" data-requiere="qr.subir">
-            <span class="ejemplo">Prototipo</span>
-            <button class="enlace-boton" type="button" id="simular">Simular vencimiento</button>
+            <span class="ejemplo">Demo</span>
+            <button class="enlace-boton" type="button" id="simular">Simular medianoche</button>
           </p>
         </div>
       </section>
 
-      <form class="panel-bloque formulario-rapido" id="form-qr" novalidate hidden aria-labelledby="t-subir">
+      <form class="panel-bloque formulario-rapido" id="form-qr" novalidate aria-labelledby="t-subir" data-requiere="qr.subir">
         <input type="hidden" name="_csrf" value="">
         <div class="panel-bloque__cabecera">
-          <h2 class="panel-bloque__titulo" id="t-subir">Subir QR nuevo</h2>
-          <button class="boton boton--fantasma boton--icono" type="button" data-alternar="form-qr" aria-label="Cerrar formulario">
-            <svg class="icono" aria-hidden="true"><use href="#i-cerrar"></use></svg>
-          </button>
+          <h2 class="panel-bloque__titulo" id="t-subir">Subir el QR de hoy</h2>
         </div>
         <div class="panel-bloque__cuerpo formulario-rapido__campos">
           <div class="campo campo--ancho">
             <div class="archivo" id="zona-qr">
               <span class="archivo__icono" aria-hidden="true"><svg class="icono icono--lg"><use href="#i-qr"></use></svg></span>
               <p class="archivo__titulo">Arrastra la imagen del QR o <span>elige un archivo</span></p>
-              <p class="archivo__ayuda" id="qr-archivo-ayuda">PNG, JPG o WebP, máximo 2 MB. Debe ser una imagen nueva: no se acepta un QR ya usado.</p>
+              <p class="archivo__ayuda" id="qr-archivo-ayuda">PNG, JPG o WebP de hasta 2 MB. Tiene que ser una imagen nueva: se compara con los QR anteriores.</p>
               <label class="visualmente-oculto" for="qr-archivo">Imagen del QR</label>
               <input id="qr-archivo" type="file" accept="image/png,image/jpeg,image/webp" aria-describedby="qr-archivo-ayuda qr-archivo-error">
             </div>
@@ -147,7 +152,13 @@
             <p class="archivo-elegido" id="qr-archivo-nombre" hidden></p>
           </div>
           <div class="campo">
-            <label class="campo__etiqueta" for="qr-monto">Monto fijo del QR</label>
+            <label class="campo__etiqueta" for="qr-fecha">Fecha del QR</label>
+            <input class="control" id="qr-fecha" type="date" value="2026-10-08" aria-describedby="qr-fecha-ayuda qr-fecha-error">
+            <p class="campo__ayuda" id="qr-fecha-ayuda">La que muestra el banco en el QR. Solo se acepta la de hoy.</p>
+            <p class="campo__error" id="qr-fecha-error" hidden></p>
+          </div>
+          <div class="campo">
+            <label class="campo__etiqueta" for="qr-monto">Monto fijo</label>
             <div class="control-grupo">
               <span class="control-grupo__prefijo" aria-hidden="true">Bs</span>
               <input class="control control--numero" id="qr-monto" type="text" inputmode="decimal" value="0,50" aria-describedby="qr-monto-error">
@@ -158,35 +169,36 @@
             <label class="campo__etiqueta" for="qr-banco">Banco</label>
             <input class="control" id="qr-banco" type="text" value="BNB" autocomplete="off">
           </div>
-          <p class="campo--ancho formulario-rapido__nota">Al subirlo, el QR actual pasa a «Reemplazado». El nuevo vale 24 horas desde ahora.</p>
+          <p class="campo--ancho formulario-rapido__nota">Vale hasta las 23:59:59 de su fecha y vence solo a medianoche. Si ya hay uno vigente, el nuevo lo reemplaza.</p>
         </div>
         <div class="panel-bloque__pie">
-          <button class="boton boton--primario" type="submit">Subir y activar</button>
-          <button class="boton" type="button" data-alternar="form-qr">Cancelar</button>
+          <button class="boton boton--primario" type="submit">
+            <svg class="icono" aria-hidden="true"><use href="#i-subir2"></use></svg>
+            Subir y activar
+          </button>
         </div>
       </form>
 
-      <section class="seccion" aria-labelledby="t-historial-qr" data-requiere="qr.historial">
+      <section class="seccion" aria-labelledby="t-historial-qr" data-requiere="qr.subir">
         <h2 class="seccion__titulo" id="t-historial-qr">Historial</h2>
         <div class="tabla-contenedor">
           <table class="tabla tabla--fichas">
-            <caption class="visualmente-oculto">Historial de QR de cobro</caption>
+            <caption class="visualmente-oculto">Historial de QR del día</caption>
             <thead>
               <tr>
-                <th scope="col">Subido</th>
-                <th scope="col">Por</th>
+                <th scope="col">Fecha</th>
+                <th scope="col">Subido por</th>
                 <th scope="col">Banco</th>
                 <th scope="col" class="col-num">Monto</th>
-                <th scope="col">Estuvo activo</th>
-                <th scope="col" class="col-num">Ventas</th>
+                <th scope="col" class="col-num">Pagos</th>
                 <th scope="col">Estado</th>
               </tr>
             </thead>
             <tbody id="filas-qr">
-              <tr><td class="num">05/10/2026 16:40</td><td>Ana Lucía Vaca</td><td>BNB</td><td class="col-num num">0,50</td><td>En curso</td><td class="col-num num">3</td><td class="celda-estado"><span class="insignia insignia--ok">Activo</span></td></tr>
-              <tr><td class="num">04/10/2026 16:12</td><td>Ana Lucía Vaca</td><td>BNB</td><td class="col-num num">0,50</td><td>24 h</td><td class="col-num num">5</td><td><span class="insignia insignia--neutra">Vencido</span></td></tr>
-              <tr><td class="num">03/10/2026 09:30</td><td>Ana Lucía Vaca</td><td>Banco Unión</td><td class="col-num num">0,50</td><td>6 h 42 min</td><td class="col-num num">2</td><td><span class="insignia insignia--neutra">Reemplazado</span></td></tr>
-              <tr><td class="num">02/10/2026 08:05</td><td>Ana Lucía Vaca</td><td>BNB</td><td class="col-num num">0,50</td><td>1 h 15 min</td><td class="col-num num">0</td><td><span class="insignia insignia--peligro">Retirado</span></td></tr>
+              <tr><td class="num">08/10/2026 · 10:52</td><td>Ana Lucía Vaca</td><td>BNB</td><td class="col-num num">0,50</td><td class="col-num num">8</td><td class="celda-estado"><span class="insignia insignia--ok">Vigente</span></td></tr>
+              <tr><td class="num">07/10/2026 · 10:45</td><td>Ana Lucía Vaca</td><td>BNB</td><td class="col-num num">0,50</td><td class="col-num num">11</td><td><span class="insignia insignia--neutra">Vencido</span></td></tr>
+              <tr><td class="num">06/10/2026 · 10:58</td><td>Ana Lucía Vaca</td><td>Banco Unión</td><td class="col-num num">0,50</td><td class="col-num num">9</td><td><span class="insignia insignia--neutra">Vencido</span></td></tr>
+              <tr><td class="num">05/10/2026 · 11:10</td><td>Ana Lucía Vaca</td><td>BNB</td><td class="col-num num">0,50</td><td class="col-num num">2</td><td><span class="insignia insignia--peligro">Retirado</span></td></tr>
             </tbody>
           </table>
         </div>
@@ -195,8 +207,8 @@
       <dialog class="modal" id="modal-retirar" aria-labelledby="retirar-titulo">
         <form method="dialog">
           <div class="modal__cuerpo">
-            <h2 class="modal__titulo" id="retirar-titulo">¿Retirar el QR ahora?</h2>
-            <p class="modal__texto">Sale de circulación de inmediato y el punto de venta no podrá cobrar con QR hasta que subas uno nuevo.</p>
+            <h2 class="modal__titulo" id="retirar-titulo">¿Retirar el QR de hoy?</h2>
+            <p class="modal__texto">Sale de circulación de inmediato y la caja no podrá cobrar con QR hasta que subas otro.</p>
           </div>
           <div class="modal__acciones">
             <button class="boton" type="submit" value="cancelar" autofocus>Cancelar</button>

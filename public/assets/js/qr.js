@@ -1,95 +1,120 @@
-/* Pagos QR (prototipo). En PHP: un solo QR activo, SHA-256 contra los
-   anteriores, vence_en = subido_en + 24 h y un middleware lo marca vencido
-   en cada petición (sin cron). Aquí el estado vive en localStorage para que
-   el POS lo lea. */
+/* QR del día (demo). Con servidor: fecha única por QR, vigente hasta las
+   23:59:59, un middleware lo marca vencido en cada petición (sin cron) y la
+   imagen se compara por SHA-256 con las anteriores (desactivable). Aquí el
+   estado vive en localStorage para que el POS y el menú lo lean. */
 (function () {
   'use strict';
 
   var P = window.Pahuichi;
   var $ = function (id) { return document.getElementById(id); };
   var CLAVE = 'pahuichi.qrVencido';
-  var anteriores = ['qr-cobro-demo.svg', 'qr-bnb-0410.png', 'qr-union-0310.png'];
+  var HOY = '2026-10-08';
 
-  function vencido() {
-    try { return window.localStorage.getItem(CLAVE) === '1'; } catch (e) { return false; }
+  function sinQr() { return P.leer(CLAVE) === '1'; }
+
+  function fijar(sin, estadoFila) {
+    P.guardar(CLAVE, sin ? '1' : '0');
+    pintar(estadoFila);
   }
 
-  function fijar(v) {
-    try { window.localStorage.setItem(CLAVE, v ? '1' : '0'); } catch (e) { /* sin almacenamiento */ }
-    pintar();
+  function pintar(estadoFila) {
+    var sin = sinQr();
+    $('qr-sin').hidden = !sin;
+    $('qr-vigente').hidden = sin;
+    $('simular').textContent = sin ? 'Volver al QR de hoy' : 'Simular medianoche';
+    var celda = $('filas-qr').rows[0].querySelector('.celda-estado');
+    if (celda) {
+      celda.innerHTML = !sin ? '<span class="insignia insignia--ok">Vigente</span>'
+        : estadoFila === 'retirado' ? '<span class="insignia insignia--peligro">Retirado</span>'
+        : '<span class="insignia insignia--neutra">Vencido</span>';
+    }
+    var aviso = document.querySelector('.menu__item[data-modulo="qr"] .menu__aviso');
+    if (aviso) aviso.hidden = !sin;
+    // Con QR vigente, el formulario sirve para reemplazarlo
+    $('t-subir').textContent = sin ? 'Subir el QR de hoy' : 'Reemplazar el QR de hoy';
   }
 
-  function pintar() {
-    var v = vencido();
-    $('qr-por-vencer').hidden = v;
-    $('qr-vencido').hidden = !v;
-    $('qr-estado').className = 'insignia ' + (v ? 'insignia--peligro' : 'insignia--ok');
-    $('qr-estado').textContent = v ? 'Vencido' : 'Activo';
-    $('qr-vence').textContent = v ? 'Venció hoy a las 16:40' : 'Hoy, 16:40 (dura 24 horas)';
-    $('qr-img').classList.toggle('qr-actual__img--vencido', v);
-    $('btn-retirar').hidden = v;
-    $('simular').textContent = v ? 'Volver a un QR vigente' : 'Simular vencimiento';
-    var fila = $('filas-qr').rows[0].querySelector('.celda-estado');
-    fila.innerHTML = v ? '<span class="insignia insignia--neutra">Vencido</span>' : '<span class="insignia insignia--ok">Activo</span>';
-  }
-
-  $('simular').addEventListener('click', function () { fijar(!vencido()); });
+  // Demo: el reloj llega a medianoche y el QR vence solo
+  $('simular').addEventListener('click', function () {
+    var sin = !sinQr();
+    fijar(sin, 'vencido');
+    P.aviso(sin ? 'Medianoche: el QR del día venció. La caja ya no puede cobrar con QR.' : 'El QR de hoy vuelve a estar vigente.');
+  });
 
   $('modal-retirar').addEventListener('close', function () {
     if (this.returnValue !== 'retirar') return;
-    fijar(true);
-    $('qr-estado').textContent = 'Retirado';
-    $('filas-qr').rows[0].querySelector('.celda-estado').innerHTML = '<span class="insignia insignia--peligro">Retirado</span>';
-    P.aviso('QR retirado. El cobro con QR queda bloqueado hasta subir uno nuevo.');
+    fijar(true, 'retirado');
+    P.aviso('QR retirado. La caja no puede cobrar con QR hasta que subas otro.');
   });
 
-  // Archivo: tipo real, tamaño y que no se repita un QR anterior
-  var archivoValido = null;
+  /* Subir: tipo, tamaño, fecha de hoy e imagen nueva (SHA-256) */
+  var archivo = null;
+  var huella = null;
+
+  function hashes() {
+    try { return JSON.parse(P.leer('pahuichi.qrHashes') || '[]'); } catch (e) { return []; }
+  }
+
+  function sha256(file) {
+    if (!(window.crypto && crypto.subtle)) return Promise.resolve(null);
+    return file.arrayBuffer().then(function (buf) { return crypto.subtle.digest('SHA-256', buf); }).then(function (h) {
+      return Array.prototype.map.call(new Uint8Array(h), function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+    });
+  }
+
   $('qr-archivo').addEventListener('change', function () {
     var f = this.files && this.files[0];
-    archivoValido = null;
+    var input = this;
+    archivo = null;
+    huella = null;
     $('qr-archivo-nombre').hidden = true;
     if (!f) return;
     var error = ['image/png', 'image/jpeg', 'image/webp'].indexOf(f.type) === -1 ? '«' + f.name + '» no es una imagen PNG, JPG o WebP.'
-      : f.size > 2 * 1024 * 1024 ? 'La imagen pasa de 2 MB.'
-      : anteriores.indexOf(f.name) !== -1 ? 'Esta imagen ya se usó como QR. Genera un QR nuevo en tu banco.' : '';
-    $('zona-qr').toggleAttribute('aria-invalid', !!error);
-    P.marcarCampo('qr-archivo', error);
-    if (error) { this.value = ''; return; }
-    archivoValido = f;
-    $('qr-archivo-nombre').hidden = false;
-    $('qr-archivo-nombre').textContent = 'Elegido: ' + f.name;
+      : f.size > 2 * 1024 * 1024 ? 'La imagen pasa de 2 MB.' : '';
+    if (error) {
+      $('zona-qr').setAttribute('aria-invalid', 'true');
+      P.marcarCampo('qr-archivo', error);
+      input.value = '';
+      return;
+    }
+    sha256(f).then(function (h) {
+      if (h && hashes().indexOf(h) !== -1) {
+        $('zona-qr').setAttribute('aria-invalid', 'true');
+        P.marcarCampo('qr-archivo', 'Esta imagen es idéntica a un QR anterior. Genera el QR de hoy en la app del banco.');
+        input.value = '';
+        return;
+      }
+      $('zona-qr').removeAttribute('aria-invalid');
+      P.marcarCampo('qr-archivo', '');
+      archivo = f;
+      huella = h;
+      $('qr-archivo-nombre').hidden = false;
+      $('qr-archivo-nombre').textContent = 'Elegida: ' + f.name;
+    });
   });
 
   $('form-qr').addEventListener('submit', function (e) {
     e.preventDefault();
     var monto = P.leerMonto($('qr-monto').value);
-    P.marcarCampo('qr-archivo', archivoValido ? '' : 'Elige la imagen del QR nuevo.');
-    P.marcarCampo('qr-monto', monto && monto > 0 ? '' : 'Escribe el monto fijo del QR, mayor que cero.');
-    if (!archivoValido) { $('qr-archivo').focus(); return; }
-    if (!(monto > 0)) { $('qr-monto').focus(); return; }
+    var errores = {
+      'qr-archivo': archivo ? '' : 'Elige la imagen del QR de hoy.',
+      'qr-fecha': $('qr-fecha').value === HOY ? '' : 'El QR es de otro día. Solo se acepta el QR con fecha de hoy (08/10/2026).',
+      'qr-monto': monto && monto > 0 ? '' : 'Escribe el monto fijo, mayor que cero.'
+    };
+    var primero = null;
+    Object.keys(errores).forEach(function (id) { P.marcarCampo(id, errores[id]); if (errores[id] && !primero) primero = id; });
+    if (primero) { $(primero).focus(); return; }
 
-    var tr = document.createElement('tr');
-    tr.className = 'fila-nueva';
-    tr.innerHTML = '<td class="num">06/10/2026 14:35</td><td>Ana Lucía Vaca</td><td></td><td class="col-num num"></td><td>En curso</td><td class="col-num num">0</td><td class="celda-estado"><span class="insignia insignia--ok">Activo</span></td>';
-    tr.cells[2].textContent = $('qr-banco').value || 'Sin banco';
-    tr.cells[3].textContent = P.bs(monto);
-    var anterior = $('filas-qr').rows[0];
-    anterior.querySelector('.celda-estado').innerHTML = '<span class="insignia insignia--neutra">Reemplazado</span>';
-    anterior.querySelector('.celda-estado').classList.remove('celda-estado');
-    anterior.cells[4].textContent = '21 h 55 min';
-    $('filas-qr').insertBefore(tr, anterior);
-    anteriores.push(archivoValido.name);
-
-    fijar(false);
-    $('qr-vence').textContent = 'Mañana, 14:35 (dura 24 horas)';
-    $('qr-por-vencer').hidden = true;
-    this.hidden = true;
+    if (huella) P.guardar('pahuichi.qrHashes', JSON.stringify(hashes().concat(huella)));
+    $('qr-img').src = URL.createObjectURL(archivo);
+    $('filas-qr').rows[0].cells[0].textContent = '08/10/2026 · 12:41';
     this.reset();
-    archivoValido = null;
+    $('qr-fecha').value = HOY;
+    archivo = null;
     $('qr-archivo-nombre').hidden = true;
-    P.aviso('QR nuevo activo hasta mañana a las 14:35. El anterior quedó como reemplazado.');
+    fijar(false);
+    P.aviso('QR de hoy activo hasta las 23:59:59. La caja ya puede cobrar con QR.');
   });
 
-  pintar();
+  pintar(P.leer('pahuichi.qrEstado'));
 })();
