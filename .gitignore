@@ -16,3 +16,7 @@ PRODUCT.md
 Thumbs.db
 .DS_Store
 node_modules/
+
+# Documentos internos de planificación
+HANDOFF.md
+docs/ERS_POS.pdf

@@ -1119,3 +1119,382 @@
   min-height: 2.75rem;
   font-weight: var(--peso-semi);
 }
+
+/* --------------------------------------------------------------------------
+   Login: lema del panel de marca y teclado de PIN
+   -------------------------------------------------------------------------- */
+.acceso__lema-titulo {
+  font-family: var(--fuente-marca);
+  font-size: var(--texto-2xl);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--blanco);
+}
+
+.acceso__lema-texto {
+  margin-top: var(--esp-1);
+  font-family: var(--fuente);
+  font-size: var(--texto-md);
+  font-weight: var(--peso-normal);
+  color: var(--color-riel-texto);
+}
+
+@media (min-width: 960px) {
+  .acceso__lema {
+    max-width: 20ch;
+    font-size: inherit;
+  }
+}
+
+.acceso__modo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.acceso__modo .subnav__enlace {
+  justify-content: center;
+  gap: var(--esp-1);
+  font-size: var(--texto-sm);
+}
+
+.pin {
+  display: grid;
+  gap: var(--esp-2);
+}
+
+.pin__etiqueta {
+  font-weight: var(--peso-semi);
+  text-align: center;
+}
+
+.pin__puntos {
+  display: flex;
+  justify-content: center;
+  gap: var(--esp-2);
+  min-height: 1.5rem;
+}
+
+.pin__punto {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--tinta-300);
+  border-radius: 50%;
+  transition: background-color var(--dur-presion) ease, border-color var(--dur-presion) ease, transform var(--dur-presion) var(--ease-out);
+}
+
+.pin__punto--opcional {
+  border-style: dashed;
+}
+
+.pin__punto.esta-lleno {
+  border-color: var(--verde-700);
+  background: var(--verde-700);
+  transform: scale(1.1);
+}
+
+/* El campo real queda accesible pero fuera de la vista: los puntos lo representan */
+.pin__entrada {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.pin__teclado {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--esp-1);
+}
+
+.pin__tecla {
+  min-height: 4rem;
+  border: 1px solid var(--color-borde-fuerte);
+  border-radius: var(--radio);
+  background: var(--blanco);
+  color: var(--color-texto);
+  font-size: var(--texto-xl);
+  font-weight: var(--peso-semi);
+  font-variant-numeric: tabular-nums;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--dur-presion) ease, transform var(--dur-presion) var(--ease-out);
+}
+
+.pin__tecla:hover {
+  background: var(--fondo-alterno);
+}
+
+.pin__tecla:active {
+  transform: scale(0.96);
+  background: var(--verde-50);
+}
+
+.pin__tecla--accion {
+  display: grid;
+  place-items: center;
+  color: var(--color-texto-2);
+}
+
+.pin__tecla--entrar {
+  border-color: var(--verde-600);
+  background: var(--verde-600);
+  color: var(--blanco);
+  font-size: var(--texto-md);
+}
+
+.pin__tecla--entrar:hover {
+  background: var(--verde-700);
+}
+
+.pin__tecla:disabled {
+  border-color: var(--linea);
+  background: var(--linea-suave);
+  color: var(--tinta-600);
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Un PIN incorrecto sacude los puntos una vez */
+.pin--error .pin__puntos {
+  animation: sacudir 320ms var(--ease-out);
+}
+
+@keyframes sacudir {
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pin--error .pin__puntos {
+    animation: none;
+  }
+}
+
+.acceso__demo-pin,
+.acceso__demo-clave {
+  margin-left: var(--esp-05);
+}
+
+/* --------------------------------------------------------------------------
+   Verificación pública de facturas
+   -------------------------------------------------------------------------- */
+.verificacion {
+  min-height: 100dvh;
+  background: var(--fondo-alterno);
+}
+
+.verificacion__cabeza {
+  display: flex;
+  align-items: center;
+  min-height: 4rem;
+  padding: 0 var(--esp-2);
+  background: var(--verde-700);
+}
+
+.verificacion__cuerpo {
+  display: grid;
+  gap: var(--esp-2);
+  max-width: 34rem;
+  margin: 0 auto;
+  padding: var(--esp-4) var(--esp-2) var(--esp-6);
+}
+
+.verificacion__academica {
+  padding: var(--esp-1);
+  border: 1px solid var(--tinta-900);
+  font-size: var(--texto-xs);
+  font-weight: var(--peso-negrita);
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+
+.verificacion__tarjeta {
+  display: grid;
+  gap: var(--esp-3);
+  padding: var(--esp-3);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  background: var(--blanco);
+}
+
+.verificacion__tarjeta h1 {
+  font-size: var(--texto-lg);
+}
+
+.verificacion__estado {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--esp-2);
+}
+
+.verificacion__icono {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--esp-6);
+  height: var(--esp-6);
+  border-radius: 50%;
+  background: var(--verde-100);
+  color: var(--verde-700);
+}
+
+.verificacion__sub {
+  color: var(--color-texto-2);
+}
+
+.verificacion__datos dd {
+  overflow-wrap: anywhere;
+}
+
+.verificacion__form {
+  display: grid;
+  gap: var(--esp-2);
+}
+
+/* --------------------------------------------------------------------------
+   Pantalla del cliente (segundo monitor o tablet)
+   -------------------------------------------------------------------------- */
+.pantalla-cliente {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 100dvh;
+  background: var(--blanco);
+}
+
+.pantalla-cliente__cabeza {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-2);
+  min-height: 4.5rem;
+  padding: 0 var(--esp-4);
+  background: var(--verde-700);
+}
+
+.pantalla-cliente__pedido {
+  color: var(--blanco);
+  font-size: var(--texto-lg);
+  font-weight: var(--peso-semi);
+}
+
+.pantalla-cliente__cuerpo {
+  display: grid;
+  gap: var(--esp-4);
+  padding: var(--esp-4);
+}
+
+@media (min-width: 900px) {
+  .pantalla-cliente__cuerpo {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  }
+}
+
+.pantalla-cliente__lineas {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pantalla-cliente__lineas li {
+  display: grid;
+  grid-template-columns: 3rem minmax(0, 1fr) auto;
+  gap: var(--esp-2);
+  padding: var(--esp-2) 0;
+  border-bottom: 1px solid var(--color-borde);
+  font-size: var(--texto-lg);
+}
+
+.pantalla-cliente__vacio {
+  font-size: var(--texto-lg);
+  color: var(--color-texto-2);
+}
+
+.pantalla-cliente__cobro {
+  display: grid;
+  align-content: start;
+  gap: var(--esp-4);
+}
+
+.pantalla-cliente__etiqueta {
+  font-size: var(--texto-lg);
+  color: var(--color-texto-2);
+}
+
+.pantalla-cliente__monto {
+  font-size: clamp(3rem, 6vw, 5rem);
+  font-weight: var(--peso-negrita);
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.pantalla-cliente__descuento {
+  margin-top: var(--esp-1);
+  font-size: var(--texto-md);
+  font-weight: var(--peso-semi);
+  color: var(--verde-800);
+}
+
+.pantalla-cliente__qr {
+  display: grid;
+  justify-items: center;
+  gap: var(--esp-2);
+  padding: var(--esp-3);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  font-size: var(--texto-md);
+  text-align: center;
+}
+
+.pantalla-cliente__qr img {
+  width: min(16rem, 60vw);
+  height: auto;
+}
+
+/* --------------------------------------------------------------------------
+   Pedidos del mesero (celular)
+   -------------------------------------------------------------------------- */
+.mesero {
+  display: grid;
+  gap: var(--esp-3);
+}
+
+.mesas {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--esp-1);
+  margin-top: var(--esp-1);
+}
+
+.mesa-opcion {
+  min-height: var(--alto-control);
+  border: 1px solid var(--color-borde-fuerte);
+  border-radius: var(--radio);
+  background: var(--blanco);
+  font-size: var(--texto-md);
+  font-weight: var(--peso-semi);
+}
+
+.mesa-opcion[aria-pressed="true"] {
+  border-color: var(--verde-700);
+  background: var(--verde-700);
+  color: var(--blanco);
+}
+
+.grilla-productos--compacta .producto-pos {
+  min-height: 5rem;
+  grid-template-rows: 1fr auto;
+  padding: var(--esp-1);
+}
+
+.mesero__pedido {
+  display: grid;
+  gap: var(--esp-2);
+  padding: var(--esp-2);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  background: var(--fondo-alterno);
+}
+
+.mesero__pedido .lineas-vacio {
+  padding: var(--esp-2) 0;
+}

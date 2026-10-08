@@ -7,14 +7,18 @@ import { join } from 'node:path';
 const [dirFrag, dirPanel] = process.argv.slice(2);
 
 const MENU = [
-  ['escritorio', 'escritorio.html', 'escritorio', 'Escritorio'],
+  ['tablero', 'tablero.html', 'escritorio', 'Tablero'],
   ['pos', 'pos.html', 'pos', 'Punto de venta'],
   ['caja', 'caja.html', 'caja', 'Caja'],
   ['ventas', 'ventas.html', 'ventas', 'Ventas y facturas'],
-  ['clientes', 'clientes.html', 'clientes', 'Clientes'],
+  ['mesero', 'mesero.html', 'mesa', 'Pedidos'],
   '-',
-  ['productos', 'productos.html', 'productos', 'Productos y categorías'],
-  ['qr', 'qr.html', 'qr', 'Pagos QR', '<span class="menu__aviso"><span class="visualmente-oculto">QR vence en </span>2 h</span>'],
+  ['conciliacion', 'conciliacion.html', 'check', 'Conciliación QR', '<span class="menu__aviso menu__aviso--cuenta"><span class="visualmente-oculto">Pagos por confirmar: </span>4</span>'],
+  ['qr', 'qr.html', 'qr', 'QR del día', '<span class="menu__aviso menu__aviso--vencido" hidden>Sin QR</span>'],
+  '-',
+  ['clientes', 'clientes.html', 'clientes', 'Clientes'],
+  ['catalogo', 'productos.html', 'productos', 'Catálogo'],
+  ['promociones', 'promociones.html', 'promocion', 'Promociones'],
   '-',
   ['reportes', 'reportes.html', 'reportes', 'Reportes'],
   ['bitacora', 'bitacora.html', 'bitacora', 'Bitácora'],
@@ -43,6 +47,8 @@ function marco(m, main) {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${m.titulo} · Pahuichi POS</title>
   <meta name="theme-color" content="#13603e">
+  <link rel="manifest" href="../manifest.json">
+  <link rel="icon" href="../assets/img/icono.svg" type="image/svg+xml">
   <link rel="preload" href="../assets/fonts/archivo-variable-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="../assets/css/tokens.css">
   <link rel="stylesheet" href="../assets/css/base.css">
@@ -56,7 +62,7 @@ ${m.cssExtra ? m.cssExtra.map((c) => `  <link rel="stylesheet" href="../assets/c
 
   <aside class="riel" id="riel" aria-label="Menú principal">
     <div class="riel__marca">
-      <a class="marca" href="escritorio.html">
+      <a class="marca" href="tablero.html">
         <span class="marca__sello" aria-hidden="true"><span></span></span>
         <span class="marca__texto">Pahuichi <small>Punto de venta</small></span>
       </a>
@@ -86,13 +92,23 @@ ${items}
           <svg class="icono" aria-hidden="true"><use href="#i-menu"></use></svg>
         </button>
         <h1 class="barra__titulo"${m.h1id ? ` id="${m.h1id}"` : ''}>${m.h1}</h1>
+        <div class="barra__estado">
+          <p class="estado-sistema estado-sistema--red" id="estado-red" hidden>
+            <svg class="icono icono--sm" aria-hidden="true"><use href="#i-sinRed"></use></svg>
+            <span>Sin conexión: las ventas se guardan y se envían al volver</span>
+          </p>
+          <a class="estado-sistema" id="estado-impresora" href="impresion.html" data-requiere="modulo.impresion">
+            <svg class="icono icono--sm" aria-hidden="true"><use href="#i-imprimir"></use></svg>
+            <span class="estado-sistema__texto">Impresora lista</span>
+          </a>
+        </div>
         <div class="barra__usuario">
           <label class="demo-rol">
-            <span class="demo-rol__texto">Prototipo: ver como</span>
+            <span class="demo-rol__texto">Demo: ver como</span>
             <select class="control" id="demo-rol">
+              <option value="administrador">Administrador</option>
               <option value="cajero">Cajero</option>
-              <option value="analista">Analista</option>
-              <option value="sysadmin">Administrador</option>
+              <option value="mesero">Mesero</option>
             </select>
           </label>
           <p class="usuario"><span class="usuario__nombre" data-rol-nombre>Ana Lucía Vaca Saucedo</span><span class="usuario__rol" data-rol-etiqueta>Administrador</span></p>

@@ -569,3 +569,71 @@
     background: var(--terracota-200);
   }
 }
+
+/* --------------------------------------------------------------------------
+   Estado del sistema en la barra: impresora y conexión
+   -------------------------------------------------------------------------- */
+.barra__estado {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-1);
+}
+
+.estado-sistema {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-05);
+  min-height: 2.75rem;
+  padding: 0 var(--esp-1);
+  border-radius: var(--radio);
+  color: var(--color-texto-2);
+  font-size: var(--texto-xs);
+  font-weight: var(--peso-semi);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+a.estado-sistema:hover {
+  background: var(--fondo-alterno);
+  color: var(--color-texto);
+  text-decoration: none;
+}
+
+.estado-sistema .icono {
+  color: var(--verde-600);
+}
+
+.estado-sistema--alerta,
+.estado-sistema--red {
+  background: var(--terracota-50);
+  color: var(--terracota-700);
+}
+
+.estado-sistema--alerta .icono,
+.estado-sistema--red .icono {
+  color: var(--terracota-600);
+}
+
+/* En pantallas angostas el estado queda como ícono con su texto accesible */
+@media (max-width: 1023.98px) {
+  .estado-sistema__texto,
+  .estado-sistema--red span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .estado-sistema {
+    width: 2.75rem;
+    justify-content: center;
+    padding: 0;
+  }
+}
+
+.menu__aviso--cuenta {
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--verde-800);
+}

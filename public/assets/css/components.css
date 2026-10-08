@@ -1040,3 +1040,137 @@ select.control {
     display: none;
   }
 }
+
+/* --------------------------------------------------------------------------
+   Botones de categoría: color propio, texto blanco con contraste AA
+   -------------------------------------------------------------------------- */
+.categorias-pos {
+  display: flex;
+  gap: var(--esp-1);
+  margin-bottom: var(--esp-2);
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 4px;
+}
+
+.categorias-pos::-webkit-scrollbar {
+  display: none;
+}
+
+.categoria-pos {
+  --cat: var(--tinta-700);
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-05);
+  min-height: var(--alto-control);
+  padding: 0 var(--esp-2);
+  border: 2px solid var(--cat);
+  border-radius: var(--radio);
+  background: var(--blanco);
+  color: var(--cat);
+  font-weight: var(--peso-semi);
+  white-space: nowrap;
+  transition: background-color var(--dur-corta) ease, color var(--dur-corta) ease, transform var(--dur-presion) var(--ease-out);
+}
+
+.categoria-pos:active {
+  transform: scale(0.97);
+}
+
+.categoria-pos[aria-pressed="true"] {
+  background: var(--cat);
+  color: var(--blanco);
+}
+
+.categoria-pos--favoritos { --cat: var(--verde-700); }
+.categoria-pos--platos { --cat: var(--cat-platos); }
+.categoria-pos--refrescos { --cat: var(--cat-refrescos); }
+.categoria-pos--sodas { --cat: var(--cat-sodas); }
+.categoria-pos--vinos { --cat: var(--cat-vinos); }
+.categoria-pos--postres { --cat: var(--cat-postres); }
+.categoria-pos--prueba { --cat: var(--cat-prueba); }
+.categoria-pos--todo { --cat: var(--tinta-700); }
+
+/* Punto de color de categoría (acompaña siempre al nombre) */
+.punto-categoria {
+  display: inline-block;
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  background: var(--cat, var(--tinta-500));
+}
+
+.punto-categoria--platos,
+.pestana--platos { --cat: var(--cat-platos); }
+.punto-categoria--refrescos,
+.pestana--refrescos { --cat: var(--cat-refrescos); }
+.punto-categoria--sodas,
+.pestana--sodas { --cat: var(--cat-sodas); }
+.punto-categoria--vinos,
+.pestana--vinos { --cat: var(--cat-vinos); }
+.punto-categoria--postres,
+.pestana--postres { --cat: var(--cat-postres); }
+.punto-categoria--prueba,
+.pestana--prueba { --cat: var(--cat-prueba); }
+
+.pestana .punto-categoria {
+  margin-right: 2px;
+}
+
+/* Interruptor como botón (role="switch"): área de 44 px, riel dibujado dentro */
+.interruptor-boton {
+  position: relative;
+  flex: none;
+  width: 3rem;
+  height: 2.75rem;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.interruptor-boton::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 2px;
+  width: 2.75rem;
+  height: 1.5rem;
+  border-radius: var(--radio-redondo);
+  background: var(--tinta-300);
+  translate: 0 -50%;
+  transition: background-color var(--dur-corta) ease;
+}
+
+.interruptor-boton::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 5px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--blanco);
+  box-shadow: var(--sombra-1);
+  translate: 0 -50%;
+  transition: transform var(--dur-corta) var(--ease-out);
+}
+
+.interruptor-boton[aria-checked="true"]::before {
+  background: var(--verde-600);
+}
+
+.interruptor-boton[aria-checked="true"]::after {
+  transform: translateX(1.25rem);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .interruptor-boton::after {
+    transition: none;
+  }
+}
+
+.celda-vacia {
+  color: var(--color-texto-3);
+}

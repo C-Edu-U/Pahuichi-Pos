@@ -49,6 +49,14 @@
   --serie-efectivo: #177448;
   --serie-qr: #4a6fb5;
 
+  /* --- Categorías del menú: color de botón con texto blanco AA (6,0 a 10,4:1) --- */
+  --cat-platos: #8a5300;
+  --cat-refrescos: #1062a8;
+  --cat-sodas: #8e2c7c;
+  --cat-vinos: #6e2a1e;
+  --cat-postres: #3f6f1f;
+  --cat-prueba: #4f5a54;
+
   /* --- Roles semánticos --- */
   --color-texto: var(--tinta-900);
   --color-texto-2: var(--tinta-600);

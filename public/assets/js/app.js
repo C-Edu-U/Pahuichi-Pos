@@ -1,10 +1,11 @@
 /* ==========================================================================
-   Pahuichi POS · Panel (prototipo estático)
-   - Permisos por rol: espejo de lo que será config/permisos.php + puede().
-     Aquí solo se simula; en PHP el servidor decide y responde 403.
+   Pahuichi POS · Panel (demo sin servidor)
+   - Permisos por rol: espejo de config/permisos.php + puede(). Aquí solo se
+     simula; con servidor, el middleware decide y responde «acceso denegado».
    - Riel lateral plegable, cajón en móvil.
+   - Estado de impresora y de conexión, cierre por inactividad, PWA.
    - Utilidades compartidas: filtros de tabla, formularios desplegables,
-     modales, avisos y formato de montos.
+     tablas en fichas, modales, avisos y formato de montos.
    ========================================================================== */
 (function () {
   'use strict';
@@ -12,50 +13,59 @@
   var CLAVE_ROL = 'pahuichi.rol';
   var CLAVE_PLEGADO = 'pahuichi.rielPlegado';
 
+  // Roles del sistema. Cocina no entra al panel: recibe la comanda impresa.
   var ROLES = {
+    administrador: { etiqueta: 'Administrador', usuario: 'Ana Lucía Vaca Saucedo', inicio: 'tablero.html' },
     cajero: { etiqueta: 'Cajero', usuario: 'Mariela Suárez Añez', inicio: 'pos.html' },
-    analista: { etiqueta: 'Analista', usuario: 'Rodrigo Justiniano Paz', inicio: 'reportes.html' },
-    sysadmin: { etiqueta: 'Administrador', usuario: 'Ana Lucía Vaca Saucedo', inicio: 'escritorio.html' }
+    mesero: { etiqueta: 'Mesero', usuario: 'Luis Fernando Roca', inicio: 'mesero.html' }
   };
 
-  // Matriz de la sección 4 del HANDOFF, por módulo y por acción
-  var TODOS = ['cajero', 'analista', 'sysadmin'];
+  // Matriz de roles y módulos
+  var ADMIN = ['administrador'];
+  var CAJA = ['administrador', 'cajero'];
   var PERMISOS = {
-    'modulo.escritorio': TODOS,
-    'modulo.pos': ['cajero', 'sysadmin'],
-    'modulo.caja': TODOS,
-    'modulo.ventas': TODOS,
-    'modulo.clientes': TODOS,
-    'modulo.productos': TODOS,
-    'modulo.qr': TODOS,
-    'modulo.reportes': ['analista', 'sysadmin'],
-    'modulo.usuarios': ['sysadmin'],
-    'modulo.config': ['sysadmin'],
-    'modulo.bitacora': ['analista', 'sysadmin'],
-    'caja.operar': ['cajero', 'sysadmin'],
-    'ventas.todas': ['analista', 'sysadmin'],
-    'ventas.anular': ['sysadmin'],
-    'clientes.crear': ['cajero', 'sysadmin'],
-    'clientes.editar': ['sysadmin'],
-    'productos.editar': ['sysadmin'],
-    'productos.agotado': ['cajero', 'sysadmin'],
-    'qr.subir': ['sysadmin'],
-    'qr.historial': ['analista', 'sysadmin'],
-    'reportes.exportar': ['analista', 'sysadmin']
+    'modulo.tablero': CAJA,
+    'modulo.pos': CAJA,
+    'modulo.caja': CAJA,
+    'modulo.ventas': CAJA,
+    'modulo.conciliacion': CAJA,
+    'modulo.qr': CAJA,
+    'modulo.clientes': CAJA,
+    'modulo.catalogo': CAJA,
+    'modulo.promociones': ADMIN,
+    'modulo.reportes': ADMIN,
+    'modulo.usuarios': ADMIN,
+    'modulo.config': ADMIN,
+    'modulo.bitacora': ADMIN,
+    'modulo.impresion': CAJA,
+    'modulo.mesero': ['mesero', 'administrador'],
+    'caja.reabrir': ADMIN,
+    'ventas.todas': ADMIN,
+    'conciliacion.resolver': ADMIN,
+    'qr.subir': ADMIN,
+    'clientes.crear': CAJA,
+    'clientes.editar': ADMIN,
+    'catalogo.editar': ADMIN,
+    'catalogo.agotado': CAJA,
+    'reportes.exportar': ADMIN
   };
 
   var MODULOS = {
-    escritorio: 'Escritorio',
+    tablero: 'Tablero',
     pos: 'Punto de venta',
     caja: 'Caja',
     ventas: 'Ventas y facturas',
+    conciliacion: 'Conciliación QR',
+    qr: 'QR del día',
     clientes: 'Clientes',
-    productos: 'Productos y categorías',
-    qr: 'Pagos QR',
+    catalogo: 'Catálogo',
+    promociones: 'Promociones',
     reportes: 'Reportes',
     usuarios: 'Usuarios',
     config: 'Configuración',
-    bitacora: 'Bitácora'
+    bitacora: 'Bitácora',
+    impresion: 'Cola de impresión',
+    mesero: 'Pedidos'
   };
 
   function leer(clave) {
@@ -68,7 +78,7 @@
 
   function rolActual() {
     var rol = leer(CLAVE_ROL);
-    return ROLES[rol] ? rol : 'sysadmin';
+    return ROLES[rol] ? rol : 'administrador';
   }
 
   function puede(permiso, rol) {
@@ -132,14 +142,20 @@
     }
   }
 
-  // Solo prototipo: ?rol=cajero fija el rol de demostración (útil para QA)
+  // Solo demo: ?rol=cajero fija el rol (útil para pruebas)
   if (ROLES[parametro('rol')]) guardar(CLAVE_ROL, parametro('rol'));
 
   window.Pahuichi = {
     puede: puede, rolActual: rolActual, ROLES: ROLES, MODULOS: MODULOS,
-    parametro: parametro, guardar: guardar, CLAVE_ROL: CLAVE_ROL,
+    parametro: parametro, leer: leer, guardar: guardar, CLAVE_ROL: CLAVE_ROL,
     bs: bs, leerMonto: leerMonto, normalizar: normalizar, aviso: aviso, marcarCampo: marcarCampo
   };
+
+  // PWA: registrar el service worker cuando se sirve por http(s)
+  if ('serviceWorker' in navigator && /^https?:/.test(window.location.protocol)) {
+    var raiz = document.body.classList.contains('panel') ? '../sw.js' : 'sw.js';
+    navigator.serviceWorker.register(raiz).catch(function () { /* sin PWA: la demo sigue funcionando */ });
+  }
 
   var cuerpo = document.body;
   if (!cuerpo.classList.contains('panel')) return;
@@ -147,7 +163,7 @@
   var moduloPagina = cuerpo.getAttribute('data-modulo');
   var es403 = cuerpo.getAttribute('data-pagina') === '403';
 
-  // Guardia de permiso (en PHP: middleware Rol + 403 + bitácora)
+  // Guardia de permiso (con servidor: middleware Rol + bitácora)
   if (!es403 && !puede('modulo.' + moduloPagina)) {
     window.location.replace('403.html?m=' + encodeURIComponent(moduloPagina));
     return;
@@ -198,30 +214,7 @@
 
   aplicarRol();
 
-  /* ------------------------------------------------------------------
-     QR vencido (HU-14): el aviso del menú cambia y el administrador
-     solo puede subir uno nuevo o cerrar sesión
-     ------------------------------------------------------------------ */
-  function qrVencido() {
-    try { return window.localStorage.getItem('pahuichi.qrVencido') === '1'; } catch (e) { return false; }
-  }
-
-  function guardiaQr() {
-    var aviso = document.querySelector('.menu__item[data-modulo="qr"] .menu__aviso');
-    if (aviso && qrVencido()) {
-      aviso.classList.add('menu__aviso--vencido');
-      aviso.innerHTML = '<span class="visualmente-oculto">QR </span>Vencido';
-    }
-    if (qrVencido() && rolActual() === 'sysadmin' && moduloPagina !== 'qr' && !es403) {
-      window.location.replace('qr.html');
-      return true;
-    }
-    return false;
-  }
-
-  if (guardiaQr()) return;
-
-  // Página 403: nombra el módulo y el rol
+  // Página de acceso denegado: nombra el módulo y el rol, sin datos del módulo
   if (es403) {
     var m = parametro('m');
     var rol403 = rolActual();
@@ -243,9 +236,78 @@
         return;
       }
       aplicarRol();
-      guardiaQr();
+      iniciarInactividad();
     });
   }
+
+  /* ------------------------------------------------------------------
+     QR del día: sin uno vigente, el menú lo avisa y el POS deshabilita
+     «Cobrar con QR»
+     ------------------------------------------------------------------ */
+  var avisoQr = document.querySelector('.menu__item[data-modulo="qr"] .menu__aviso');
+  if (avisoQr) avisoQr.hidden = leer('pahuichi.qrVencido') !== '1';
+
+  /* ------------------------------------------------------------------
+     Estado de impresora (cola del servicio puente) y de la conexión
+     ------------------------------------------------------------------ */
+  var estadoImpresora = document.getElementById('estado-impresora');
+  if (estadoImpresora) {
+    var caida = leer('pahuichi.impresora') === 'caida';
+    estadoImpresora.classList.toggle('estado-sistema--alerta', caida);
+    estadoImpresora.querySelector('.estado-sistema__texto').textContent = caida ? 'Impresora sin conexión · 3 en cola' : 'Impresora lista';
+  }
+
+  var estadoRed = document.getElementById('estado-red');
+  function pintarRed() {
+    if (!estadoRed) return;
+    estadoRed.hidden = navigator.onLine;
+  }
+  window.addEventListener('online', function () { pintarRed(); aviso('Conexión recuperada. Las ventas pendientes se enviaron.'); });
+  window.addEventListener('offline', pintarRed);
+  pintarRed();
+
+  /* ------------------------------------------------------------------
+     Cierre por 15 min de inactividad, salvo el cajero (aviso 1 min antes)
+     ------------------------------------------------------------------ */
+  var temporizadores = [];
+  var dialogoInactividad = null;
+
+  function cerrarPorInactividad() {
+    window.location.href = '../login.html?estado=inactividad';
+  }
+
+  function avisarInactividad() {
+    if (!dialogoInactividad) {
+      dialogoInactividad = document.createElement('dialog');
+      dialogoInactividad.className = 'modal';
+      dialogoInactividad.setAttribute('aria-labelledby', 'inactividad-titulo');
+      dialogoInactividad.innerHTML =
+        '<div class="modal__cuerpo"><h2 class="modal__titulo" id="inactividad-titulo">¿Sigues ahí?</h2>' +
+        '<p class="modal__texto">Por seguridad, tu sesión se cierra en un minuto por inactividad.</p></div>' +
+        '<div class="modal__acciones"><button class="boton" type="button" data-salir>Cerrar sesión</button>' +
+        '<button class="boton boton--primario" type="button" data-cerrar-modal autofocus>Seguir trabajando</button></div>';
+      document.body.appendChild(dialogoInactividad);
+      dialogoInactividad.querySelector('[data-salir]').addEventListener('click', cerrarPorInactividad);
+      dialogoInactividad.addEventListener('close', iniciarInactividad);
+    }
+    if (!dialogoInactividad.open) dialogoInactividad.showModal();
+  }
+
+  function iniciarInactividad() {
+    temporizadores.forEach(window.clearTimeout);
+    temporizadores = [];
+    if (rolActual() === 'cajero') return;
+    var minutos = parametro('inactividad') ? 0.05 : 14; // ?inactividad=1 lo muestra enseguida
+    temporizadores.push(window.setTimeout(avisarInactividad, minutos * 60000));
+    temporizadores.push(window.setTimeout(cerrarPorInactividad, (minutos + 1) * 60000));
+  }
+
+  ['pointerdown', 'keydown'].forEach(function (t) {
+    document.addEventListener(t, function () {
+      if (!dialogoInactividad || !dialogoInactividad.open) iniciarInactividad();
+    }, { passive: true });
+  });
+  iniciarInactividad();
 
   /* ------------------------------------------------------------------
      Riel: expandido en escritorio salvo que el usuario lo pliegue
@@ -326,6 +388,25 @@
   });
 
   /* ------------------------------------------------------------------
+     Tablas que en móvil pasan a fichas: cada celda lleva la etiqueta de
+     su columna (también las filas que se agregan después)
+     ------------------------------------------------------------------ */
+  function etiquetarFichas(tabla) {
+    if (!tabla.tHead) return;
+    var cabeza = Array.prototype.map.call(tabla.tHead.rows[0].cells, function (th) { return th.textContent.trim(); });
+    Array.prototype.forEach.call(tabla.tBodies[0].rows, function (tr) {
+      Array.prototype.forEach.call(tr.cells, function (td, i) {
+        if (!td.hasAttribute('data-etiqueta')) td.setAttribute('data-etiqueta', cabeza[i] || '');
+      });
+    });
+  }
+
+  document.querySelectorAll('.tabla--fichas').forEach(function (tabla) {
+    etiquetarFichas(tabla);
+    new MutationObserver(function () { etiquetarFichas(tabla); }).observe(tabla.tBodies[0], { childList: true });
+  });
+
+  /* ------------------------------------------------------------------
      Filtros de tabla por atributos:
        <input data-filtra="filas-x">            busca en el texto de la fila
        <select data-filtra="filas-x" data-campo="estado">  compara tr[data-estado]
@@ -365,25 +446,6 @@
     document.dispatchEvent(new CustomEvent('pahuichi:filtrado', { detail: { id: id, visibles: visibles } }));
   }
   window.Pahuichi.filtrarTabla = filtrarTabla;
-
-  /* ------------------------------------------------------------------
-     Tablas que en móvil pasan a fichas: cada celda lleva la etiqueta de
-     su columna (también las filas que se agregan después)
-     ------------------------------------------------------------------ */
-  function etiquetarFichas(tabla) {
-    if (!tabla.tHead) return;
-    var cabeza = Array.prototype.map.call(tabla.tHead.rows[0].cells, function (th) { return th.textContent.trim(); });
-    Array.prototype.forEach.call(tabla.tBodies[0].rows, function (tr) {
-      Array.prototype.forEach.call(tr.cells, function (td, i) {
-        if (!td.hasAttribute('data-etiqueta')) td.setAttribute('data-etiqueta', cabeza[i] || '');
-      });
-    });
-  }
-
-  document.querySelectorAll('.tabla--fichas').forEach(function (tabla) {
-    etiquetarFichas(tabla);
-    new MutationObserver(function () { etiquetarFichas(tabla); }).observe(tabla.tBodies[0], { childList: true });
-  });
 
   var tablasFiltrables = {};
   document.querySelectorAll('[data-filtra]').forEach(function (c) {
@@ -442,7 +504,7 @@
     }
   });
 
-  // Cerrar sesión (en PHP: POST con CSRF a /salir)
+  // Cerrar sesión (con servidor: POST con CSRF a /salir)
   document.querySelectorAll('[data-salir]').forEach(function (b) {
     b.addEventListener('click', function () { window.location.href = '../login.html?estado=salida'; });
   });
