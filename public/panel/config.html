@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Configuración · Pahuichi POS</title>
   <meta name="theme-color" content="#13603e">
+  <link rel="manifest" href="../manifest.json">
+  <link rel="icon" href="../assets/img/icono.svg" type="image/svg+xml">
   <link rel="preload" href="../assets/fonts/archivo-variable-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="../assets/css/tokens.css">
   <link rel="stylesheet" href="../assets/css/base.css">
@@ -19,7 +21,7 @@
 
   <aside class="riel" id="riel" aria-label="Menú principal">
     <div class="riel__marca">
-      <a class="marca" href="escritorio.html">
+      <a class="marca" href="tablero.html">
         <span class="marca__sello" aria-hidden="true"><span></span></span>
         <span class="marca__texto">Pahuichi <small>Punto de venta</small></span>
       </a>
@@ -29,14 +31,18 @@
     </div>
     <nav class="menu" aria-label="Módulos">
       <ul class="menu__lista" role="list">
-        <li class="menu__item" data-modulo="escritorio"><a class="menu__enlace" href="escritorio.html"><svg class="icono" aria-hidden="true"><use href="#i-escritorio"></use></svg><span class="menu__texto">Escritorio</span></a></li>
+        <li class="menu__item" data-modulo="tablero"><a class="menu__enlace" href="tablero.html"><svg class="icono" aria-hidden="true"><use href="#i-escritorio"></use></svg><span class="menu__texto">Tablero</span></a></li>
         <li class="menu__item" data-modulo="pos"><a class="menu__enlace" href="pos.html"><svg class="icono" aria-hidden="true"><use href="#i-pos"></use></svg><span class="menu__texto">Punto de venta</span></a></li>
         <li class="menu__item" data-modulo="caja"><a class="menu__enlace" href="caja.html"><svg class="icono" aria-hidden="true"><use href="#i-caja"></use></svg><span class="menu__texto">Caja</span></a></li>
         <li class="menu__item" data-modulo="ventas"><a class="menu__enlace" href="ventas.html"><svg class="icono" aria-hidden="true"><use href="#i-ventas"></use></svg><span class="menu__texto">Ventas y facturas</span></a></li>
-        <li class="menu__item" data-modulo="clientes"><a class="menu__enlace" href="clientes.html"><svg class="icono" aria-hidden="true"><use href="#i-clientes"></use></svg><span class="menu__texto">Clientes</span></a></li>
+        <li class="menu__item" data-modulo="mesero"><a class="menu__enlace" href="mesero.html"><svg class="icono" aria-hidden="true"><use href="#i-mesa"></use></svg><span class="menu__texto">Pedidos</span></a></li>
         <li class="menu__separador" role="separator"></li>
-        <li class="menu__item" data-modulo="productos"><a class="menu__enlace" href="productos.html"><svg class="icono" aria-hidden="true"><use href="#i-productos"></use></svg><span class="menu__texto">Productos y categorías</span></a></li>
-        <li class="menu__item" data-modulo="qr"><a class="menu__enlace" href="qr.html"><svg class="icono" aria-hidden="true"><use href="#i-qr"></use></svg><span class="menu__texto">Pagos QR</span><span class="menu__aviso"><span class="visualmente-oculto">QR vence en </span>2 h</span></a></li>
+        <li class="menu__item" data-modulo="conciliacion"><a class="menu__enlace" href="conciliacion.html"><svg class="icono" aria-hidden="true"><use href="#i-check"></use></svg><span class="menu__texto">Conciliación QR</span><span class="menu__aviso menu__aviso--cuenta"><span class="visualmente-oculto">Pagos por confirmar: </span>4</span></a></li>
+        <li class="menu__item" data-modulo="qr"><a class="menu__enlace" href="qr.html"><svg class="icono" aria-hidden="true"><use href="#i-qr"></use></svg><span class="menu__texto">QR del día</span><span class="menu__aviso menu__aviso--vencido" hidden>Sin QR</span></a></li>
+        <li class="menu__separador" role="separator"></li>
+        <li class="menu__item" data-modulo="clientes"><a class="menu__enlace" href="clientes.html"><svg class="icono" aria-hidden="true"><use href="#i-clientes"></use></svg><span class="menu__texto">Clientes</span></a></li>
+        <li class="menu__item" data-modulo="catalogo"><a class="menu__enlace" href="productos.html"><svg class="icono" aria-hidden="true"><use href="#i-productos"></use></svg><span class="menu__texto">Catálogo</span></a></li>
+        <li class="menu__item" data-modulo="promociones"><a class="menu__enlace" href="promociones.html"><svg class="icono" aria-hidden="true"><use href="#i-promocion"></use></svg><span class="menu__texto">Promociones</span></a></li>
         <li class="menu__separador" role="separator"></li>
         <li class="menu__item" data-modulo="reportes"><a class="menu__enlace" href="reportes.html"><svg class="icono" aria-hidden="true"><use href="#i-reportes"></use></svg><span class="menu__texto">Reportes</span></a></li>
         <li class="menu__item" data-modulo="bitacora"><a class="menu__enlace" href="bitacora.html"><svg class="icono" aria-hidden="true"><use href="#i-bitacora"></use></svg><span class="menu__texto">Bitácora</span></a></li>
@@ -62,13 +68,23 @@
           <svg class="icono" aria-hidden="true"><use href="#i-menu"></use></svg>
         </button>
         <h1 class="barra__titulo">Configuración</h1>
+        <div class="barra__estado">
+          <p class="estado-sistema estado-sistema--red" id="estado-red" hidden>
+            <svg class="icono icono--sm" aria-hidden="true"><use href="#i-sinRed"></use></svg>
+            <span>Sin conexión: las ventas se guardan y se envían al volver</span>
+          </p>
+          <a class="estado-sistema" id="estado-impresora" href="impresion.html" data-requiere="modulo.impresion">
+            <svg class="icono icono--sm" aria-hidden="true"><use href="#i-imprimir"></use></svg>
+            <span class="estado-sistema__texto">Impresora lista</span>
+          </a>
+        </div>
         <div class="barra__usuario">
           <label class="demo-rol">
-            <span class="demo-rol__texto">Prototipo: ver como</span>
+            <span class="demo-rol__texto">Demo: ver como</span>
             <select class="control" id="demo-rol">
+              <option value="administrador">Administrador</option>
               <option value="cajero">Cajero</option>
-              <option value="analista">Analista</option>
-              <option value="sysadmin">Administrador</option>
+              <option value="mesero">Mesero</option>
             </select>
           </label>
           <p class="usuario"><span class="usuario__nombre" data-rol-nombre>Ana Lucía Vaca Saucedo</span><span class="usuario__rol" data-rol-etiqueta>Administrador</span></p>
@@ -83,139 +99,111 @@
     <main class="contenido" id="contenido">
       <div class="config">
         <nav class="config__indice" aria-label="Secciones de configuración">
-          <a href="#datos-fiscales">Datos fiscales</a>
-          <a href="#facturacion">Facturación</a>
-          <a href="#pagos-qr">Pagos QR</a>
+          <a href="#negocio">Negocio</a>
+          <a href="#fiscal">Parámetros fiscales</a>
           <a href="#leyendas">Leyendas</a>
-          <a href="#catalogos">Catálogos del SIN</a>
+          <a href="#turnos">Turnos</a>
+          <a href="#impresoras">Impresoras</a>
+          <a href="#caja-cobro">Caja y cobro</a>
+          <a href="#seguridad">Seguridad</a>
+          <a href="#respaldos">Copias de seguridad</a>
         </nav>
 
         <div class="config__secciones">
-          <form class="panel-bloque config__seccion" id="datos-fiscales" novalidate aria-labelledby="t-fiscales" data-guardar="Datos fiscales guardados.">
+          <form class="panel-bloque config__seccion" id="negocio" novalidate aria-labelledby="t-negocio" data-guardar="Datos del negocio guardados.">
             <input type="hidden" name="_csrf" value="">
             <div class="panel-bloque__cabecera">
-              <h2 class="panel-bloque__titulo" id="t-fiscales">Datos fiscales de la empresa</h2>
+              <h2 class="panel-bloque__titulo" id="t-negocio">Datos del negocio</h2>
               <span class="ejemplo">Datos de ejemplo</span>
             </div>
             <div class="panel-bloque__cuerpo formulario-rapido__campos">
               <div class="campo">
-                <label class="campo__etiqueta" for="e-nit">NIT</label>
-                <input class="control codigo-entrada" id="e-nit" type="text" inputmode="numeric" value="1023456021" aria-describedby="e-nit-error">
-                <p class="campo__error" id="e-nit-error" hidden></p>
+                <label class="campo__etiqueta" for="n-razon">Razón social</label>
+                <input class="control" id="n-razon" type="text" value="PAHUICHI S.R.L." aria-describedby="n-razon-error">
+                <p class="campo__error" id="n-razon-error" hidden></p>
               </div>
               <div class="campo">
-                <label class="campo__etiqueta" for="e-razon">Razón social</label>
-                <input class="control" id="e-razon" type="text" value="PAHUICHI S.R.L." aria-describedby="e-razon-error">
-                <p class="campo__error" id="e-razon-error" hidden></p>
+                <label class="campo__etiqueta" for="n-comercial">Nombre comercial</label>
+                <input class="control" id="n-comercial" type="text" value="Pahuichi">
+              </div>
+              <div class="campo">
+                <label class="campo__etiqueta" for="n-nit">NIT</label>
+                <input class="control codigo-entrada" id="n-nit" type="text" inputmode="numeric" value="1023456021" aria-describedby="n-nit-error">
+                <p class="campo__error" id="n-nit-error" hidden></p>
+              </div>
+              <div class="campo">
+                <label class="campo__etiqueta" for="n-telefono">Teléfono</label>
+                <input class="control" id="n-telefono" type="tel" placeholder="Por confirmar">
               </div>
               <div class="campo campo--ancho">
-                <label class="campo__etiqueta" for="e-direccion">Dirección</label>
-                <input class="control" id="e-direccion" type="text" value="Calle por confirmar, Santa Cruz de la Sierra">
+                <label class="campo__etiqueta" for="n-direccion">Dirección</label>
+                <input class="control" id="n-direccion" type="text" value="Calle por confirmar">
               </div>
               <div class="campo">
-                <label class="campo__etiqueta" for="e-municipio">Municipio</label>
-                <input class="control" id="e-municipio" type="text" value="Santa Cruz de la Sierra">
+                <label class="campo__etiqueta" for="n-municipio">Municipio</label>
+                <input class="control" id="n-municipio" type="text" value="Santa Cruz de la Sierra">
               </div>
               <div class="campo">
-                <label class="campo__etiqueta" for="e-telefono">Teléfono</label>
-                <input class="control" id="e-telefono" type="tel" placeholder="Por confirmar">
-              </div>
-              <div class="campo">
-                <label class="campo__etiqueta" for="e-sucursal">Sucursal</label>
-                <input class="control control--numero" id="e-sucursal" type="text" inputmode="numeric" value="0" aria-describedby="e-sucursal-ayuda">
-                <p class="campo__ayuda" id="e-sucursal-ayuda">0 es la casa matriz.</p>
-              </div>
-              <div class="campo">
-                <label class="campo__etiqueta" for="e-pv">Punto de venta</label>
-                <input class="control control--numero" id="e-pv" type="text" inputmode="numeric" value="0">
-              </div>
-              <div class="campo campo--ancho">
-                <label class="campo__etiqueta" for="e-actividad">Actividad económica principal</label>
-                <select class="control" id="e-actividad">
-                  <option value="561011" selected>561011 · Restaurantes y venta de comidas</option>
-                  <option value="107100">107100 · Elaboración de productos de panadería</option>
-                </select>
-              </div>
-              <div class="campo campo--ancho">
-                <label class="campo__etiqueta" for="e-modalidad">Modalidad de facturación</label>
-                <select class="control" id="e-modalidad">
-                  <option value="2" selected>Computarizada en línea</option>
-                  <option value="1">Electrónica en línea</option>
-                </select>
+                <label class="campo__etiqueta" for="n-logo">Logo <span class="campo__opcional">(opcional)</span></label>
+                <input class="control control--archivo" id="n-logo" type="file" accept="image/png,image/svg+xml,image/jpeg">
               </div>
             </div>
             <div class="panel-bloque__pie">
-              <button class="boton boton--primario" type="submit">Guardar datos fiscales</button>
+              <button class="boton boton--primario" type="submit">Guardar</button>
             </div>
           </form>
 
-          <form class="panel-bloque config__seccion" id="facturacion" novalidate aria-labelledby="t-facturacion" data-guardar="Opciones de facturación guardadas.">
+          <form class="panel-bloque config__seccion" id="fiscal" novalidate aria-labelledby="t-fiscal" data-guardar="Parámetros fiscales guardados.">
             <input type="hidden" name="_csrf" value="">
             <div class="panel-bloque__cabecera">
-              <h2 class="panel-bloque__titulo" id="t-facturacion">Facturación</h2>
+              <h2 class="panel-bloque__titulo" id="t-fiscal">Parámetros fiscales</h2>
+              <span class="insignia insignia--neutra">Simulados</span>
             </div>
-            <div class="panel-bloque__cuerpo config__opciones">
-              <label class="casilla interruptor">
-                <input type="checkbox" role="switch" checked>
-                <span class="casilla__texto">
-                  <span class="casilla__titulo">IVA transparente</span>
-                  <span class="casilla__ayuda">Muestra el precio sin IVA y el IVA incluido (13 %) en la factura. RND 102600000034, Ley 1733.</span>
-                </span>
-              </label>
-
-              <fieldset class="opciones">
-                <legend class="campo__etiqueta">Número para el botón «Sin datos»</legend>
-                <label class="opcion"><input type="radio" name="sin-datos" value="99002" checked> <span><strong class="codigo">99002</strong> Control tributario</span></label>
-                <label class="opcion"><input type="radio" name="sin-datos" value="99003"> <span><strong class="codigo">99003</strong> Ventas menores del día</span></label>
-                <p class="campo__ayuda">Pendiente de confirmar con el docente. La razón social siempre es S/N.</p>
-              </fieldset>
-
-              <fieldset class="opciones">
-                <legend class="campo__etiqueta">Formato de impresión por defecto</legend>
-                <label class="opcion"><input type="radio" name="formato" value="rollo" checked> <span>Rollo de 80 mm</span></label>
-                <label class="opcion"><input type="radio" name="formato" value="media"> <span>Media hoja</span></label>
-              </fieldset>
-
-              <fieldset class="opciones">
-                <legend class="campo__etiqueta">QR de verificación de la factura</legend>
-                <label class="opcion"><input type="radio" name="dominio" value="piloto" checked> <span>Sitio piloto del SIN <span class="codigo">pilotosiat.impuestos.gob.bo</span></span></label>
-                <label class="opcion"><input type="radio" name="dominio" value="produccion"> <span>Producción <span class="codigo">siat.impuestos.gob.bo</span></span></label>
-              </fieldset>
-
-              <dl class="datos">
-                <dt>CUFD vigente</dt><dd><span class="codigo">BQUFDdkRDQUE=MzQ1MDc2RkQ4M0Y5Nzg=</span> <span class="insignia insignia--neutra">Simulado</span></dd>
-                <dt>Rota</dt><dd>Cada 24 horas. Próxima rotación: mañana a las 00:00.</dd>
+            <div class="panel-bloque__cuerpo formulario-rapido__campos">
+              <div class="campo">
+                <label class="campo__etiqueta" for="f-sucursal">Sucursal</label>
+                <input class="control control--numero" id="f-sucursal" type="text" inputmode="numeric" value="0" aria-describedby="f-sucursal-ayuda">
+                <p class="campo__ayuda" id="f-sucursal-ayuda">0 es la casa matriz.</p>
+              </div>
+              <div class="campo">
+                <label class="campo__etiqueta" for="f-pv">Punto de venta</label>
+                <input class="control control--numero" id="f-pv" type="text" inputmode="numeric" value="0">
+              </div>
+              <div class="campo campo--ancho">
+                <label class="campo__etiqueta" for="f-actividad">Actividad económica</label>
+                <input class="control" id="f-actividad" type="text" value="561011 · Restaurantes y venta de comidas">
+              </div>
+              <div class="campo">
+                <label class="campo__etiqueta" for="f-cuis">CUIS</label>
+                <input class="control codigo-entrada" id="f-cuis" type="text" value="C2F45A01">
+              </div>
+              <div class="campo">
+                <label class="campo__etiqueta" for="f-modalidad">Modalidad</label>
+                <select class="control" id="f-modalidad"><option>Computarizada en línea</option><option>Electrónica en línea</option></select>
+              </div>
+              <div class="campo campo--ancho">
+                <label class="campo__etiqueta" for="f-cufd">CUFD</label>
+                <input class="control codigo-entrada" id="f-cufd" type="text" value="BQUFDdkRDQUE=MzQ1MDc2RkQ4M0Y5Nzg=">
+              </div>
+              <div class="campo">
+                <label class="campo__etiqueta" for="f-vigencia">Vigencia del CUFD</label>
+                <input class="control" id="f-vigencia" type="datetime-local" value="2026-10-08T23:59" aria-describedby="f-vigencia-ayuda">
+                <p class="campo__ayuda" id="f-vigencia-ayuda">Si no corresponde al día, no se emiten facturas.</p>
+              </div>
+              <div class="campo">
+                <label class="campo__etiqueta" for="f-control">Código de control</label>
+                <input class="control codigo-entrada" id="f-control" type="text" value="7A3F2C91D4E8B605">
+              </div>
+              <div class="campo">
+                <label class="campo__etiqueta" for="f-inicial">Número inicial de factura</label>
+                <input class="control control--numero" id="f-inicial" type="text" inputmode="numeric" value="1">
+              </div>
+              <dl class="datos campo--ancho">
                 <dt>Próxima factura</dt><dd class="num">N° 129</dd>
               </dl>
             </div>
             <div class="panel-bloque__pie">
-              <button class="boton boton--primario" type="submit">Guardar facturación</button>
-            </div>
-          </form>
-
-          <form class="panel-bloque config__seccion" id="pagos-qr" novalidate aria-labelledby="t-pagos-qr" data-guardar="Opciones de pagos QR guardadas.">
-            <input type="hidden" name="_csrf" value="">
-            <div class="panel-bloque__cabecera">
-              <h2 class="panel-bloque__titulo" id="t-pagos-qr">Pagos QR</h2>
-            </div>
-            <div class="panel-bloque__cuerpo formulario-rapido__campos">
-              <div class="campo">
-                <label class="campo__etiqueta" for="q-monto">Monto fijo del QR</label>
-                <div class="control-grupo">
-                  <span class="control-grupo__prefijo" aria-hidden="true">Bs</span>
-                  <input class="control control--numero" id="q-monto" type="text" inputmode="decimal" value="0,50">
-                </div>
-              </div>
-              <div class="campo">
-                <label class="campo__etiqueta" for="q-aviso">Avisar antes de que venza</label>
-                <div class="control-grupo">
-                  <input class="control control--numero" id="q-aviso" type="text" inputmode="numeric" value="2">
-                  <span class="control-grupo__sufijo" aria-hidden="true">horas</span>
-                </div>
-              </div>
-            </div>
-            <div class="panel-bloque__pie">
-              <button class="boton boton--primario" type="submit">Guardar pagos QR</button>
+              <button class="boton boton--primario" type="submit">Guardar</button>
             </div>
           </form>
 
@@ -227,54 +215,155 @@
                 Agregar leyenda
               </button>
             </div>
-            <form class="panel-bloque__cuerpo formulario-rapido__campos form-leyenda" id="form-leyenda" novalidate hidden>
-              <div class="campo campo--ancho">
+            <form class="panel-bloque__cuerpo form-leyenda" id="form-leyenda" novalidate hidden>
+              <div class="campo">
                 <label class="campo__etiqueta" for="l-texto">Texto de la leyenda</label>
                 <textarea class="control control--area" id="l-texto" rows="2" aria-describedby="l-texto-error"></textarea>
                 <p class="campo__error" id="l-texto-error" hidden></p>
               </div>
-              <div class="campo">
-                <label class="campo__etiqueta" for="l-actividad">Actividad</label>
-                <select class="control" id="l-actividad">
-                  <option value="561011">561011</option>
-                  <option value="107100">107100</option>
-                  <option value="110400">110400</option>
-                </select>
-              </div>
-              <div class="campo form-leyenda__acciones">
-                <button class="boton boton--primario" type="submit">Agregar</button>
-              </div>
+              <button class="boton boton--primario" type="submit">Agregar</button>
             </form>
-            <p class="config__nota">En cada factura se elige una al azar, según la actividad del producto.</p>
-            <ul class="leyendas" id="lista-leyendas" role="list">
-              <li class="leyenda-fila"><span class="codigo">561011</span><p>Ley N° 453: El proveedor deberá entregar el producto en las modalidades y términos ofertados o convenidos.</p></li>
-              <li class="leyenda-fila"><span class="codigo">561011</span><p>Ley N° 453: Tienes derecho a recibir información sobre las características y contenidos de los productos que consumes.</p></li>
-              <li class="leyenda-fila"><span class="codigo">107100</span><p>Ley N° 453: Está prohibido importar, distribuir o comercializar productos expirados o prontos a expirar.</p></li>
-              <li class="leyenda-fila"><span class="codigo">110400</span><p>Ley N° 453: Tienes derecho a un trato equitativo sin discriminación en la oferta de productos.</p></li>
-            </ul>
+            <p class="config__nota">Cada factura toma una al azar entre las activas. Mínimo 8.</p>
+            <ul class="leyendas" id="lista-leyendas" role="list"></ul>
           </section>
 
-          <section class="panel-bloque config__seccion" id="catalogos" aria-labelledby="t-catalogos">
+          <form class="panel-bloque config__seccion" id="turnos" novalidate aria-labelledby="t-turnos" data-guardar="Turnos guardados.">
+            <input type="hidden" name="_csrf" value="">
             <div class="panel-bloque__cabecera">
-              <h2 class="panel-bloque__titulo" id="t-catalogos">Catálogos del SIN</h2>
-              <button class="boton" type="button" id="sincronizar">
+              <h2 class="panel-bloque__titulo" id="t-turnos">Turnos</h2>
+            </div>
+            <div class="panel-bloque__cuerpo turnos">
+              <fieldset class="turno">
+                <legend>Medio día</legend>
+                <div class="campo"><label class="campo__etiqueta" for="t1-ini">Desde</label><input class="control" id="t1-ini" type="time" value="11:00"></div>
+                <div class="campo"><label class="campo__etiqueta" for="t1-fin">Hasta</label><input class="control" id="t1-fin" type="time" value="16:00"></div>
+              </fieldset>
+              <fieldset class="turno">
+                <legend>Noche</legend>
+                <div class="campo"><label class="campo__etiqueta" for="t2-ini">Desde</label><input class="control" id="t2-ini" type="time" value="18:00"></div>
+                <div class="campo"><label class="campo__etiqueta" for="t2-fin">Hasta</label><input class="control" id="t2-fin" type="time" value="23:59" aria-describedby="t2-fin-ayuda"><p class="campo__ayuda" id="t2-fin-ayuda">Hasta medianoche.</p></div>
+              </fieldset>
+              <p class="config__nota">El turno de noche no abre si la caja de medio día no está cerrada y arqueada.</p>
+            </div>
+            <div class="panel-bloque__pie">
+              <button class="boton boton--primario" type="submit">Guardar</button>
+            </div>
+          </form>
+
+          <section class="panel-bloque config__seccion" id="impresoras" aria-labelledby="t-impresoras">
+            <div class="panel-bloque__cabecera">
+              <h2 class="panel-bloque__titulo" id="t-impresoras">Impresoras</h2>
+              <a class="boton" href="impresion.html">Ver cola de impresión</a>
+            </div>
+            <div class="impresoras">
+              <form class="impresora" novalidate data-guardar="Impresora de caja guardada.">
+                <h3 class="impresora__nombre">Caja</h3>
+                <div class="impresora__campos">
+                  <div class="campo"><label class="campo__etiqueta" for="i1-ancho">Ancho</label><select class="control" id="i1-ancho"><option selected>76 mm</option><option>58 mm</option></select></div>
+                  <div class="campo"><label class="campo__etiqueta" for="i1-col">Columnas</label><input class="control control--numero" id="i1-col" type="text" inputmode="numeric" value="42"></div>
+                  <fieldset class="opciones campo--ancho"><legend class="campo__etiqueta">Imprime</legend>
+                    <label class="opcion"><input type="checkbox" checked> <span>Factura</span></label>
+                    <label class="opcion"><input type="checkbox" checked> <span>Copia de caja</span></label>
+                    <label class="opcion"><input type="checkbox"> <span>Comanda</span></label>
+                    <label class="opcion"><input type="checkbox" checked> <span>Reporte de cierre</span></label>
+                  </fieldset>
+                </div>
+                <div class="impresora__acciones"><button class="boton" type="button" data-prueba>Imprimir prueba</button><button class="boton boton--primario" type="submit">Guardar</button></div>
+              </form>
+              <form class="impresora" novalidate data-guardar="Impresora de cocina guardada.">
+                <h3 class="impresora__nombre">Cocina</h3>
+                <div class="impresora__campos">
+                  <div class="campo"><label class="campo__etiqueta" for="i2-ancho">Ancho</label><select class="control" id="i2-ancho"><option selected>76 mm</option><option>58 mm</option></select></div>
+                  <div class="campo"><label class="campo__etiqueta" for="i2-col">Columnas</label><input class="control control--numero" id="i2-col" type="text" inputmode="numeric" value="42"></div>
+                  <fieldset class="opciones campo--ancho"><legend class="campo__etiqueta">Imprime</legend>
+                    <label class="opcion"><input type="checkbox"> <span>Factura</span></label>
+                    <label class="opcion"><input type="checkbox"> <span>Copia de caja</span></label>
+                    <label class="opcion"><input type="checkbox" checked> <span>Comanda</span></label>
+                    <label class="opcion"><input type="checkbox"> <span>Reporte de cierre</span></label>
+                  </fieldset>
+                </div>
+                <div class="impresora__acciones"><button class="boton" type="button" data-prueba>Imprimir prueba</button><button class="boton boton--primario" type="submit">Guardar</button></div>
+              </form>
+            </div>
+            <p class="config__nota">Con una sola impresora, los tres tickets salen uno tras otro en la de caja. Pendiente: confirmar el modelo de la impresora (76 o 58 mm).</p>
+          </section>
+
+          <form class="panel-bloque config__seccion" id="caja-cobro" novalidate aria-labelledby="t-caja-cobro" data-guardar="Parámetros de caja y cobro guardados.">
+            <input type="hidden" name="_csrf" value="">
+            <div class="panel-bloque__cabecera">
+              <h2 class="panel-bloque__titulo" id="t-caja-cobro">Caja y cobro</h2>
+            </div>
+            <div class="panel-bloque__cuerpo formulario-rapido__campos">
+              <div class="campo">
+                <label class="campo__etiqueta" for="c-umbral">Observación obligatoria desde</label>
+                <div class="control-grupo">
+                  <span class="control-grupo__prefijo" aria-hidden="true">Bs</span>
+                  <input class="control control--numero" id="c-umbral" type="text" inputmode="decimal" value="10,00" aria-describedby="c-umbral-ayuda">
+                </div>
+                <p class="campo__ayuda" id="c-umbral-ayuda">De diferencia en el arqueo, en más o en menos.</p>
+              </div>
+              <div class="campo">
+                <label class="campo__etiqueta" for="c-qr">Monto fijo del QR del día</label>
+                <div class="control-grupo">
+                  <span class="control-grupo__prefijo" aria-hidden="true">Bs</span>
+                  <input class="control control--numero" id="c-qr" type="text" inputmode="decimal" value="0,50">
+                </div>
+              </div>
+              <label class="casilla interruptor campo--ancho">
+                <input type="checkbox" role="switch" checked>
+                <span class="casilla__texto">
+                  <span class="casilla__titulo">Rechazar QR repetidos</span>
+                  <span class="casilla__ayuda">Compara la imagen con las anteriores (SHA-256) antes de activarla.</span>
+                </span>
+              </label>
+            </div>
+            <div class="panel-bloque__pie">
+              <button class="boton boton--primario" type="submit">Guardar</button>
+            </div>
+          </form>
+
+          <form class="panel-bloque config__seccion" id="seguridad" novalidate aria-labelledby="t-seguridad" data-guardar="Parámetros de seguridad guardados.">
+            <input type="hidden" name="_csrf" value="">
+            <div class="panel-bloque__cabecera">
+              <h2 class="panel-bloque__titulo" id="t-seguridad">Seguridad</h2>
+            </div>
+            <div class="panel-bloque__cuerpo formulario-rapido__campos">
+              <div class="campo">
+                <label class="campo__etiqueta" for="s-inactividad">Cerrar sesión tras</label>
+                <div class="control-grupo">
+                  <input class="control control--numero" id="s-inactividad" type="text" inputmode="numeric" value="15">
+                  <span class="control-grupo__sufijo" aria-hidden="true">min</span>
+                </div>
+                <p class="campo__ayuda">Sin actividad. No aplica al cajero.</p>
+              </div>
+              <div class="campo">
+                <label class="campo__etiqueta" for="s-intentos">Bloquear tras</label>
+                <div class="control-grupo">
+                  <input class="control control--numero" id="s-intentos" type="text" inputmode="numeric" value="5">
+                  <span class="control-grupo__sufijo" aria-hidden="true">intentos</span>
+                </div>
+                <p class="campo__ayuda">Fallidos seguidos. El bloqueo dura 15 minutos.</p>
+              </div>
+            </div>
+            <div class="panel-bloque__pie">
+              <button class="boton boton--primario" type="submit">Guardar</button>
+            </div>
+          </form>
+
+          <section class="panel-bloque config__seccion" id="respaldos" aria-labelledby="t-respaldos">
+            <div class="panel-bloque__cabecera">
+              <h2 class="panel-bloque__titulo" id="t-respaldos">Copias de seguridad</h2>
+              <button class="boton" type="button" id="respaldar">
                 <svg class="icono" aria-hidden="true"><use href="#i-descargar"></use></svg>
-                Actualizar catálogos
+                Respaldar ahora
               </button>
             </div>
-            <table class="tabla tabla--compacta">
-              <caption class="visualmente-oculto">Catálogos cargados</caption>
-              <thead><tr><th scope="col">Catálogo</th><th scope="col" class="col-num">Registros</th></tr></thead>
-              <tbody>
-                <tr><td>Tipos de documento de identidad</td><td class="col-num num">5</td></tr>
-                <tr><td>Métodos de pago</td><td class="col-num num">8</td></tr>
-                <tr><td>Unidades de medida</td><td class="col-num num">3</td></tr>
-                <tr><td>Motivos de anulación</td><td class="col-num num">4</td></tr>
-                <tr><td>Leyendas de facturas</td><td class="col-num num" id="cuenta-leyendas">4</td></tr>
-                <tr><td>Actividades económicas</td><td class="col-num num">3</td></tr>
-              </tbody>
-            </table>
-            <p class="config__nota" id="ultima-sincronizacion">Última actualización: 01/10/2026, 08:00.</p>
+            <dl class="resumen">
+              <div class="resumen__fila"><dt>Frecuencia</dt><dd>Diaria, a las 03:00</dd></div>
+              <div class="resumen__fila"><dt>Se conservan</dt><dd>30 días</dd></div>
+              <div class="resumen__fila"><dt>Última copia</dt><dd class="num" id="ultimo-respaldo">Hoy, 03:00 · 2,4 MB</dd></div>
+              <div class="resumen__fila"><dt>Última restauración probada</dt><dd class="num">01/10/2026</dd></div>
+            </dl>
           </section>
         </div>
       </div>
