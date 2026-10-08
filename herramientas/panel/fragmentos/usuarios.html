@@ -1,7 +1,7 @@
 <!-- {"titulo":"Usuarios","modulo":"usuarios","h1":"Usuarios","js":["usuarios.js"],"cssExtra":["modulos.css"]} -->
     <main class="contenido" id="contenido">
       <div class="cabeza-pagina">
-        <p class="cabeza-pagina__texto">Quién puede entrar al sistema y con qué rol. Las claves nunca se ven: se resetean.</p>
+        <p class="cabeza-pagina__texto">El cajero entra con PIN en la PC de caja; el resto, con usuario y contraseña. Cocina no entra al panel: recibe la comanda impresa.</p>
         <div class="cabeza-pagina__acciones">
           <button class="boton boton--primario" type="button" data-alternar="form-usuario" aria-expanded="false" aria-controls="form-usuario">
             <svg class="icono" aria-hidden="true"><use href="#i-usuarioMas"></use></svg>
@@ -34,11 +34,12 @@
             <label class="campo__etiqueta" for="u-rol">Rol</label>
             <select class="control" id="u-rol">
               <option value="cajero">Cajero</option>
-              <option value="analista">Analista</option>
-              <option value="sysadmin">Administrador</option>
+              <option value="administrador">Administrador</option>
+              <option value="mesero">Mesero</option>
+              <option value="cocina">Cocina</option>
             </select>
           </div>
-          <p class="campo--ancho formulario-rapido__nota">Se genera una clave temporal que el usuario debe cambiar al primer ingreso.</p>
+          <p class="campo--ancho formulario-rapido__nota" id="u-nota">Se genera una contraseña temporal y, para el cajero, un PIN de 4 dígitos. Se muestran una sola vez.</p>
         </div>
         <div class="panel-bloque__pie">
           <button class="boton boton--primario" type="submit">Crear usuario</button>
@@ -56,9 +57,10 @@
           <label class="visualmente-oculto" for="u-filtro-rol">Rol</label>
           <select class="control" id="u-filtro-rol" data-filtra="filas-usuarios" data-campo="rol">
             <option value="">Todos los roles</option>
+            <option value="administrador">Administrador</option>
             <option value="cajero">Cajero</option>
-            <option value="analista">Analista</option>
-            <option value="sysadmin">Administrador</option>
+            <option value="mesero">Mesero</option>
+            <option value="cocina">Cocina</option>
           </select>
         </div>
       </div>
@@ -70,17 +72,18 @@
             <tr>
               <th scope="col">Usuario</th>
               <th scope="col">Rol</th>
+              <th scope="col">Acceso</th>
               <th scope="col">Estado</th>
               <th scope="col">Último ingreso</th>
               <th scope="col" class="col-accion"><span class="visualmente-oculto">Acciones</span></th>
             </tr>
           </thead>
           <tbody id="filas-usuarios">
-            <tr data-rol="sysadmin" data-nombre="Ana Lucía Vaca Saucedo"><td><span class="tabla__principal">Ana Lucía Vaca Saucedo</span><span class="tabla__secundario codigo">admin</span></td><td><span class="insignia insignia--neutra">Administrador</span></td><td class="celda-estado"><span class="insignia insignia--ok">Activo</span></td><td class="num">Hoy, 07:40</td><td class="col-accion"><div class="acciones-fila"><button class="boton" type="button" data-abrir-modal="modal-clave">Resetear clave</button></div></td></tr>
-            <tr data-rol="cajero" data-nombre="Mariela Suárez Añez"><td><span class="tabla__principal">Mariela Suárez Añez</span><span class="tabla__secundario codigo">mariela</span></td><td><span class="insignia insignia--neutra">Cajero</span></td><td class="celda-estado"><span class="insignia insignia--ok">Activo</span></td><td class="num">Hoy, 06:58</td><td class="col-accion"><div class="acciones-fila"><button class="boton" type="button" data-abrir-modal="modal-clave">Resetear clave</button><button class="boton" type="button" data-activo="true">Desactivar</button></div></td></tr>
-            <tr data-rol="cajero" data-nombre="Jorge Rivero Chávez"><td><span class="tabla__principal">Jorge Rivero Chávez</span><span class="tabla__secundario codigo">jorge</span></td><td><span class="insignia insignia--neutra">Cajero</span></td><td class="celda-estado"><span class="insignia insignia--aviso">Bloqueado hasta 10:47</span></td><td class="num">Ayer, 07:05</td><td class="col-accion"><div class="acciones-fila"><button class="boton" type="button" data-desbloquear>Desbloquear</button><button class="boton" type="button" data-abrir-modal="modal-clave">Resetear clave</button></div></td></tr>
-            <tr data-rol="analista" data-nombre="Rodrigo Justiniano Paz"><td><span class="tabla__principal">Rodrigo Justiniano Paz</span><span class="tabla__secundario codigo">rodrigo</span></td><td><span class="insignia insignia--neutra">Analista</span></td><td class="celda-estado"><span class="insignia insignia--ok">Activo</span></td><td class="num">Hoy, 09:15</td><td class="col-accion"><div class="acciones-fila"><button class="boton" type="button" data-abrir-modal="modal-clave">Resetear clave</button><button class="boton" type="button" data-activo="true">Desactivar</button></div></td></tr>
-            <tr data-rol="cajero" data-nombre="Fabiola Roca Justiniano"><td><span class="tabla__principal">Fabiola Roca Justiniano</span><span class="tabla__secundario codigo">fabiola</span></td><td><span class="insignia insignia--neutra">Cajero</span></td><td class="celda-estado"><span class="insignia insignia--neutra">Inactivo</span></td><td class="num">12/08/2026</td><td class="col-accion"><div class="acciones-fila"><button class="boton" type="button" data-abrir-modal="modal-clave">Resetear clave</button><button class="boton" type="button" data-activo="false">Activar</button></div></td></tr>
+            <tr data-rol="administrador" data-nombre="Ana Lucía Vaca Saucedo"><td><span class="tabla__principal">Ana Lucía Vaca Saucedo</span><span class="tabla__secundario codigo">admin</span></td><td><select class="control control--fila" aria-label="Rol de Ana Lucía Vaca"><option value="administrador" selected>Administrador</option><option value="cajero">Cajero</option><option value="mesero">Mesero</option><option value="cocina">Cocina</option></select></td><td>Contraseña y PIN de autorización</td><td class="celda-estado"><span class="insignia insignia--ok">Activo</span></td><td class="num">Hoy, 10:48</td><td class="col-accion"><div class="acciones-fila"><button class="boton" type="button" data-abrir-modal="modal-clave" data-tipo="contraseña">Resetear contraseña</button></div></td></tr>
+            <tr data-rol="cajero" data-nombre="Mariela Suárez Añez"><td><span class="tabla__principal">Mariela Suárez Añez</span><span class="tabla__secundario codigo">mariela</span></td><td><select class="control control--fila" aria-label="Rol de Mariela Suárez"><option value="administrador">Administrador</option><option value="cajero" selected>Cajero</option><option value="mesero">Mesero</option><option value="cocina">Cocina</option></select></td><td>PIN</td><td class="celda-estado"><span class="insignia insignia--ok">Activo</span></td><td class="num">Hoy, 11:01</td><td class="col-accion"><div class="acciones-fila"><button class="boton" type="button" data-abrir-modal="modal-clave" data-tipo="PIN">Resetear PIN</button><button class="boton" type="button" data-activo="true">Desactivar</button></div></td></tr>
+            <tr data-rol="cajero" data-nombre="Jorge Rivero Chávez"><td><span class="tabla__principal">Jorge Rivero Chávez</span><span class="tabla__secundario codigo">jorge</span></td><td><select class="control control--fila" aria-label="Rol de Jorge Rivero"><option value="administrador">Administrador</option><option value="cajero" selected>Cajero</option><option value="mesero">Mesero</option><option value="cocina">Cocina</option></select></td><td>PIN</td><td class="celda-estado"><span class="insignia insignia--aviso">Bloqueado hasta 13:02</span></td><td class="num">Ayer, 23:48</td><td class="col-accion"><div class="acciones-fila"><button class="boton" type="button" data-desbloquear>Desbloquear</button><button class="boton" type="button" data-abrir-modal="modal-clave" data-tipo="PIN">Resetear PIN</button></div></td></tr>
+            <tr data-rol="mesero" data-nombre="Luis Fernando Roca"><td><span class="tabla__principal">Luis Fernando Roca</span><span class="tabla__secundario codigo">luis</span></td><td><select class="control control--fila" aria-label="Rol de Luis Fernando Roca"><option value="administrador">Administrador</option><option value="cajero">Cajero</option><option value="mesero" selected>Mesero</option><option value="cocina">Cocina</option></select></td><td>Contraseña</td><td class="celda-estado"><span class="insignia insignia--ok">Activo</span></td><td class="num">Hoy, 11:15</td><td class="col-accion"><div class="acciones-fila"><button class="boton" type="button" data-abrir-modal="modal-clave" data-tipo="contraseña">Resetear contraseña</button><button class="boton" type="button" data-activo="true">Desactivar</button></div></td></tr>
+            <tr data-rol="cocina" data-nombre="Teresa Paz Justiniano"><td><span class="tabla__principal">Teresa Paz Justiniano</span><span class="tabla__secundario codigo">teresa</span></td><td><select class="control control--fila" aria-label="Rol de Teresa Paz"><option value="administrador">Administrador</option><option value="cajero">Cajero</option><option value="mesero">Mesero</option><option value="cocina" selected>Cocina</option></select></td><td>Sin acceso al panel</td><td class="celda-estado"><span class="insignia insignia--ok">Activo</span></td><td class="celda-vacia">Nunca</td><td class="col-accion"><div class="acciones-fila"><button class="boton" type="button" data-activo="true">Desactivar</button></div></td></tr>
           </tbody>
         </table>
         <div class="vacio" data-vacio-de="filas-usuarios" hidden>
@@ -91,17 +94,17 @@
 
       <dialog class="modal" id="modal-clave" aria-labelledby="clave-titulo">
         <div class="modal__cuerpo" id="clave-paso">
-          <h2 class="modal__titulo" id="clave-titulo">¿Resetear la clave?</h2>
-          <p class="modal__texto" id="clave-texto">Se generará una clave temporal y la actual dejará de funcionar.</p>
+          <h2 class="modal__titulo" id="clave-titulo">¿Resetear?</h2>
+          <p class="modal__texto" id="clave-texto">El acceso actual deja de funcionar y se genera uno temporal.</p>
         </div>
         <div class="modal__cuerpo" id="clave-lista" hidden>
-          <h2 class="modal__titulo">Clave temporal</h2>
-          <p class="modal__texto">Entrégala en persona. Solo se muestra esta vez y deberá cambiarse al ingresar.</p>
-          <p class="clave-temporal" id="clave-temporal">cuñape-4827</p>
+          <h2 class="modal__titulo" id="clave-lista-titulo">Acceso temporal</h2>
+          <p class="modal__texto">Entrégalo en persona. Solo se muestra esta vez y debe cambiarse al ingresar.</p>
+          <dl class="claves-temporales" id="claves-temporales"></dl>
         </div>
         <div class="modal__acciones" id="clave-acciones">
           <button class="boton" type="button" data-cerrar-modal>Cancelar</button>
-          <button class="boton boton--primario" type="button" id="generar-clave">Resetear clave</button>
+          <button class="boton boton--primario" type="button" id="generar-clave">Resetear</button>
         </div>
         <div class="modal__acciones" id="clave-cerrar" hidden>
           <button class="boton boton--primario" type="button" data-cerrar-modal>Listo</button>
