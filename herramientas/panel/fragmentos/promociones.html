@@ -1,0 +1,77 @@
+<!-- {"titulo":"Promociones","modulo":"promociones","h1":"Promociones","js":["datos.js","promociones-motor.js","promociones.js"],"cssExtra":["modulos.css"]} -->
+    <main class="contenido" id="contenido">
+      <div class="cabeza-pagina">
+        <p class="cabeza-pagina__texto">Se aplican solas en el punto de venta y se ven como una línea de descuento. Si una no es acumulable, gana la de mayor beneficio.</p>
+        <div class="cabeza-pagina__acciones">
+          <a class="boton boton--primario" href="promocion-form.html">
+            <svg class="icono" aria-hidden="true"><use href="#i-mas"></use></svg>
+            Nueva promoción
+          </a>
+        </div>
+      </div>
+
+      <p class="reloj-demo"><svg class="icono icono--sm" aria-hidden="true"><use href="#i-reloj"></use></svg>Estado según la hora de la demo: jueves 08/10/2026, 12:41.</p>
+
+      <div class="tabla-contenedor">
+        <table class="tabla tabla--fichas">
+          <caption class="visualmente-oculto">Promociones</caption>
+          <thead>
+            <tr>
+              <th scope="col">Promoción</th>
+              <th scope="col">Cuándo</th>
+              <th scope="col">Reglas</th>
+              <th scope="col">Ahora</th>
+              <th scope="col" class="col-accion"><span class="visualmente-oculto">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody id="filas-promos"></tbody>
+        </table>
+      </div>
+
+      <section class="seccion simulador" aria-labelledby="t-simulador">
+        <div class="seccion__cabeza">
+          <h2 id="t-simulador">Simulador</h2>
+        </div>
+        <p class="cabeza-pagina__texto">Arma un carrito, elige el día y la hora y mira qué promociones aplicarían.</p>
+        <div class="simulador__cuerpo">
+          <div class="panel-bloque simulador__entrada">
+            <div class="panel-bloque__cuerpo simulador__campos">
+              <div class="campo">
+                <label class="campo__etiqueta" for="s-dia">Día</label>
+                <select class="control" id="s-dia">
+                  <option value="1">Lunes</option><option value="2">Martes</option><option value="3">Miércoles</option>
+                  <option value="4" selected>Jueves</option><option value="5">Viernes</option><option value="6">Sábado</option><option value="0">Domingo</option>
+                </select>
+              </div>
+              <div class="campo">
+                <label class="campo__etiqueta" for="s-hora">Hora</label>
+                <input class="control" id="s-hora" type="time" value="12:41">
+              </div>
+              <div class="campo campo--ancho">
+                <label class="campo__etiqueta" for="s-cliente">Cliente</label>
+                <select class="control" id="s-cliente">
+                  <option value="">S/N</option>
+                  <option value="6234510">Gutiérrez Añez (cumple hoy)</option>
+                  <option value="4567891">Rodríguez Peña</option>
+                </select>
+              </div>
+              <div class="campo campo--ancho">
+                <label class="campo__etiqueta" for="s-producto">Agregar producto</label>
+                <div class="simulador__agregar">
+                  <select class="control" id="s-producto"></select>
+                  <button class="boton" type="button" id="s-agregar">
+                    <svg class="icono" aria-hidden="true"><use href="#i-mas"></use></svg>
+                    Agregar
+                  </button>
+                </div>
+              </div>
+            </div>
+            <ul class="simulador__carrito" id="s-carrito" role="list"></ul>
+          </div>
+          <div class="panel-bloque simulador__resultado" aria-live="polite">
+            <div class="panel-bloque__cabecera"><h3 class="panel-bloque__titulo">Resultado</h3></div>
+            <div class="panel-bloque__cuerpo" id="s-resultado"></div>
+          </div>
+        </div>
+      </section>
+    </main>
