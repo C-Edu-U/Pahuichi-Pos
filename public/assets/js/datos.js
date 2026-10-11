@@ -78,3 +78,41 @@ window.PahuichiDatos = {
   siguienteFactura: 129,
   umbralObservacion: 10
 };
+
+
+/* HU-14: persistencia LOCAL para la demo, compartida por catálogo y POS.
+   No sustituye MariaDB: cada navegador tiene sus propios productos. */
+(function () {
+  'use strict';
+  var D = window.PahuichiDatos;
+  var CLAVE = 'pahuichi.catalogo.productos.v1';
+
+  try {
+    var copia = JSON.parse(window.localStorage.getItem(CLAVE) || 'null');
+    if (Array.isArray(copia) && copia.length && copia.every(function (p) {
+      return p && typeof p.id === 'string' && typeof p.nombre === 'string' &&
+        typeof p.categoria === 'string' && Number.isFinite(p.precio) && p.precio > 0;
+    }) && new Set(copia.map(function (p) { return p.id; })).size === copia.length) {
+      D.productos = copia;
+    }
+  } catch (e) { /* Se mantienen los datos iniciales si hay datos corruptos. */ }
+
+  D.guardarProducto = function (producto, idOriginal) {
+    var lista = D.productos.slice();
+    var indice = idOriginal ? lista.findIndex(function (p) { return p.id === idOriginal; }) : -1;
+    if (idOriginal && indice === -1) return { ok: false, error: 'El producto que intentas editar ya no existe.' };
+    if (lista.some(function (p, i) { return i !== indice && p.id === producto.id; })) {
+      return { ok: false, error: 'Ese código ya lo usa otro producto.' };
+    }
+    if (indice < 0) lista.push(producto);
+    else lista[indice] = producto;
+    try {
+      window.localStorage.setItem(CLAVE, JSON.stringify(lista));
+    } catch (e) {
+      return { ok: false, error: 'No se pudo guardar en este navegador. Revisa el almacenamiento disponible.' };
+    }
+    // Reutilizar el array para no romper otras referencias a los datos.
+    D.productos.splice.apply(D.productos, [0, D.productos.length].concat(lista));
+    return { ok: true };
+  };
+})();

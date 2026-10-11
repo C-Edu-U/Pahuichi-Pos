@@ -25,6 +25,7 @@
     var ul = $('m-grilla');
     ul.innerHTML = '';
     D.productos.filter(function (p) {
+      if (p.activo === false) return false;
       return categoria === 'favoritos' ? p.favorito : p.categoria === categoria;
     }).forEach(function (p) {
       var li = document.createElement('li');
