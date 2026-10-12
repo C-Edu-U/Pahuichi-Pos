@@ -93,6 +93,7 @@
   function visibles() {
     var q = P.normalizar($('pos-buscar').value.trim());
     return D.productos.filter(function (p) {
+      if (p.activo === false) return false;
       if (q) return P.normalizar(p.nombre + ' ' + p.corto + ' ' + p.id).indexOf(q) !== -1;
       if (estado.categoria === 'favoritos') return p.favorito;
       if (estado.categoria === 'todo') return true;

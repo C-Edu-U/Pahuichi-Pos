@@ -55,12 +55,14 @@
   }
 
   function pintarEstado(tr, p) {
-    tr.querySelector('.celda-estado').innerHTML = p.agotado
-      ? '<span class="insignia insignia--aviso">Agotado</span>'
+    tr.querySelector('.celda-estado').innerHTML = p.activo === false
+      ? '<span class="insignia insignia--neutra">Inactivo</span>'
+      : p.agotado ? '<span class="insignia insignia--aviso">Agotado</span>'
       : '<span class="insignia insignia--ok">Disponible</span>';
   }
 
   D.productos.forEach(function (p) { $('filas').appendChild(fila(p)); });
+  $('pestanas').querySelector('[data-categoria=""] .pestana__cuenta').textContent = D.productos.length;
 
   function filtrar() {
     var q = P.normalizar($('buscar').value.trim());
@@ -70,7 +72,7 @@
       var p = D.productos.filter(function (x) { return x.id === tr.getAttribute('data-id'); })[0];
       var ok = (!q || P.normalizar(p.nombre + ' ' + p.corto + ' ' + p.id).indexOf(q) !== -1) &&
         (!categoria || p.categoria === categoria) &&
-        (!e || (e === 'favorito' && p.favorito) || (e === 'agotado' && p.agotado) || (e === 'cocina' && p.cocina));
+        (!e || (e === 'favorito' && p.favorito) || (e === 'agotado' && p.agotado) || (e === 'cocina' && p.cocina) || (e === 'inactivo' && p.activo === false));
       tr.hidden = !ok;
       if (ok) n++;
     });
@@ -102,21 +104,28 @@
     var fav = e.target.closest('[data-favorito]');
     if (fav) {
       if (!P.puede('catalogo.editar')) { P.aviso('Solo el administrador cambia los favoritos.'); return; }
-      p.favorito = !p.favorito;
-      fav.setAttribute('aria-pressed', String(p.favorito));
-      $('anuncio').textContent = p.nombre + (p.favorito ? ' ahora es favorito.' : ' ya no es favorito.');
+      var nuevoFavorito = !p.favorito;
+      var actualizado = D.guardarProducto(Object.assign({}, p, { favorito: nuevoFavorito }), p.id);
+      if (!actualizado.ok) { P.aviso(actualizado.error, 'error'); return; }
+      fav.setAttribute('aria-pressed', String(nuevoFavorito));
+      $('anuncio').textContent = p.nombre + (nuevoFavorito ? ' ahora es favorito.' : ' ya no es favorito.');
       return;
     }
     var ag = e.target.closest('.boton-agotado');
     if (ag) {
-      p.agotado = !p.agotado;
-      ag.setAttribute('aria-pressed', String(p.agotado));
-      pintarEstado(tr, p);
-      $('anuncio').textContent = p.nombre + (p.agotado ? ' marcado como agotado.' : ' vuelve a estar disponible.');
+      var nuevoAgotado = !p.agotado;
+      var actualizado = D.guardarProducto(Object.assign({}, p, { agotado: nuevoAgotado }), p.id);
+      if (!actualizado.ok) { P.aviso(actualizado.error, 'error'); return; }
+      ag.setAttribute('aria-pressed', String(nuevoAgotado));
+      pintarEstado(tr, Object.assign({}, p, { agotado: nuevoAgotado }));
+      $('anuncio').textContent = p.nombre + (nuevoAgotado ? ' marcado como agotado.' : ' vuelve a estar disponible.');
     }
   });
 
-  if (P.parametro('guardado')) document.querySelector('.aviso-guardado').hidden = false;
+  if (P.parametro('guardado')) {
+    document.querySelector('.aviso-guardado').hidden = false;
+    if (P.parametro('inactivo')) document.querySelector('.aviso-guardado .alerta__texto').textContent = 'Guardado como inactivo; no aparece en el punto de venta.';
+  }
   var desdeUrl = P.parametro('estado');
   if (desdeUrl) $('estado').value = desdeUrl;
   filtrar();

@@ -29,10 +29,16 @@
     $('categoria').value = original.categoria;
     $('precio').value = P.bs(original.precio);
     $('unidad').value = original.unidad;
+    $('descripcion').value = original.descripcion || '';
+    $('activo').checked = original.activo !== false;
+    // El código identifica ventas y promociones: se mantiene fijo al editar.
+    $('codigo').readOnly = true;
+    $('codigo-ayuda').textContent = 'Código fijo para conservar las referencias a este producto.';
     $('favorito').checked = !!original.favorito;
     $('cocina').checked = !!original.cocina;
     $('agotado').checked = !!original.agotado;
-    if (original.categoria === 'platos') modificadores = [{ nombre: 'Sin cebolla', precio: 0 }, { nombre: 'Porción extra de arroz', precio: 5 }];
+    if (Array.isArray(original.modificadores)) modificadores = original.modificadores.map(function (m) { return { nombre: m.nombre, precio: m.precio }; });
+    else if (original.categoria === 'platos') modificadores = [{ nombre: 'Sin cebolla', precio: 0 }, { nombre: 'Porción extra de arroz', precio: 5 }];
     $('historial-precios').hidden = false;
     [['01/09/2026', 'Ana Lucía Vaca', original.precio - 5, original.precio], ['15/06/2026', 'Ana Lucía Vaca', original.precio - 10, original.precio - 5]].forEach(function (h) {
       var tr = $('filas-historial').insertRow();
@@ -162,9 +168,28 @@
       return;
     }
     $('resumen-errores').hidden = true;
-    $('guardar').setAttribute('aria-busy', 'true');
-    $('guardar').disabled = true;
-    window.setTimeout(function () { window.location.href = 'productos.html?guardado=1'; }, 400);
+    if (!P.puede('catalogo.editar')) { P.aviso('Solo el administrador puede guardar productos.', 'error'); return; }
+    var producto = {
+      id: $('codigo').value.trim(),
+      nombre: $('nombre').value.trim(),
+      corto: $('corto').value.trim(),
+      descripcion: $('descripcion').value.trim(),
+      categoria: $('categoria').value,
+      precio: P.leerMonto($('precio').value),
+      unidad: $('unidad').value,
+      activo: $('activo').checked,
+      favorito: $('favorito').checked,
+      cocina: $('cocina').checked,
+      agotado: $('agotado').checked,
+      modificadores: modificadores.map(function (m) { return { nombre: m.nombre, precio: m.precio }; })
+    };
+    var resultado = D.guardarProducto(producto, original ? original.id : null);
+    if (!resultado.ok) {
+      P.marcarCampo(resultado.error.indexOf('código') >= 0 ? 'codigo' : 'nombre', resultado.error);
+      P.aviso(resultado.error, 'error');
+      return;
+    }
+    window.location.href = 'productos.html?guardado=1' + (producto.activo ? '' : '&inactivo=1');
   });
 
   pintarModificadores();
