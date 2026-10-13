@@ -9,6 +9,7 @@ declare(strict_types=1);
  */
 
 use App\Controllers\AuthController;
+use App\Controllers\CategoriaController;
 use App\Controllers\ConfigController;
 use App\Controllers\InicioController;
 use App\Controllers\ModuloController;
@@ -44,6 +45,15 @@ $router->post('/config/negocio', [ConfigController::class, 'negocio'], $config);
 $router->post('/config/fiscal', [ConfigController::class, 'fiscal'], $config);
 $router->post('/config/turnos', [ConfigController::class, 'turnos'], $config);
 $router->get('/negocio/logo', [ConfigController::class, 'logo']);
+
+// Catálogo (HU-13): todos los de caja lo ven; solo el administrador lo edita
+$catalogo = ['auth', 'permiso:modulo.catalogo'];
+$editarCatalogo = [...$catalogo, 'permiso:catalogo.editar'];
+$router->get('/catalogo/categorias', [CategoriaController::class, 'index'], $catalogo);
+$router->post('/catalogo/categorias', [CategoriaController::class, 'crear'], $editarCatalogo);
+$router->get('/catalogo/categorias/{id}/editar', [CategoriaController::class, 'editar'], $editarCatalogo);
+$router->post('/catalogo/categorias/{id}', [CategoriaController::class, 'actualizar'], $editarCatalogo);
+$router->post('/catalogo/categorias/{id}/estado', [CategoriaController::class, 'estado'], $editarCatalogo);
 
 // Módulos aún sin construir: pantalla «próximamente»
 foreach (Config::get('modulos') as $clave => $m) {

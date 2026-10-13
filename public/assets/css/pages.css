@@ -591,6 +591,12 @@
   max-width: 6rem;
 }
 
+.nueva-categoria__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-1);
+}
+
 .tabla--categorias .acciones-fila .boton {
   font-size: var(--texto-sm);
 }
