@@ -50,7 +50,8 @@ final class AuthController extends Controller
 
         if ($resultado['ok']) {
             Auth::iniciar($resultado['usuario'], $modo);
-            return $this->redirigir(Auth::inicio());
+            $temporal = $modo === 'clave' && (int) $resultado['usuario']['debe_cambiar_clave'];
+            return $this->redirigir($temporal ? '/cambiar-clave' : Auth::inicio());
         }
 
         return $this->login(['modo' => $modo, 'usuario' => $usuario, 'resultado' => $resultado], 422);

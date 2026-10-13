@@ -56,7 +56,6 @@ return [
     ],
     'usuarios' => [
         'grupo' => 5, 'ruta' => '/usuarios', 'icono' => 'usuarios', 'texto' => 'Usuarios',
-        'pendiente' => ['historias' => 'HU-03', 'texto' => 'Alta, roles, desactivar y reseteo de contraseña y PIN.'],
     ],
     'config' => [
         'grupo' => 5, 'ruta' => '/config', 'icono' => 'config', 'texto' => 'Configuración',

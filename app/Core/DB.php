@@ -73,17 +73,24 @@ final class DB
         return (int) self::conexion()->lastInsertId();
     }
 
-    /** Ejecuta $fn dentro de una transacción; si algo falla, deshace todo. */
+    /**
+     * Ejecuta $fn dentro de una transacción; si algo falla, deshace todo.
+     * Si ya hay una transacción abierta, usa un punto de guardado (así se anidan).
+     */
     public static function transaccion(callable $fn): mixed
     {
         $pdo = self::conexion();
-        $pdo->beginTransaction();
+        $anidada = $pdo->inTransaction();
+        $punto = 'p' . bin2hex(random_bytes(4));
+        $anidada ? $pdo->exec("SAVEPOINT {$punto}") : $pdo->beginTransaction();
         try {
             $resultado = $fn();
-            $pdo->commit();
+            $anidada ? $pdo->exec("RELEASE SAVEPOINT {$punto}") : $pdo->commit();
             return $resultado;
         } catch (Throwable $e) {
-            if ($pdo->inTransaction()) {
+            if ($anidada) {
+                $pdo->exec("ROLLBACK TO SAVEPOINT {$punto}");
+            } elseif ($pdo->inTransaction()) {
                 $pdo->rollBack();
             }
             throw $e;

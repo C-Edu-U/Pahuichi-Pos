@@ -11,37 +11,31 @@ use App\Core\Peticion;
 use App\Core\Reloj;
 use App\Core\Respuesta;
 use App\Core\Sesion;
-use PDO;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Caso base: cada prueba empieza con los datos de seeds.sql y una sesión vacía.
+ * Caso base: cada prueba corre dentro de una transacción que se deshace al
+ * terminar, así todas parten de los datos de seeds.sql. Sesión vacía en memoria.
  * get() y post() pasan por el router y los middleware como una petición real.
  */
 abstract class CasoPrueba extends TestCase
 {
-    private const TABLAS_FIJAS = ['migraciones'];
-
     protected function setUp(): void
     {
         parent::setUp();
         Reloj::fijar(null);
         Sesion::enMemoria();
-        $this->restaurarDatos();
+        DB::conexion()->beginTransaction();
     }
 
-    private function restaurarDatos(): void
+    protected function tearDown(): void
     {
         $pdo = DB::conexion();
-        $pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
-        foreach ($pdo->query("SHOW FULL TABLES WHERE Table_type = 'BASE TABLE'")->fetchAll(PDO::FETCH_COLUMN) as $tabla) {
-            if (!in_array($tabla, self::TABLAS_FIJAS, true)) {
-                $pdo->exec("TRUNCATE TABLE `{$tabla}`");
-            }
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
         }
-        $pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
-        $migrador = new \App\Core\Migrador($pdo, App::raiz() . '/database');
-        $migrador->sembrarSiVacia();
+        Reloj::fijar(null);
+        parent::tearDown();
     }
 
     protected function get(string $ruta, array $query = [], string $ip = '10.0.0.1'): Respuesta

@@ -787,6 +787,14 @@
   font-size: var(--texto-sm);
 }
 
+.tabla--usuarios td:first-child {
+  min-width: 12rem;
+}
+
+.tabla--usuarios .acciones-fila .boton {
+  white-space: nowrap;
+}
+
 /* --------------------------------------------------------------------------
    Configuración
    -------------------------------------------------------------------------- */
