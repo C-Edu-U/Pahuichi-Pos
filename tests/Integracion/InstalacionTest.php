@@ -68,6 +68,7 @@ final class InstalacionTest extends CasoPrueba
 
     public function testModuloSinConstruirMuestraProximamente(): void
     {
+        $this->entrarComo('admin');
         $r = $this->get('/reportes');
 
         $this->assertSame(200, $r->estado);

@@ -8,18 +8,26 @@ declare(strict_types=1);
  * @var App\Core\Router $router
  */
 
+use App\Controllers\AuthController;
+use App\Controllers\InicioController;
 use App\Controllers\ModuloController;
 use App\Controllers\SaludController;
 use App\Core\Config;
 
 $router->get('/salud', [SaludController::class, 'index']);
 
-// Inicio
-$router->get('/', [App\Controllers\InicioController::class, 'index']);
+// Sesión (HU-02)
+$router->get('/', [InicioController::class, 'index']);
+$router->get('/login', [AuthController::class, 'mostrar'], ['invitado']);
+$router->post('/login', [AuthController::class, 'entrar'], ['invitado']);
+$router->post('/salir', [AuthController::class, 'salir']);
+$router->post('/sesion/seguir', [AuthController::class, 'seguir'], ['auth']);
+$router->get('/cambiar-clave', [AuthController::class, 'formCambiarClave'], ['auth']);
+$router->post('/cambiar-clave', [AuthController::class, 'cambiarClave'], ['auth']);
 
 // Módulos aún sin construir: pantalla «próximamente»
 foreach (Config::get('modulos') as $clave => $m) {
     if (isset($m['pendiente'])) {
-        $router->get($m['ruta'], [ModuloController::class, 'pendiente']);
+        $router->get($m['ruta'], [ModuloController::class, 'pendiente'], ['auth']);
     }
 }

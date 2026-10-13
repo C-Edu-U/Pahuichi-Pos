@@ -13,6 +13,8 @@ final class App
     /** Middleware que las rutas nombran con un alias (con parámetro: 'permiso:modulo.caja'). */
     private const MIDDLEWARE = [
         'csrf' => \App\Middleware\VerificarCsrf::class,
+        'auth' => \App\Middleware\Autenticado::class,
+        'invitado' => \App\Middleware\Invitado::class,
     ];
 
     /** Middleware de todas las rutas. */
@@ -59,6 +61,7 @@ final class App
     public function manejar(Peticion $peticion): Respuesta
     {
         self::$actual = $peticion;
+        Auth::olvidar();
         try {
             [$estado, $accion, $middleware, $parametros] = $this->router->resolver($peticion->metodo, $peticion->ruta);
             if ($estado !== 200) {

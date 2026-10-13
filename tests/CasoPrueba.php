@@ -56,6 +56,14 @@ abstract class CasoPrueba extends TestCase
         return App::crear()->manejar(new Peticion('POST', $ruta, [], $datos, [], $ip));
     }
 
+    /** Inicia sesión directamente, sin pasar por el formulario. */
+    protected function entrarComo(string $usuario, string $modo = 'clave'): array
+    {
+        $u = \App\Models\Usuario::buscarPorUsuario($usuario);
+        \App\Core\Auth::iniciar($u, $modo);
+        return $u;
+    }
+
     protected function assertRedirige(string $destino, Respuesta $r): void
     {
         $this->assertContains($r->estado, [301, 302, 303], 'Se esperaba una redirección');

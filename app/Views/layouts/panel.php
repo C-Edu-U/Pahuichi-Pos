@@ -3,11 +3,15 @@
  * Marco del panel: riel lateral, barra superior y contenido.
  * Variables: $titulo, $modulo, $h1, $contenido; opcionales $css, $js, $claseBody, $rielPlegado.
  */
+use App\Core\Auth;
 use App\Core\Config;
+use App\Core\Csrf;
 use App\Core\Sesion;
+use App\Models\Usuario;
 
 $modulos = array_filter(Config::get('modulos'), static fn (array $m): bool => $m['grupo'] > 0);
 $aviso = Sesion::tomarFlash('aviso');
+$usuario = Auth::usuario();
 $js = $js ?? [];
 ?>
 <!doctype html>
@@ -15,13 +19,13 @@ $js = $js ?? [];
 <head>
   <?php require __DIR__ . '/_cabeza.php'; ?>
 </head>
-<body class="panel<?= isset($claseBody) ? ' ' . e($claseBody) : '' ?>" data-modulo="<?= e($modulo ?? '') ?>"<?= !empty($rielPlegado) ? ' data-riel-plegado' : '' ?><?= $aviso ? ' data-aviso="' . e($aviso) . '"' : '' ?>>
+<body class="panel<?= isset($claseBody) ? ' ' . e($claseBody) : '' ?>" data-modulo="<?= e($modulo ?? '') ?>" data-csrf="<?= e(Csrf::token()) ?>" data-inactividad="<?= e(Auth::minutosInactividad()) ?>"<?= !empty($rielPlegado) ? ' data-riel-plegado' : '' ?><?= $aviso ? ' data-aviso="' . e($aviso) . '"' : '' ?>>
   <?php require __DIR__ . '/_sprite.php'; ?>
   <a class="saltar-contenido" href="#contenido">Saltar al contenido</a>
 
   <aside class="riel" id="riel" aria-label="Menú principal">
     <div class="riel__marca">
-      <a class="marca" href="/">
+      <a class="marca" href="<?= e(Auth::inicio()) ?>">
         <span class="marca__sello" aria-hidden="true"><span></span></span>
         <span class="marca__texto">Pahuichi <small>Punto de venta</small></span>
       </a>
@@ -62,6 +66,19 @@ $js = $js ?? [];
             <span>Sin conexión con el servidor</span>
           </p>
         </div>
+<?php if ($usuario !== null): ?>
+        <div class="barra__usuario">
+          <p class="usuario"><span class="usuario__nombre"><?= e($usuario['nombre']) ?></span><span class="usuario__rol"><?= e(Usuario::ROLES[$usuario['rol']]) ?></span></p>
+          <form id="form-salir" method="post" action="/salir">
+            <?= csrf_campo() ?>
+            <input type="hidden" name="motivo" value="">
+            <button class="boton boton--fantasma boton-salir" type="submit" aria-label="Cerrar sesión">
+              <?= icono('salir') ?>
+              <span class="boton-salir__texto">Salir</span>
+            </button>
+          </form>
+        </div>
+<?php endif; ?>
       </div>
     </header>
 
