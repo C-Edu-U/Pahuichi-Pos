@@ -34,6 +34,48 @@ La primera vez tarda unos minutos: construye la imagen de PHP, instala las depen
 
 La base también se puede revisar con un cliente SQL en `127.0.0.1:3307` (usuario `pahuichi`, clave `pahuichi_local`, salvo que `.env` diga otra cosa).
 
+## Usuarios de prueba
+
+| Rol | Cómo entrar | Pantalla de entrada |
+|---|---|---|
+| Cajero | PIN **4821** (Mariela) o **7350** (Jorge) en «Caja con PIN» | Punto de venta |
+| Administrador | Usuario `admin`, contraseña `Pahuichi2026` | Tablero |
+| Mesero | Usuario `luis`, contraseña `Pahuichi2026` | Pedidos |
+| Cocina | Usuario `teresa` | No entra al panel: recibe la comanda impresa |
+
+Los cajeros también tienen la contraseña `Pahuichi2026`. El PIN de autorización del administrador es `1234` (lo usarán la anulación y el descuento manual).
+
+## Estado: Sprint 1
+
+| Historia | Qué hace | Dónde |
+|---|---|---|
+| HU-01 | `docker compose up` con HTTPS, base MVC, migraciones y datos de prueba | todo el proyecto |
+| HU-02 | Login con contraseña o PIN, bloqueo de 15 min tras 5 fallos, cierre por inactividad salvo el cajero | `/login` |
+| HU-03 | Alta de usuarios, rol, activar y desactivar, desbloquear, reseteo de contraseña y PIN | `/usuarios` |
+| HU-04 | Permisos por rol en cada ruta, 403 con registro en la bitácora y menú filtrado | `config/permisos.php` |
+| HU-08 | Datos del negocio con logo | `/config#negocio` |
+| HU-09 | Parámetros fiscales simulados y aviso de CUFD vencido | `/config#fiscal` |
+| HU-11 | Horario de los turnos | `/config#turnos` |
+| HU-13 | Categorías con orden y color de la paleta | `/catalogo/categorias` |
+| HU-14 | Productos; favorito y agotado de un toque | `/catalogo/productos` |
+| HU-20 | Abrir caja con turno, cajero y fondo; una sola caja abierta | `/caja` |
+| HU-21 | Sin caja abierta, el POS muestra «Abrir caja» | `/pos` |
+
+El resto de los módulos muestra «Próximamente» con sus historias. Toda acción sensible queda en la tabla `bitacora` (su pantalla llega con HU-05).
+
+### Guía para el QA
+
+Los escenarios Gherkin del Sprint 1 tienen prueba automática en `tests/Integracion/` (`docker compose exec app composer test`). Para revisarlos a mano:
+
+1. **Instalación limpia:** `docker compose down -v` y `docker compose up --build`; luego https://localhost:8443/salud muestra la base migrada con 5 usuarios y 25 productos.
+2. **Login del cajero con PIN:** PIN 4821 → entra al punto de venta.
+3. **Bloqueo por intentos:** usuario `luis` con una contraseña errada 5 veces → bloqueado hasta dentro de 15 minutos. Como `admin`, en Usuarios aparece «Bloqueado hasta» y se puede desbloquear.
+4. **Permiso validado en el servidor:** como cajero, escribe a mano https://localhost:8443/usuarios → «acceso denegado» sin datos.
+5. **Sin caja no se vende:** como cajero, el punto de venta muestra «Abrir caja».
+6. **Una sola caja:** con dos navegadores (o una ventana de incógnito), deja a Jorge (PIN 7350) en «Abrir caja» con el turno de noche. En el otro, abre la caja de medio día con Mariela. Luego envía el formulario de Jorge → el sistema lo impide y explica que primero se debe cerrar y arquear la caja de medio día.
+
+Para repetir las pruebas desde cero: `docker compose exec app php bin/consola.php reiniciar`. El CUFD de los datos de prueba vence a las 23:59 del día en que se cargaron; al día siguiente la configuración lo muestra como vencido, que es lo esperado.
+
 ## Arquitectura
 
 ```
