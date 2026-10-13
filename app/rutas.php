@@ -13,6 +13,7 @@ use App\Controllers\CategoriaController;
 use App\Controllers\ConfigController;
 use App\Controllers\InicioController;
 use App\Controllers\ModuloController;
+use App\Controllers\ProductoController;
 use App\Controllers\SaludController;
 use App\Controllers\UsuarioController;
 use App\Core\Config;
@@ -46,9 +47,17 @@ $router->post('/config/fiscal', [ConfigController::class, 'fiscal'], $config);
 $router->post('/config/turnos', [ConfigController::class, 'turnos'], $config);
 $router->get('/negocio/logo', [ConfigController::class, 'logo']);
 
-// Catálogo (HU-13): todos los de caja lo ven; solo el administrador lo edita
+// Catálogo (HU-13, HU-14): todos los de caja lo ven; solo el administrador lo edita
 $catalogo = ['auth', 'permiso:modulo.catalogo'];
 $editarCatalogo = [...$catalogo, 'permiso:catalogo.editar'];
+$router->get('/catalogo', [InicioController::class, 'catalogo'], $catalogo);
+$router->get('/catalogo/productos', [ProductoController::class, 'index'], $catalogo);
+$router->get('/catalogo/productos/nuevo', [ProductoController::class, 'nuevo'], $editarCatalogo);
+$router->post('/catalogo/productos/nuevo', [ProductoController::class, 'crear'], $editarCatalogo);
+$router->get('/catalogo/productos/{id}/editar', [ProductoController::class, 'editar'], $editarCatalogo);
+$router->post('/catalogo/productos/{id}', [ProductoController::class, 'actualizar'], $editarCatalogo);
+$router->post('/catalogo/productos/{id}/favorito', [ProductoController::class, 'favorito'], $editarCatalogo);
+$router->post('/catalogo/productos/{id}/agotado', [ProductoController::class, 'agotado'], [...$catalogo, 'permiso:catalogo.agotado']);
 $router->get('/catalogo/categorias', [CategoriaController::class, 'index'], $catalogo);
 $router->post('/catalogo/categorias', [CategoriaController::class, 'crear'], $editarCatalogo);
 $router->get('/catalogo/categorias/{id}/editar', [CategoriaController::class, 'editar'], $editarCatalogo);

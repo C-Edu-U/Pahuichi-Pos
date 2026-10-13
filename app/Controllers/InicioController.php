@@ -16,4 +16,10 @@ final class InicioController extends Controller
     {
         return $this->redirigir(Auth::usuario() !== null && !Auth::vencida() ? Auth::inicio() : '/login');
     }
+
+    /** /catalogo abre la lista de productos. */
+    public function catalogo(Peticion $peticion): Respuesta
+    {
+        return $this->redirigir('/catalogo/productos');
+    }
 }

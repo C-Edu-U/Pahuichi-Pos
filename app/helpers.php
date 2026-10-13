@@ -37,6 +37,24 @@ function bs(float|int|string|null $monto): string
     return number_format((float) $monto, 2, ',', '.');
 }
 
+/**
+ * Lee un monto escrito a mano: 1.286,50 · 1286,50 · 1286.50 · 45. Devuelve null si no es válido.
+ * Mismo criterio que Pahuichi.leerMonto en app.js.
+ */
+function leer_monto(string $texto): ?float
+{
+    $limpio = preg_replace('/\s+/', '', trim($texto));
+    if (str_contains($limpio, ',')) {
+        $limpio = str_replace(['.', ','], ['', '.'], $limpio);
+    } elseif (!preg_match('/^\d+\.\d{1,2}$/', $limpio)) {
+        $limpio = str_replace('.', '', $limpio);
+    }
+    if (!preg_match('/^\d+(\.\d{1,2})?$/', $limpio)) {
+        return null;
+    }
+    return round((float) $limpio, 2);
+}
+
 /** Ícono del sprite (assets/img/iconos.svg, incluido en el layout). */
 function icono(string $nombre, string $clase = ''): string
 {

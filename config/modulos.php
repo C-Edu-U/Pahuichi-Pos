@@ -40,7 +40,6 @@ return [
     ],
     'catalogo' => [
         'grupo' => 3, 'ruta' => '/catalogo/productos', 'icono' => 'productos', 'texto' => 'Catálogo',
-        'pendiente' => ['historias' => 'HU-13, HU-14', 'texto' => 'Productos y categorías del menú.'],
     ],
     'promociones' => [
         'grupo' => 3, 'ruta' => '/promociones', 'icono' => 'promocion', 'texto' => 'Promociones',
