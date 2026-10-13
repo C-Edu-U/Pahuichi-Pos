@@ -4,7 +4,26 @@ declare(strict_types=1);
 
 // Funciones cortas para las vistas.
 
+use App\Core\Auth;
+use App\Core\Config;
 use App\Core\Csrf;
+
+/** ¿El rol (por defecto, el del usuario de la sesión) tiene este permiso? (config/permisos.php) */
+function puede(string $permiso, ?string $rol = null): bool
+{
+    $rol ??= Auth::rol();
+    return $rol !== null && in_array($rol, Config::get('permisos')[$permiso] ?? [], true);
+}
+
+/** Permisos del usuario de la sesión, para que el JS muestre u oculte botones. */
+function permisos_actuales(): array
+{
+    $rol = Auth::rol();
+    return $rol === null ? [] : array_keys(array_filter(
+        Config::get('permisos'),
+        static fn (array $roles): bool => in_array($rol, $roles, true),
+    ));
+}
 
 /** Escapa texto para HTML. Toda salida variable pasa por aquí. */
 function e(mixed $valor): string

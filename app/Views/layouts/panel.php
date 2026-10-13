@@ -9,7 +9,12 @@ use App\Core\Csrf;
 use App\Core\Sesion;
 use App\Models\Usuario;
 
-$modulos = array_filter(Config::get('modulos'), static fn (array $m): bool => $m['grupo'] > 0);
+// Menú filtrado por rol (comodidad: cada ruta valida su permiso en el servidor)
+$modulos = array_filter(
+    Config::get('modulos'),
+    static fn (array $m, string $clave): bool => $m['grupo'] > 0 && puede('modulo.' . $clave),
+    ARRAY_FILTER_USE_BOTH,
+);
 $aviso = Sesion::tomarFlash('aviso');
 $usuario = Auth::usuario();
 $js = $js ?? [];
@@ -19,7 +24,7 @@ $js = $js ?? [];
 <head>
   <?php require __DIR__ . '/_cabeza.php'; ?>
 </head>
-<body class="panel<?= isset($claseBody) ? ' ' . e($claseBody) : '' ?>" data-modulo="<?= e($modulo ?? '') ?>" data-csrf="<?= e(Csrf::token()) ?>" data-inactividad="<?= e(Auth::minutosInactividad()) ?>"<?= !empty($rielPlegado) ? ' data-riel-plegado' : '' ?><?= $aviso ? ' data-aviso="' . e($aviso) . '"' : '' ?>>
+<body class="panel<?= isset($claseBody) ? ' ' . e($claseBody) : '' ?>" data-modulo="<?= e($modulo ?? '') ?>" data-csrf="<?= e(Csrf::token()) ?>" data-inactividad="<?= e(Auth::minutosInactividad()) ?>" data-permisos="<?= e(implode(' ', permisos_actuales())) ?>"<?= !empty($rielPlegado) ? ' data-riel-plegado' : '' ?><?= $aviso ? ' data-aviso="' . e($aviso) . '"' : '' ?>>
   <?php require __DIR__ . '/_sprite.php'; ?>
   <a class="saltar-contenido" href="#contenido">Saltar al contenido</a>
 

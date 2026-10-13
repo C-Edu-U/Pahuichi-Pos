@@ -15,6 +15,7 @@ final class App
         'csrf' => \App\Middleware\VerificarCsrf::class,
         'auth' => \App\Middleware\Autenticado::class,
         'invitado' => \App\Middleware\Invitado::class,
+        'permiso' => \App\Middleware\Permiso::class,
     ];
 
     /** Middleware de todas las rutas. */

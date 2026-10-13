@@ -28,6 +28,6 @@ $router->post('/cambiar-clave', [AuthController::class, 'cambiarClave'], ['auth'
 // Módulos aún sin construir: pantalla «próximamente»
 foreach (Config::get('modulos') as $clave => $m) {
     if (isset($m['pendiente'])) {
-        $router->get($m['ruta'], [ModuloController::class, 'pendiente'], ['auth']);
+        $router->get($m['ruta'], [ModuloController::class, 'pendiente'], ['auth', "permiso:modulo.{$clave}"]);
     }
 }
