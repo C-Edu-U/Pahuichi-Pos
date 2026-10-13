@@ -1,0 +1,55 @@
+# Pahuichi POS: todo el sistema con un solo «docker compose up».
+# Las variables se leen de .env (ver .env.example); sin .env se usan los valores por defecto.
+name: pahuichi
+
+services:
+  app:
+    build: ./docker/app
+    image: pahuichi-app
+    restart: unless-stopped
+    ports:
+      - "${PUERTO_HTTPS:-8443}:443"
+      - "${PUERTO_HTTP:-8080}:80"
+    environment:
+      APP_ENTORNO: ${APP_ENTORNO:-desarrollo}
+      PUERTO_HTTPS: ${PUERTO_HTTPS:-8443}
+      DB_HOST: db
+      DB_PUERTO: 3306
+      DB_NOMBRE: ${DB_NOMBRE:-pahuichi}
+      DB_USUARIO: ${DB_USUARIO:-pahuichi}
+      DB_CLAVE: ${DB_CLAVE:-pahuichi_local}
+    volumes:
+      - .:/var/www/pahuichi
+      - vendor:/var/www/pahuichi/vendor
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mariadb:11.4
+    restart: unless-stopped
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=-04:00
+    environment:
+      MARIADB_DATABASE: ${DB_NOMBRE:-pahuichi}
+      MARIADB_USER: ${DB_USUARIO:-pahuichi}
+      MARIADB_PASSWORD: ${DB_CLAVE:-pahuichi_local}
+      MARIADB_ROOT_PASSWORD: ${DB_CLAVE_ROOT:-pahuichi_root_local}
+    ports:
+      # Solo desde esta PC, para revisar la base con un cliente SQL
+      - "127.0.0.1:${PUERTO_DB:-3307}:3306"
+    volumes:
+      - db-datos:/var/lib/mysql
+      - ./docker/db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+volumes:
+  db-datos:
+  vendor:

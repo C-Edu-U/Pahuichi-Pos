@@ -1,72 +1,16 @@
 /* ==========================================================================
-   Pahuichi POS · Panel (demo sin servidor)
-   - Permisos por rol: espejo de config/permisos.php + puede(). Aquí solo se
-     simula; con servidor, el middleware decide y responde «acceso denegado».
-   - Riel lateral plegable, cajón en móvil.
-   - Estado de impresora y de conexión, cierre por inactividad, PWA.
+   Pahuichi POS · Panel
+   - Los permisos los decide el servidor; el body trae los del usuario en
+     data-permisos solo para mostrar u ocultar botones.
+   - Riel lateral plegable, cajón en móvil, estado de la conexión, PWA.
    - Utilidades compartidas: filtros de tabla, formularios desplegables,
      tablas en fichas, modales, avisos y formato de montos.
    ========================================================================== */
 (function () {
   'use strict';
 
-  var CLAVE_ROL = 'pahuichi.rol';
   var CLAVE_PLEGADO = 'pahuichi.rielPlegado';
-
-  // Roles del sistema. Cocina no entra al panel: recibe la comanda impresa.
-  var ROLES = {
-    administrador: { etiqueta: 'Administrador', usuario: 'Ana Lucía Vaca Saucedo', inicio: 'tablero.html' },
-    cajero: { etiqueta: 'Cajero', usuario: 'Mariela Suárez Añez', inicio: 'pos.html' },
-    mesero: { etiqueta: 'Mesero', usuario: 'Luis Fernando Roca', inicio: 'mesero.html' }
-  };
-
-  // Matriz de roles y módulos
-  var ADMIN = ['administrador'];
-  var CAJA = ['administrador', 'cajero'];
-  var PERMISOS = {
-    'modulo.tablero': CAJA,
-    'modulo.pos': CAJA,
-    'modulo.caja': CAJA,
-    'modulo.ventas': CAJA,
-    'modulo.conciliacion': CAJA,
-    'modulo.qr': CAJA,
-    'modulo.clientes': CAJA,
-    'modulo.catalogo': CAJA,
-    'modulo.promociones': ADMIN,
-    'modulo.reportes': ADMIN,
-    'modulo.usuarios': ADMIN,
-    'modulo.config': ADMIN,
-    'modulo.bitacora': ADMIN,
-    'modulo.impresion': CAJA,
-    'modulo.mesero': ['mesero', 'administrador'],
-    'caja.reabrir': ADMIN,
-    'ventas.todas': ADMIN,
-    'conciliacion.resolver': ADMIN,
-    'qr.subir': ADMIN,
-    'clientes.crear': CAJA,
-    'clientes.editar': ADMIN,
-    'catalogo.editar': ADMIN,
-    'catalogo.agotado': CAJA,
-    'reportes.exportar': ADMIN
-  };
-
-  var MODULOS = {
-    tablero: 'Tablero',
-    pos: 'Punto de venta',
-    caja: 'Caja',
-    ventas: 'Ventas y facturas',
-    conciliacion: 'Conciliación QR',
-    qr: 'QR del día',
-    clientes: 'Clientes',
-    catalogo: 'Catálogo',
-    promociones: 'Promociones',
-    reportes: 'Reportes',
-    usuarios: 'Usuarios',
-    config: 'Configuración',
-    bitacora: 'Bitácora',
-    impresion: 'Cola de impresión',
-    mesero: 'Pedidos'
-  };
+  var cuerpo = document.body;
 
   function leer(clave) {
     try { return window.localStorage.getItem(clave); } catch (e) { return null; }
@@ -76,14 +20,9 @@
     try { window.localStorage.setItem(clave, valor); } catch (e) { /* almacenamiento bloqueado */ }
   }
 
-  function rolActual() {
-    var rol = leer(CLAVE_ROL);
-    return ROLES[rol] ? rol : 'administrador';
-  }
-
-  function puede(permiso, rol) {
-    var roles = PERMISOS[permiso];
-    return !!roles && roles.indexOf(rol || rolActual()) !== -1;
+  var permisos = (cuerpo.getAttribute('data-permisos') || '').split(' ');
+  function puede(permiso) {
+    return permisos.indexOf(permiso) !== -1;
   }
 
   function parametro(nombre) {
@@ -97,8 +36,11 @@
     return fijo[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ',' + fijo[1];
   }
 
+  // Acepta 1.286,50 · 1286,50 · 1286.50 · 45 (igual que App\Support\Monto en el servidor)
   function leerMonto(texto) {
-    var limpio = String(texto).trim().replace(/\s/g, '').replace(/\./g, '').replace(',', '.');
+    var limpio = String(texto).trim().replace(/\s/g, '');
+    if (limpio.indexOf(',') !== -1) limpio = limpio.replace(/\./g, '').replace(',', '.');
+    else if (!/^\d+\.\d{1,2}$/.test(limpio)) limpio = limpio.replace(/\./g, '');
     if (!/^\d+(\.\d{1,2})?$/.test(limpio)) return null;
     return Math.round(parseFloat(limpio) * 100) / 100;
   }
@@ -125,7 +67,7 @@
     window.setTimeout(function () { el.remove(); }, 3600);
   }
 
-  // Error junto al campo
+  // Error junto al campo (el servidor valida igual; esto solo adelanta el aviso)
   function marcarCampo(id, mensaje) {
     var control = document.getElementById(id);
     var error = document.getElementById(id + '-error');
@@ -142,138 +84,46 @@
     }
   }
 
-  // Solo demo: ?rol=cajero fija el rol (útil para pruebas)
-  if (ROLES[parametro('rol')]) guardar(CLAVE_ROL, parametro('rol'));
-
   window.Pahuichi = {
-    puede: puede, rolActual: rolActual, ROLES: ROLES, MODULOS: MODULOS,
-    parametro: parametro, leer: leer, guardar: guardar, CLAVE_ROL: CLAVE_ROL,
+    puede: puede, parametro: parametro, leer: leer, guardar: guardar,
     bs: bs, leerMonto: leerMonto, normalizar: normalizar, aviso: aviso, marcarCampo: marcarCampo
   };
 
-  // PWA: registrar el service worker cuando se sirve por http(s)
-  if ('serviceWorker' in navigator && /^https?:/.test(window.location.protocol)) {
-    var raiz = document.body.classList.contains('panel') ? '../sw.js' : 'sw.js';
-    navigator.serviceWorker.register(raiz).catch(function () { /* sin PWA: la demo sigue funcionando */ });
+  // PWA: service worker en la raíz del sitio
+  if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
+    navigator.serviceWorker.register('/sw.js').catch(function () { /* sin PWA, el sistema sigue funcionando */ });
   }
 
-  var cuerpo = document.body;
   if (!cuerpo.classList.contains('panel')) return;
 
-  var moduloPagina = cuerpo.getAttribute('data-modulo');
-  var es403 = cuerpo.getAttribute('data-pagina') === '403';
-
-  // Guardia de permiso (con servidor: middleware Rol + bitácora)
-  if (!es403 && !puede('modulo.' + moduloPagina)) {
-    window.location.replace('403.html?m=' + encodeURIComponent(moduloPagina));
-    return;
-  }
+  // Aviso que deja el servidor tras guardar (patrón POST, redirección, GET)
+  if (cuerpo.hasAttribute('data-aviso')) aviso(cuerpo.getAttribute('data-aviso'));
 
   /* ------------------------------------------------------------------
-     Aplicar rol: menú, acciones y bloques por rol
+     Estado de la conexión con el servidor
      ------------------------------------------------------------------ */
-  function aplicarRol() {
-    var rol = rolActual();
-    var datos = ROLES[rol];
-
-    document.querySelectorAll('[data-rol-nombre]').forEach(function (el) { el.textContent = datos.usuario; });
-    document.querySelectorAll('[data-rol-etiqueta]').forEach(function (el) { el.textContent = datos.etiqueta; });
-
-    document.querySelectorAll('.menu__item[data-modulo]').forEach(function (li) {
-      li.hidden = !puede('modulo.' + li.getAttribute('data-modulo'), rol);
-    });
-
-    // Separadores: solo entre grupos con algo visible a ambos lados
-    document.querySelectorAll('.menu__separador').forEach(function (sep) {
-      var antes = false;
-      var despues = false;
-      var el = sep.previousElementSibling;
-      while (el && !el.classList.contains('menu__separador')) { if (!el.hidden) antes = true; el = el.previousElementSibling; }
-      el = sep.nextElementSibling;
-      while (el && !el.classList.contains('menu__separador')) { if (!el.hidden) despues = true; el = el.nextElementSibling; }
-      sep.hidden = !(antes && despues);
-    });
-
-    document.querySelectorAll('[data-requiere]').forEach(function (el) {
-      el.hidden = !puede(el.getAttribute('data-requiere'), rol);
-    });
-
-    document.querySelectorAll('[data-sin-permiso]').forEach(function (el) {
-      el.hidden = puede(el.getAttribute('data-sin-permiso'), rol);
-    });
-
-    document.querySelectorAll('[data-solo-rol]').forEach(function (el) {
-      el.hidden = el.getAttribute('data-solo-rol').split(' ').indexOf(rol) === -1;
-    });
-
-    var selector = document.getElementById('demo-rol');
-    if (selector) selector.value = rol;
-
-    document.dispatchEvent(new CustomEvent('pahuichi:rol', { detail: { rol: rol } }));
-  }
-
-  aplicarRol();
-
-  // Página de acceso denegado: nombra el módulo y el rol, sin datos del módulo
-  if (es403) {
-    var m = parametro('m');
-    var rol403 = rolActual();
-    var nombre = document.getElementById('denegado-modulo');
-    if (nombre && MODULOS[m]) nombre.textContent = MODULOS[m];
-    var etiqueta = document.getElementById('denegado-rol');
-    if (etiqueta) etiqueta.textContent = ROLES[rol403].etiqueta;
-    var volver = document.getElementById('denegado-volver');
-    if (volver) volver.href = ROLES[rol403].inicio;
-  }
-
-  var selectorRol = document.getElementById('demo-rol');
-  if (selectorRol) {
-    selectorRol.addEventListener('change', function () {
-      guardar(CLAVE_ROL, selectorRol.value);
-      if (es403) { window.location.replace(ROLES[selectorRol.value].inicio); return; }
-      if (!puede('modulo.' + moduloPagina, selectorRol.value)) {
-        window.location.replace('403.html?m=' + encodeURIComponent(moduloPagina));
-        return;
-      }
-      aplicarRol();
-      iniciarInactividad();
-    });
-  }
-
-  /* ------------------------------------------------------------------
-     QR del día: sin uno vigente, el menú lo avisa y el POS deshabilita
-     «Cobrar con QR»
-     ------------------------------------------------------------------ */
-  var avisoQr = document.querySelector('.menu__item[data-modulo="qr"] .menu__aviso');
-  if (avisoQr) avisoQr.hidden = leer('pahuichi.qrVencido') !== '1';
-
-  /* ------------------------------------------------------------------
-     Estado de impresora (cola del servicio puente) y de la conexión
-     ------------------------------------------------------------------ */
-  var estadoImpresora = document.getElementById('estado-impresora');
-  if (estadoImpresora) {
-    var caida = leer('pahuichi.impresora') === 'caida';
-    estadoImpresora.classList.toggle('estado-sistema--alerta', caida);
-    estadoImpresora.querySelector('.estado-sistema__texto').textContent = caida ? 'Impresora sin conexión · 3 en cola' : 'Impresora lista';
-  }
-
   var estadoRed = document.getElementById('estado-red');
   function pintarRed() {
-    if (!estadoRed) return;
-    estadoRed.hidden = navigator.onLine;
+    if (estadoRed) estadoRed.hidden = navigator.onLine;
   }
-  window.addEventListener('online', function () { pintarRed(); aviso('Conexión recuperada. Las ventas pendientes se enviaron.'); });
+  window.addEventListener('online', function () { pintarRed(); aviso('Conexión recuperada.'); });
   window.addEventListener('offline', pintarRed);
   pintarRed();
 
   /* ------------------------------------------------------------------
-     Cierre por 15 min de inactividad, salvo el cajero (aviso 1 min antes)
+     Cierre por inactividad (el servidor lo aplica igual): aviso un minuto
+     antes. data-inactividad trae los minutos; el cajero no lo tiene.
      ------------------------------------------------------------------ */
+  var minutosInactividad = parseFloat(cuerpo.getAttribute('data-inactividad') || '0');
   var temporizadores = [];
   var dialogoInactividad = null;
 
   function cerrarPorInactividad() {
-    window.location.href = '../login.html?estado=inactividad';
+    var form = document.getElementById('form-salir');
+    if (!form) { window.location.href = '/login?estado=inactividad'; return; }
+    var motivo = form.querySelector('[name="motivo"]');
+    if (motivo) motivo.value = 'inactividad';
+    form.submit();
   }
 
   function avisarInactividad() {
@@ -284,11 +134,21 @@
       dialogoInactividad.innerHTML =
         '<div class="modal__cuerpo"><h2 class="modal__titulo" id="inactividad-titulo">¿Sigues ahí?</h2>' +
         '<p class="modal__texto">Por seguridad, tu sesión se cierra en un minuto por inactividad.</p></div>' +
-        '<div class="modal__acciones"><button class="boton" type="button" data-salir>Cerrar sesión</button>' +
+        '<div class="modal__acciones"><button class="boton" type="button" data-salir-ahora>Cerrar sesión</button>' +
         '<button class="boton boton--primario" type="button" data-cerrar-modal autofocus>Seguir trabajando</button></div>';
       document.body.appendChild(dialogoInactividad);
-      dialogoInactividad.querySelector('[data-salir]').addEventListener('click', cerrarPorInactividad);
-      dialogoInactividad.addEventListener('close', iniciarInactividad);
+      dialogoInactividad.querySelector('[data-salir-ahora]').addEventListener('click', function () {
+        var form = document.getElementById('form-salir');
+        if (form) form.submit();
+      });
+      dialogoInactividad.addEventListener('close', function () {
+        // Seguir trabajando: un pedido al servidor renueva la sesión
+        fetch('/sesion/seguir', {
+          method: 'POST',
+          headers: { 'X-CSRF-Token': cuerpo.getAttribute('data-csrf') || '', 'Accept': 'application/json' }
+        }).catch(function () { /* si no hay red, el servidor decidirá en el próximo pedido */ });
+        iniciarInactividad();
+      });
     }
     if (!dialogoInactividad.open) dialogoInactividad.showModal();
   }
@@ -296,8 +156,8 @@
   function iniciarInactividad() {
     temporizadores.forEach(window.clearTimeout);
     temporizadores = [];
-    if (rolActual() === 'cajero') return;
-    var minutos = parametro('inactividad') ? 0.05 : 14; // ?inactividad=1 lo muestra enseguida
+    if (!minutosInactividad) return;
+    var minutos = parametro('inactividad') ? 0.05 : minutosInactividad - 1; // ?inactividad=1 lo muestra enseguida
     temporizadores.push(window.setTimeout(avisarInactividad, minutos * 60000));
     temporizadores.push(window.setTimeout(cerrarPorInactividad, (minutos + 1) * 60000));
   }
@@ -504,8 +364,16 @@
     }
   });
 
-  // Cerrar sesión (con servidor: POST con CSRF a /salir)
-  document.querySelectorAll('[data-salir]').forEach(function (b) {
-    b.addEventListener('click', function () { window.location.href = '../login.html?estado=salida'; });
+  // Envíos que piden confirmación: <form data-confirmar="¿Seguro?">
+  document.addEventListener('submit', function (e) {
+    var texto = e.target.getAttribute && e.target.getAttribute('data-confirmar');
+    if (texto && !window.confirm(texto)) e.preventDefault();
+  });
+
+  // Selects que envían su formulario al cambiar (por ejemplo, el rol en la tabla de usuarios)
+  document.addEventListener('change', function (e) {
+    var sel = e.target.closest('[data-enviar-al-cambiar]');
+    if (!sel || !sel.form) return;
+    if (sel.form.requestSubmit) sel.form.requestSubmit(); else sel.form.submit();
   });
 })();

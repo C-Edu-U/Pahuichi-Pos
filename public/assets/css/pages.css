@@ -673,6 +673,12 @@
   margin-top: var(--esp-1);
 }
 
+/* Página suelta, sin menú (errores 404 y 500) */
+.contenido--suelto {
+  margin-inline: auto;
+  max-width: 48rem;
+}
+
 /* ==========================================================================
    Acceso (login)
    ========================================================================== */

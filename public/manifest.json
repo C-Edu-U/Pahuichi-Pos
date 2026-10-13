@@ -3,12 +3,12 @@
   "short_name": "Pahuichi",
   "description": "Punto de venta del restaurante: caja, cobros, facturas y reportes.",
   "lang": "es-BO",
-  "start_url": "login.html",
-  "scope": "./",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#13603e",
   "icons": [
-    { "src": "assets/img/icono.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+    { "src": "/assets/img/icono.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
   ]
 }
