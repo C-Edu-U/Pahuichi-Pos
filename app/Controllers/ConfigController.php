@@ -11,10 +11,11 @@ use App\Core\Peticion;
 use App\Core\Respuesta;
 use App\Models\Bitacora;
 use App\Models\Negocio;
+use App\Models\ParametrosFiscales;
 use App\Services\Imagenes;
 use DomainException;
 
-/** Configuración del negocio (HU-08). Solo el administrador. */
+/** Configuración: negocio (HU-08) y parámetros fiscales (HU-09). Solo el administrador. */
 final class ConfigController extends Controller
 {
     private const LOGO_MAX = 1048576;
@@ -54,6 +55,61 @@ final class ConfigController extends Controller
         }
         Bitacora::registrar('config.negocio', 'negocio', 1, $this->cambios($antes, $datos));
         return $this->redirigirConAviso('/config#negocio', 'Datos del negocio guardados.');
+    }
+
+    /** Parámetros fiscales simulados (HU-09). */
+    public function fiscal(Peticion $peticion): Respuesta
+    {
+        $d = [
+            'codigo_sucursal' => (string) $peticion->entrada('codigo_sucursal'),
+            'codigo_punto_venta' => (string) $peticion->entrada('codigo_punto_venta'),
+            'actividad_economica' => (string) $peticion->entrada('actividad_economica'),
+            'cuis' => strtoupper((string) $peticion->entrada('cuis')),
+            'cufd' => (string) $peticion->entrada('cufd'),
+            'cufd_codigo_control' => strtoupper((string) $peticion->entrada('cufd_codigo_control')),
+            'cufd_vigencia' => (string) $peticion->entrada('cufd_vigencia'),
+            'numero_inicial' => (string) $peticion->entrada('numero_inicial'),
+            'modalidad' => (string) $peticion->entrada('modalidad'),
+        ];
+
+        $errores = [];
+        foreach (['codigo_sucursal' => 'f-sucursal', 'codigo_punto_venta' => 'f-pv'] as $campo => $id) {
+            if (!preg_match('/^\d{1,4}$/', $d[$campo])) {
+                $errores[$id] = 'Escribe un número de 0 a 9999.';
+            }
+        }
+        if ($d['actividad_economica'] === '' || mb_strlen($d['actividad_economica']) > 120) {
+            $errores['f-actividad'] = 'Escribe el código y la descripción de la actividad (hasta 120 caracteres).';
+        }
+        if (!preg_match('/^[A-Z0-9]{4,20}$/', $d['cuis'])) {
+            $errores['f-cuis'] = 'El CUIS tiene de 4 a 20 letras o números.';
+        }
+        if (!preg_match('/^[A-Za-z0-9+\/=]{8,120}$/', $d['cufd'])) {
+            $errores['f-cufd'] = 'El CUFD tiene de 8 a 120 letras, números o los signos + / =.';
+        }
+        if (!preg_match('/^[A-F0-9]{8,40}$/', $d['cufd_codigo_control'])) {
+            $errores['f-control'] = 'El código de control tiene de 8 a 40 caracteres hexadecimales (0-9 y A-F).';
+        }
+        $vigencia = \DateTimeImmutable::createFromFormat('!Y-m-d\TH:i', $d['cufd_vigencia']);
+        if ($vigencia === false || $vigencia->format('Y-m-d\TH:i') !== $d['cufd_vigencia']) {
+            $errores['f-vigencia'] = 'Elige la fecha y la hora de vigencia.';
+        } else {
+            $d['cufd_vigencia'] = $vigencia->format('Y-m-d H:i:00');
+        }
+        if (!preg_match('/^[1-9]\d{0,8}$/', $d['numero_inicial'])) {
+            $errores['f-inicial'] = 'El número inicial es un entero desde 1.';
+        }
+        if (!isset(ParametrosFiscales::MODALIDADES[$d['modalidad']])) {
+            $errores['f-modalidad'] = 'Elige una modalidad de la lista.';
+        }
+        if ($errores) {
+            return $this->pantalla(['errores' => $errores, 'fiscal' => $d + ParametrosFiscales::obtener()], 422);
+        }
+
+        $antes = ParametrosFiscales::obtener();
+        ParametrosFiscales::guardar($d);
+        Bitacora::registrar('config.fiscal', 'parametros_fiscales', 1, $this->cambios($antes, $d));
+        return $this->redirigirConAviso('/config#fiscal', 'Parámetros fiscales guardados.');
     }
 
     /** Logo del negocio (también lo usarán la factura y la pantalla del cliente). */
@@ -117,6 +173,7 @@ final class ConfigController extends Controller
             'js' => ['config.js'],
             'errores' => [],
             'negocio' => Negocio::obtener(),
+            'fiscal' => ParametrosFiscales::obtener(),
             'leyendas' => (int) DB::valor('SELECT COUNT(*) FROM leyendas WHERE activo = 1'),
         ], $estado);
     }

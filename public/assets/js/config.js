@@ -34,5 +34,22 @@
     });
   }
 
+  var fiscal = $('fiscal');
+  if (fiscal) {
+    ['f-cuis', 'f-control'].forEach(function (id) {
+      $(id).addEventListener('input', function () { this.value = this.value.toUpperCase(); });
+    });
+    fiscal.addEventListener('submit', function (e) {
+      validar(fiscal, {
+        'f-sucursal': function (v) { return /^\d{1,4}$/.test(v) ? '' : 'Escribe un número de 0 a 9999.'; },
+        'f-pv': function (v) { return /^\d{1,4}$/.test(v) ? '' : 'Escribe un número de 0 a 9999.'; },
+        'f-cuis': function (v) { return /^[A-Z0-9]{4,20}$/.test(v) ? '' : 'El CUIS tiene de 4 a 20 letras o números.'; },
+        'f-control': function (v) { return /^[A-F0-9]{8,40}$/.test(v) ? '' : 'El código de control tiene de 8 a 40 caracteres hexadecimales (0-9 y A-F).'; },
+        'f-vigencia': function (v) { return v ? '' : 'Elige la fecha y la hora de vigencia.'; },
+        'f-inicial': function (v) { return /^[1-9]\d{0,8}$/.test(v) ? '' : 'El número inicial es un entero desde 1.'; }
+      }, e);
+    });
+  }
+
   window.PahuichiConfig = { validar: validar };
 })();

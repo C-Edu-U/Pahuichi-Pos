@@ -37,10 +37,11 @@ $router->post('/usuarios/{id}/desbloquear', [UsuarioController::class, 'desbloqu
 $router->post('/usuarios/{id}/clave', [UsuarioController::class, 'resetearClave'], $usuarios);
 $router->post('/usuarios/{id}/pin', [UsuarioController::class, 'resetearPin'], $usuarios);
 
-// Configuración (HU-08)
+// Configuración (HU-08, HU-09)
 $config = ['auth', 'permiso:modulo.config'];
 $router->get('/config', [ConfigController::class, 'index'], $config);
 $router->post('/config/negocio', [ConfigController::class, 'negocio'], $config);
+$router->post('/config/fiscal', [ConfigController::class, 'fiscal'], $config);
 $router->get('/negocio/logo', [ConfigController::class, 'logo']);
 
 // Módulos aún sin construir: pantalla «próximamente»

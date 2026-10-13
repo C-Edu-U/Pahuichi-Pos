@@ -1,6 +1,7 @@
 <?php
-/** Configuración. Variables: $negocio, $errores, $leyendas (cantidad activa) */
+/** Configuración. Variables: $negocio, $fiscal, $errores, $leyendas (cantidad activa) */
 use App\Core\Config;
+use App\Models\ParametrosFiscales;
 
 $pendiente = static function (string $id, string $titulo, string $historias, string $texto): void {
     $tituloSeccion = $titulo;
@@ -75,7 +76,80 @@ $pendiente = static function (string $id, string $titulo, string $historias, str
             </div>
           </form>
 
-<?php $pendiente('fiscal', 'Parámetros fiscales', 'HU-09', 'Sucursal, punto de venta, actividad, CUIS, CUFD con vigencia y código de control, número inicial y modalidad.'); ?>
+<?php
+$vigencia = substr(str_replace(' ', 'T', (string) $fiscal['cufd_vigencia']), 0, 16);
+$cufdVigente = !isset($errores['f-vigencia']) && ParametrosFiscales::cufdVigente($fiscal);
+?>
+          <form class="panel-bloque config__seccion" id="fiscal" method="post" action="/config/fiscal" novalidate aria-labelledby="t-fiscal">
+            <?= csrf_campo() ?>
+            <div class="panel-bloque__cabecera">
+              <h2 class="panel-bloque__titulo" id="t-fiscal">Parámetros fiscales</h2>
+              <span class="insignia insignia--neutra">Simulados</span>
+            </div>
+            <div class="panel-bloque__cuerpo formulario-rapido__campos">
+              <div class="campo">
+                <label class="campo__etiqueta" for="f-sucursal">Sucursal</label>
+                <input class="control control--numero" id="f-sucursal" name="codigo_sucursal" type="text" inputmode="numeric" maxlength="4" value="<?= e($fiscal['codigo_sucursal']) ?>"<?= campo_error($errores, 'f-sucursal', 'f-sucursal-ayuda') ?>>
+                <p class="campo__ayuda" id="f-sucursal-ayuda">0 es la casa matriz.</p>
+                <?= mensaje_error($errores, 'f-sucursal') ?>
+              </div>
+              <div class="campo">
+                <label class="campo__etiqueta" for="f-pv">Punto de venta</label>
+                <input class="control control--numero" id="f-pv" name="codigo_punto_venta" type="text" inputmode="numeric" maxlength="4" value="<?= e($fiscal['codigo_punto_venta']) ?>"<?= campo_error($errores, 'f-pv') ?>>
+                <?= mensaje_error($errores, 'f-pv') ?>
+              </div>
+              <div class="campo campo--ancho">
+                <label class="campo__etiqueta" for="f-actividad">Actividad económica</label>
+                <input class="control" id="f-actividad" name="actividad_economica" type="text" maxlength="120" value="<?= e($fiscal['actividad_economica']) ?>"<?= campo_error($errores, 'f-actividad') ?>>
+                <?= mensaje_error($errores, 'f-actividad') ?>
+              </div>
+              <div class="campo">
+                <label class="campo__etiqueta" for="f-cuis">CUIS</label>
+                <input class="control codigo-entrada" id="f-cuis" name="cuis" type="text" maxlength="20" value="<?= e($fiscal['cuis']) ?>" autocomplete="off" spellcheck="false"<?= campo_error($errores, 'f-cuis') ?>>
+                <?= mensaje_error($errores, 'f-cuis') ?>
+              </div>
+              <div class="campo">
+                <label class="campo__etiqueta" for="f-modalidad">Modalidad</label>
+                <select class="control" id="f-modalidad" name="modalidad"<?= campo_error($errores, 'f-modalidad') ?>>
+<?php foreach (ParametrosFiscales::MODALIDADES as $clave => $texto): ?>
+                  <option value="<?= e($clave) ?>"<?= $fiscal['modalidad'] === $clave ? ' selected' : '' ?>><?= e($texto) ?></option>
+<?php endforeach; ?>
+                </select>
+                <?= mensaje_error($errores, 'f-modalidad') ?>
+              </div>
+              <div class="campo campo--ancho">
+                <label class="campo__etiqueta" for="f-cufd">CUFD</label>
+                <input class="control codigo-entrada" id="f-cufd" name="cufd" type="text" maxlength="120" value="<?= e($fiscal['cufd']) ?>" autocomplete="off" spellcheck="false"<?= campo_error($errores, 'f-cufd') ?>>
+                <?= mensaje_error($errores, 'f-cufd') ?>
+              </div>
+              <div class="campo">
+                <label class="campo__etiqueta" for="f-vigencia">Vigencia del CUFD</label>
+                <input class="control" id="f-vigencia" name="cufd_vigencia" type="datetime-local" value="<?= e($vigencia) ?>"<?= campo_error($errores, 'f-vigencia', 'f-vigencia-ayuda') ?>>
+                <p class="campo__ayuda" id="f-vigencia-ayuda">Si no corresponde al día, no se emiten facturas.</p>
+                <?= mensaje_error($errores, 'f-vigencia') ?>
+              </div>
+              <div class="campo">
+                <label class="campo__etiqueta" for="f-control">Código de control</label>
+                <input class="control codigo-entrada" id="f-control" name="cufd_codigo_control" type="text" maxlength="40" value="<?= e($fiscal['cufd_codigo_control']) ?>" autocomplete="off" spellcheck="false"<?= campo_error($errores, 'f-control') ?>>
+                <?= mensaje_error($errores, 'f-control') ?>
+              </div>
+              <div class="campo">
+                <label class="campo__etiqueta" for="f-inicial">Número inicial de factura</label>
+                <input class="control control--numero" id="f-inicial" name="numero_inicial" type="text" inputmode="numeric" maxlength="9" value="<?= e($fiscal['numero_inicial']) ?>"<?= campo_error($errores, 'f-inicial') ?>>
+                <?= mensaje_error($errores, 'f-inicial') ?>
+              </div>
+              <dl class="datos campo--ancho">
+                <dt>Estado del CUFD</dt>
+                <dd><?= $cufdVigente
+                    ? '<span class="insignia insignia--ok">Vigente hoy</span>'
+                    : '<span class="insignia insignia--aviso">Vencido: no corresponde al día de hoy</span>' ?></dd>
+                <dt>Próxima factura</dt><dd class="num">N° <?= e($fiscal['numero_inicial']) ?></dd>
+              </dl>
+            </div>
+            <div class="panel-bloque__pie">
+              <button class="boton boton--primario" type="submit">Guardar</button>
+            </div>
+          </form>
 
 <?php $pendiente('leyendas', 'Leyendas de la Ley N° 453', 'HU-10', "Hay {$leyendas} leyendas cargadas. Cada factura tomará una al azar entre las activas."); ?>
 
