@@ -59,7 +59,6 @@ return [
     ],
     'config' => [
         'grupo' => 5, 'ruta' => '/config', 'icono' => 'config', 'texto' => 'Configuración',
-        'pendiente' => ['historias' => 'HU-08, HU-09, HU-11', 'texto' => 'Datos del negocio, parámetros fiscales y turnos.'],
     ],
     // Fuera del menú: se entra desde el estado de la impresora
     'impresion' => [

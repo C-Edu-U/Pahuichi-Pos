@@ -9,6 +9,7 @@ declare(strict_types=1);
  */
 
 use App\Controllers\AuthController;
+use App\Controllers\ConfigController;
 use App\Controllers\InicioController;
 use App\Controllers\ModuloController;
 use App\Controllers\SaludController;
@@ -35,6 +36,12 @@ $router->post('/usuarios/{id}/estado', [UsuarioController::class, 'estado'], $us
 $router->post('/usuarios/{id}/desbloquear', [UsuarioController::class, 'desbloquear'], $usuarios);
 $router->post('/usuarios/{id}/clave', [UsuarioController::class, 'resetearClave'], $usuarios);
 $router->post('/usuarios/{id}/pin', [UsuarioController::class, 'resetearPin'], $usuarios);
+
+// Configuración (HU-08)
+$config = ['auth', 'permiso:modulo.config'];
+$router->get('/config', [ConfigController::class, 'index'], $config);
+$router->post('/config/negocio', [ConfigController::class, 'negocio'], $config);
+$router->get('/negocio/logo', [ConfigController::class, 'logo']);
 
 // Módulos aún sin construir: pantalla «próximamente»
 foreach (Config::get('modulos') as $clave => $m) {

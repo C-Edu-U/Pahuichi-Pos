@@ -848,6 +848,20 @@
   scroll-margin-top: calc(var(--barra-alto) + var(--esp-2));
 }
 
+.config__seccion--pendiente .config__nota {
+  padding-bottom: var(--esp-3);
+}
+
+.logo-actual img {
+  display: block;
+  width: auto;
+  max-width: 10rem;
+  height: auto;
+  max-height: 4rem;
+  margin-bottom: var(--esp-1);
+  object-fit: contain;
+}
+
 .config__opciones {
   display: grid;
   gap: var(--esp-3);
