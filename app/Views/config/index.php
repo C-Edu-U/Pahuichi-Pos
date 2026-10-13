@@ -1,7 +1,8 @@
 <?php
-/** Configuración. Variables: $negocio, $fiscal, $errores, $leyendas (cantidad activa) */
+/** Configuración. Variables: $negocio, $fiscal, $turnos, $errores, $leyendas (cantidad activa) */
 use App\Core\Config;
 use App\Models\ParametrosFiscales;
+use App\Models\Turno;
 
 $pendiente = static function (string $id, string $titulo, string $historias, string $texto): void {
     $tituloSeccion = $titulo;
@@ -153,7 +154,34 @@ $cufdVigente = !isset($errores['f-vigencia']) && ParametrosFiscales::cufdVigente
 
 <?php $pendiente('leyendas', 'Leyendas de la Ley N° 453', 'HU-10', "Hay {$leyendas} leyendas cargadas. Cada factura tomará una al azar entre las activas."); ?>
 
-<?php $pendiente('turnos', 'Turnos', 'HU-11', 'Medio día de 11:00 a 16:00 y noche de 18:00 a 24:00.'); ?>
+          <form class="panel-bloque config__seccion" id="turnos" method="post" action="/config/turnos" novalidate aria-labelledby="t-turnos">
+            <?= csrf_campo() ?>
+            <div class="panel-bloque__cabecera">
+              <h2 class="panel-bloque__titulo" id="t-turnos">Turnos</h2>
+            </div>
+            <div class="panel-bloque__cuerpo turnos">
+<?php foreach ($turnos as $t): $id = (int) $t['id']; ?>
+              <fieldset class="turno">
+                <legend><?= e($t['nombre']) ?></legend>
+                <div class="campo">
+                  <label class="campo__etiqueta" for="t<?= $id ?>-ini">Desde</label>
+                  <input class="control" id="t<?= $id ?>-ini" name="turnos[<?= $id ?>][inicio]" type="time" value="<?= e(Turno::horaControl($t['hora_inicio'])) ?>"<?= campo_error($errores, "t{$id}-ini") ?>>
+                  <?= mensaje_error($errores, "t{$id}-ini") ?>
+                </div>
+                <div class="campo">
+                  <label class="campo__etiqueta" for="t<?= $id ?>-fin">Hasta</label>
+                  <input class="control" id="t<?= $id ?>-fin" name="turnos[<?= $id ?>][fin]" type="time" value="<?= e(Turno::horaControl($t['hora_fin'])) ?>"<?= campo_error($errores, "t{$id}-fin", "t{$id}-fin-ayuda") ?>>
+                  <p class="campo__ayuda" id="t<?= $id ?>-fin-ayuda">23:59 es hasta medianoche.</p>
+                  <?= mensaje_error($errores, "t{$id}-fin") ?>
+                </div>
+              </fieldset>
+<?php endforeach; ?>
+              <p class="config__nota">Un turno no abre si la caja del anterior no está cerrada y arqueada.</p>
+            </div>
+            <div class="panel-bloque__pie">
+              <button class="boton boton--primario" type="submit">Guardar</button>
+            </div>
+          </form>
 
 <?php $pendiente('impresoras', 'Impresoras', 'HU-12', 'Ancho de 76 o 58 mm, columnas y qué ticket imprime cada una.'); ?>
 

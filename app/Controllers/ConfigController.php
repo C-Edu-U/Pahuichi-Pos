@@ -12,10 +12,11 @@ use App\Core\Respuesta;
 use App\Models\Bitacora;
 use App\Models\Negocio;
 use App\Models\ParametrosFiscales;
+use App\Models\Turno;
 use App\Services\Imagenes;
 use DomainException;
 
-/** Configuración: negocio (HU-08) y parámetros fiscales (HU-09). Solo el administrador. */
+/** Configuración: negocio (HU-08), parámetros fiscales (HU-09) y turnos (HU-11). Solo el administrador. */
 final class ConfigController extends Controller
 {
     private const LOGO_MAX = 1048576;
@@ -112,6 +113,67 @@ final class ConfigController extends Controller
         return $this->redirigirConAviso('/config#fiscal', 'Parámetros fiscales guardados.');
     }
 
+    /** Horario de los turnos (HU-11). 23:59 en el fin significa hasta medianoche (24:00). */
+    public function turnos(Peticion $peticion): Respuesta
+    {
+        $enviados = is_array($peticion->datos['turnos'] ?? null) ? $peticion->datos['turnos'] : [];
+        $turnos = Turno::todos();
+        $errores = [];
+        $nuevos = [];
+        foreach ($turnos as $t) {
+            $id = (int) $t['id'];
+            $inicio = trim((string) ($enviados[$id]['inicio'] ?? ''));
+            $fin = trim((string) ($enviados[$id]['fin'] ?? ''));
+            if (!preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $inicio)) {
+                $errores["t{$id}-ini"] = 'Elige la hora de inicio.';
+            }
+            if (!preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $fin)) {
+                $errores["t{$id}-fin"] = 'Elige la hora de fin.';
+            }
+            $fin = $fin === '23:59' ? '24:00' : $fin;
+            if (!isset($errores["t{$id}-ini"]) && !isset($errores["t{$id}-fin"]) && $inicio >= $fin) {
+                $errores["t{$id}-fin"] = 'Debe terminar después de empezar.';
+            }
+            $nuevos[$id] = ['inicio' => "{$inicio}:00", 'fin' => "{$fin}:00", 'nombre' => $t['nombre']];
+        }
+
+        // Los turnos no se cruzan: cada uno empieza cuando el anterior ya terminó
+        if (!$errores) {
+            $orden = $nuevos;
+            uasort($orden, static fn (array $a, array $b): int => strcmp($a['inicio'], $b['inicio']));
+            $anterior = null;
+            foreach ($orden as $id => $t) {
+                if ($anterior !== null && $t['inicio'] < $anterior['fin']) {
+                    $errores["t{$id}-ini"] = "Se cruza con el turno de {$anterior['nombre']}, que termina a las " . substr($anterior['fin'], 0, 5) . '.';
+                }
+                $anterior = $t;
+            }
+        }
+
+        if ($errores) {
+            $mostrar = array_map(static function (array $t) use ($nuevos): array {
+                $n = $nuevos[(int) $t['id']];
+                return ['hora_inicio' => $n['inicio'], 'hora_fin' => $n['fin']] + $t;
+            }, $turnos);
+            return $this->pantalla(['errores' => $errores, 'turnos' => $mostrar], 422);
+        }
+
+        $cambios = [];
+        DB::transaccion(function () use ($turnos, $nuevos, &$cambios): void {
+            foreach ($turnos as $t) {
+                $n = $nuevos[(int) $t['id']];
+                if ($n['inicio'] !== $t['hora_inicio'] || $n['fin'] !== $t['hora_fin']) {
+                    Turno::cambiarHorario((int) $t['id'], $n['inicio'], $n['fin']);
+                    $cambios[$t['clave']] = ['antes' => Turno::horario($t), 'despues' => Turno::horario(['hora_inicio' => $n['inicio'], 'hora_fin' => $n['fin']])];
+                }
+            }
+        });
+        if ($cambios) {
+            Bitacora::registrar('config.turnos', 'turnos', null, $cambios);
+        }
+        return $this->redirigirConAviso('/config#turnos', 'Turnos guardados.');
+    }
+
     /** Logo del negocio (también lo usarán la factura y la pantalla del cliente). */
     public function logo(Peticion $peticion): Respuesta
     {
@@ -174,6 +236,7 @@ final class ConfigController extends Controller
             'errores' => [],
             'negocio' => Negocio::obtener(),
             'fiscal' => ParametrosFiscales::obtener(),
+            'turnos' => Turno::todos(),
             'leyendas' => (int) DB::valor('SELECT COUNT(*) FROM leyendas WHERE activo = 1'),
         ], $estado);
     }
