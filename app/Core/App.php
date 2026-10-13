@@ -16,6 +16,7 @@ final class App
         'auth' => \App\Middleware\Autenticado::class,
         'invitado' => \App\Middleware\Invitado::class,
         'permiso' => \App\Middleware\Permiso::class,
+        'caja' => \App\Middleware\CajaAbierta::class,
     ];
 
     /** Middleware de todas las rutas. */

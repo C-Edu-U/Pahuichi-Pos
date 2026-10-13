@@ -12,7 +12,6 @@ return [
     ],
     'pos' => [
         'grupo' => 1, 'ruta' => '/pos', 'icono' => 'pos', 'texto' => 'Punto de venta',
-        'pendiente' => ['historias' => 'HU-21, HU-28 a HU-34', 'texto' => 'Cuadrícula de productos, carrito y cobro.'],
     ],
     'caja' => [
         'grupo' => 1, 'ruta' => '/caja', 'icono' => 'caja', 'texto' => 'Caja',

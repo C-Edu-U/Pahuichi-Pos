@@ -14,6 +14,7 @@ use App\Controllers\CategoriaController;
 use App\Controllers\ConfigController;
 use App\Controllers\InicioController;
 use App\Controllers\ModuloController;
+use App\Controllers\PosController;
 use App\Controllers\ProductoController;
 use App\Controllers\SaludController;
 use App\Controllers\UsuarioController;
@@ -68,6 +69,9 @@ $router->post('/catalogo/categorias/{id}/estado', [CategoriaController::class, '
 // Caja (HU-20)
 $router->get('/caja', [CajaController::class, 'index'], ['auth', 'permiso:modulo.caja']);
 $router->post('/caja/abrir', [CajaController::class, 'abrir'], ['auth', 'permiso:modulo.caja']);
+
+// Punto de venta (HU-21): sin caja abierta no se vende
+$router->get('/pos', [PosController::class, 'index'], ['auth', 'permiso:modulo.pos', 'caja']);
 
 // Módulos aún sin construir: pantalla «próximamente»
 foreach (Config::get('modulos') as $clave => $m) {

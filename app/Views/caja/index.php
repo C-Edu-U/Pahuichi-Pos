@@ -91,11 +91,10 @@ $fecha = static fn (string $momento): string => (new DateTimeImmutable($momento)
             </dl>
             <p class="caja__ciego">
               <?= icono('ocultar', 'icono--sm') ?>
-              Cierre ciego: el efectivo esperado se muestra recién en el resumen, después de contar.
+              Cierre ciego: el efectivo esperado se muestra recién en el resumen, después de contar. Llega con HU-23 a HU-26.
             </p>
             <div class="panel-bloque__pie">
               <a class="boton boton--primario" href="/pos"><?= icono('pos') ?> Ir al punto de venta</a>
-              <span class="insignia insignia--aviso">Cierre ciego y arqueo: próximamente · HU-23 a HU-26</span>
             </div>
           </div>
         </section>
@@ -105,7 +104,7 @@ $fecha = static fn (string $momento): string => (new DateTimeImmutable($momento)
             <h2 id="t-movimientos">Ingresos y egresos</h2>
             <span class="insignia insignia--aviso">Próximamente · HU-22</span>
           </div>
-          <p class="config__nota">Movimientos de efectivo durante el turno con monto, motivo y responsable.</p>
+          <p class="cabeza-pagina__texto">Movimientos de efectivo durante el turno, con monto, motivo y responsable.</p>
         </section>
       </div>
 <?php endif; ?>
