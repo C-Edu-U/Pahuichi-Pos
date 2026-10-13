@@ -16,7 +16,6 @@ return [
     ],
     'caja' => [
         'grupo' => 1, 'ruta' => '/caja', 'icono' => 'caja', 'texto' => 'Caja',
-        'pendiente' => ['historias' => 'HU-20 a HU-27', 'texto' => 'Apertura con fondo inicial, movimientos y cierre ciego con arqueo.'],
     ],
     'ventas' => [
         'grupo' => 1, 'ruta' => '/ventas', 'icono' => 'ventas', 'texto' => 'Ventas y facturas',

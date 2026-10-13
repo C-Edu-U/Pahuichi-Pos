@@ -204,6 +204,15 @@
   transition: border-color var(--dur-corta) ease, box-shadow var(--dur-corta) ease;
 }
 
+/* Dato fijo con forma de campo (por ejemplo, el cajero de su propia caja) */
+.control--fijo {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  background: var(--fondo-alterno);
+  border-color: var(--color-borde);
+}
+
 .control::placeholder {
   color: var(--color-texto-3);
   opacity: 1;

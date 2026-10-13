@@ -9,6 +9,7 @@ declare(strict_types=1);
  */
 
 use App\Controllers\AuthController;
+use App\Controllers\CajaController;
 use App\Controllers\CategoriaController;
 use App\Controllers\ConfigController;
 use App\Controllers\InicioController;
@@ -63,6 +64,10 @@ $router->post('/catalogo/categorias', [CategoriaController::class, 'crear'], $ed
 $router->get('/catalogo/categorias/{id}/editar', [CategoriaController::class, 'editar'], $editarCatalogo);
 $router->post('/catalogo/categorias/{id}', [CategoriaController::class, 'actualizar'], $editarCatalogo);
 $router->post('/catalogo/categorias/{id}/estado', [CategoriaController::class, 'estado'], $editarCatalogo);
+
+// Caja (HU-20)
+$router->get('/caja', [CajaController::class, 'index'], ['auth', 'permiso:modulo.caja']);
+$router->post('/caja/abrir', [CajaController::class, 'abrir'], ['auth', 'permiso:modulo.caja']);
 
 // Módulos aún sin construir: pantalla «próximamente»
 foreach (Config::get('modulos') as $clave => $m) {
