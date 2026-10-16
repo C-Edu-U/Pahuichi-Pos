@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Tests\Integracion;
 
 use App\Core\DB;
+use App\Core\Reloj;
 use App\Models\Bitacora;
+use App\Models\Turno;
 use Tests\CasoPrueba;
 
 /** HU-11: turnos configurables. */
@@ -17,6 +19,7 @@ final class TurnosTest extends CasoPrueba
     protected function setUp(): void
     {
         parent::setUp();
+        Reloj::fijar('2026-10-15 10:00:00');
         $this->entrarComo('admin');
         $this->mediodia = (int) DB::valor("SELECT id FROM turnos WHERE clave = 'mediodia'");
         $this->noche = (int) DB::valor("SELECT id FROM turnos WHERE clave = 'noche'");
@@ -72,5 +75,95 @@ final class TurnosTest extends CasoPrueba
     public function testHoraInvalida(): void
     {
         $this->assertStringContainsString('Elige la hora de inicio.', $this->enviar('', '16:00', '18:00', '23:59')->cuerpo);
+    }
+
+    public function testAgregarTurnoNuevo(): void
+    {
+        $r = $this->post('/config/turnos', [
+            'accion' => 'agregar',
+            'nueva_clave' => 'madrugada',
+            'nuevo_nombre' => 'Madrugada',
+            'nuevo_inicio' => '22:00',
+            'nuevo_fin' => '06:00',
+            'nuevo_orden' => '3',
+        ]);
+
+        $this->assertRedirige('/config#turnos', $r);
+        $this->assertSame('22:00:00', DB::valor('SELECT hora_inicio FROM turnos WHERE clave = ?', ['madrugada']));
+        $this->assertSame('06:00:00', DB::valor('SELECT hora_fin FROM turnos WHERE clave = ?', ['madrugada']));
+        $this->assertCount(3, DB::filas('SELECT id FROM turnos ORDER BY orden'));
+        $this->assertCount(1, Bitacora::ultimos('config.turnos.agregar'));
+    }
+
+    public function testNoAgregarTurnoConClaveDuplicada(): void
+    {
+        $r = $this->post('/config/turnos', [
+            'accion' => 'agregar',
+            'nueva_clave' => 'mediodia',
+            'nuevo_nombre' => 'Duplicado',
+            'nuevo_inicio' => '22:00',
+            'nuevo_fin' => '06:00',
+            'nuevo_orden' => '3',
+        ]);
+
+        $this->assertSame(422, $r->estado);
+        $this->assertStringContainsString('ya existe', $r->cuerpo);
+    }
+
+    public function testNoAgregarTurnoConFinAntesDeInicio(): void
+    {
+        $r = $this->post('/config/turnos', [
+            'accion' => 'agregar',
+            'nueva_clave' => 'madrugada',
+            'nuevo_nombre' => 'Madrugada',
+            'nuevo_inicio' => '06:00',
+            'nuevo_fin' => '02:00',
+            'nuevo_orden' => '3',
+        ]);
+
+        $this->assertSame(422, $r->estado);
+        $this->assertStringContainsString('Debe terminar después de empezar.', $r->cuerpo);
+    }
+
+    public function testEliminarTurnoSinCajas(): void
+    {
+        $r = $this->post('/config/turnos', [
+            'accion' => 'eliminar',
+            'turnos_eliminar' => [$this->noche],
+        ]);
+
+        $this->assertRedirige('/config#turnos', $r);
+        $this->assertNull(Turno::buscar($this->noche));
+        $this->assertCount(1, Bitacora::ultimos('config.turnos.eliminar'));
+    }
+
+    public function testNoEliminarUltimoTurno(): void
+    {
+        $this->post('/config/turnos', ['accion' => 'eliminar', 'turnos_eliminar' => [$this->noche]]);
+
+        $r = $this->post('/config/turnos', ['accion' => 'eliminar', 'turnos_eliminar' => [$this->mediodia]]);
+
+        $this->assertSame(422, $r->estado);
+        $this->assertStringContainsString('único turno', $r->cuerpo);
+    }
+
+    public function testNoEliminarTurnoConCajasHoy(): void
+    {
+        DB::consulta("INSERT INTO cajas (turno_id, fecha, cajero_id, abierta_por, fondo_inicial, abierta_en) VALUES (?, CURDATE(), 1, 1, 100, NOW())", [$this->mediodia]);
+
+        $r = $this->post('/config/turnos', ['accion' => 'eliminar', 'turnos_eliminar' => [$this->mediodia]]);
+
+        $this->assertSame(422, $r->estado);
+        $this->assertStringContainsString('ya tiene cajas hoy', $r->cuerpo);
+    }
+
+    public function testNoEditarTurnoEnCurso(): void
+    {
+        Reloj::fijar('2026-10-15 12:00:00');
+
+        $r = $this->enviar('10:00', '15:00', '18:00', '23:59');
+
+        $this->assertSame(422, $r->estado);
+        $this->assertStringContainsString('está en curso', $r->cuerpo);
     }
 }

@@ -8,6 +8,7 @@ use App\Core\Controller;
 use App\Core\DB;
 use App\Core\ErrorHttp;
 use App\Core\Peticion;
+use App\Core\Reloj;
 use App\Core\Respuesta;
 use App\Models\Bitacora;
 use App\Models\Negocio;
@@ -15,6 +16,7 @@ use App\Models\ParametrosFiscales;
 use App\Models\Turno;
 use App\Services\Imagenes;
 use DomainException;
+use Throwable;
 
 /** Configuración: negocio (HU-08), parámetros fiscales (HU-09) y turnos (HU-11). Solo el administrador. */
 final class ConfigController extends Controller
@@ -116,25 +118,137 @@ final class ConfigController extends Controller
     /** Horario de los turnos (HU-11). 23:59 en el fin significa hasta medianoche (24:00). */
     public function turnos(Peticion $peticion): Respuesta
     {
-        $enviados = is_array($peticion->datos['turnos'] ?? null) ? $peticion->datos['turnos'] : [];
+        $accion = (string) $peticion->entrada('accion');
         $turnos = Turno::todos();
         $errores = [];
         $nuevos = [];
+        $eliminar = is_array($peticion->datos['turnos_eliminar'] ?? null) ? $peticion->datos['turnos_eliminar'] : [];
+
+        // Detectar acción por qué campos trae el POST (no hay input oculto de accion).
+        if ($eliminar !== []) {
+            $accion = 'eliminar';
+        } elseif ($peticion->entrada('nueva_clave') !== null) {
+            $accion = 'agregar';
+        } else {
+            $accion = 'editar';
+        }
+
+        // ---------- AGREGAR turno ----------
+        if ($accion === 'agregar') {
+            $clave = trim((string) $peticion->entrada('nueva_clave'));
+            $nombre = trim((string) $peticion->entrada('nuevo_nombre'));
+            $inicio = trim((string) $peticion->entrada('nuevo_inicio'));
+            $fin = trim((string) $peticion->entrada('nuevo_fin'));
+            $ordenTexto = trim((string) $peticion->entrada('nuevo_orden'));
+
+            if ($clave === '' || !preg_match('/^[a-z0-9_]{3,20}$/', $clave)) {
+                $errores['nueva_clave'] = 'La clave tiene de 3 a 20 letras minúsculas, números o guion bajo.';
+            } elseif (DB::valor('SELECT id FROM turnos WHERE clave = ?', [$clave]) !== null) {
+                $errores['nueva_clave'] = 'Esa clave de turno ya existe.';
+            }
+            if ($nombre === '' || mb_strlen($nombre) > 30) {
+                $errores['nuevo_nombre'] = 'El nombre tiene de 1 a 30 caracteres.';
+            }
+            if (!preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $inicio)) {
+                $errores['nuevo_inicio'] = 'Elige la hora de inicio.';
+            }
+            if (!preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $fin)) {
+                $errores['nuevo_fin'] = 'Elige la hora de fin.';
+            }
+            if (!preg_match('/^[1-9]\d*$/', $ordenTexto)) {
+                $errores['nuevo_orden'] = 'El orden es un número desde 1.';
+            }
+            if (!$errores && $inicio >= $fin) {
+                $errores['nuevo_fin'] = 'Debe terminar después de empezar.';
+            }
+            if (!$errores) {
+                $finDb = $fin === '23:59' ? '24:00:00' : "{$fin}:00";
+                $inicioDb = "{$inicio}:00";
+                // No se cruza con los existentes
+                foreach ($turnos as $t) {
+                    if ($inicioDb < $t['hora_fin'] && $t['hora_inicio'] < $finDb) {
+                        $errores['nuevo_inicio'] = "Se cruza con el turno de {$t['nombre']}.";
+                        break;
+                $anterior = $t;
+            }
+                }
+            }
+            if (!$errores) {
+                try {
+                    Turno::crear($clave, $nombre, $inicioDb, $finDb, (int) $ordenTexto);
+                    Bitacora::registrar('config.turnos.agregar', 'turnos', null, [
+                        'clave' => $clave,
+                        'nombre' => $nombre,
+                        'horario' => Turno::horario(['hora_inicio' => $inicioDb, 'hora_fin' => $finDb]),
+                    ]);
+                    return $this->redirigirConAviso('/config#turnos', 'Turno agregado.');
+                } catch (Throwable $e) {
+                    $errores['nuevo_general'] = 'No se pudo agregar el turno.';
+                }
+            }
+        }
+
+        // ---------- ELIMINAR turnos ----------
+        if ($accion === 'eliminar' && $eliminar !== []) {
+            $quedan = count(Turno::activos()) - count(array_filter($eliminar, static fn ($id): bool => Turno::buscar((int) $id) !== null));
+            foreach ($eliminar as $idRaw) {
+                $id = (int) $idRaw;
+                $t = Turno::buscar($id);
+                if ($t === null) {
+                    continue;
+                }
+                if ($quedan <= 0) {
+                    $errores["e{$id}"] = 'No se puede eliminar el último turno.';
+                    continue;
+                }
+                if (Turno::tieneCajasHoy($id)) {
+                    $errores["e{$id}"] = "El turno de {$t['nombre']} ya tiene cajas hoy y no se puede eliminar.";
+                    continue;
+                }
+                if (Turno::estaEnCurso($id)) {
+                    $errores["e{$id}"] = "El turno de {$t['nombre']} está en curso y no se puede eliminar.";
+                    continue;
+                }
+                Turno::eliminar($id);
+                $quedan--;
+                Bitacora::registrar('config.turnos.eliminar', 'turnos', $id, ['nombre' => $t['nombre']]);
+            }
+            if (!$errores) {
+                return $this->redirigirConAviso('/config#turnos', 'Turno(s) eliminado(s).');
+            }
+        }
+
+        // ---------- EDITAR horarios ----------
+        $enviados = is_array($peticion->datos['turnos'] ?? null) ? $peticion->datos['turnos'] : [];
+        $cambios = [];
+        $nuevos = [];
+
         foreach ($turnos as $t) {
             $id = (int) $t['id'];
-            $inicio = trim((string) ($enviados[$id]['inicio'] ?? ''));
-            $fin = trim((string) ($enviados[$id]['fin'] ?? ''));
+            $enviado = $enviados[$id] ?? [];
+            $inicio = trim((string) ($enviado['inicio'] ?? ''));
+            $fin = trim((string) ($enviado['fin'] ?? ''));
+            $nuevos[$id] = ['inicio' => '', 'fin' => '', 'nombre' => $t['nombre'], 'clave' => $t['clave']];
+
             if (!preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $inicio)) {
                 $errores["t{$id}-ini"] = 'Elige la hora de inicio.';
             }
             if (!preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $fin)) {
                 $errores["t{$id}-fin"] = 'Elige la hora de fin.';
             }
-            $fin = $fin === '23:59' ? '24:00' : $fin;
+            $finDb = $fin === '23:59' ? '24:00:00' : "{$fin}:00";
+            $inicioDb = "{$inicio}:00";
+            $nuevos[$id]['inicio'] = $inicioDb;
+            $nuevos[$id]['fin'] = $finDb;
+
+            // No se puede editar un turno que ya empezó o está en curso (salvo que sea futura modificación permitida)
+            if (!$errores && Turno::estaEnCurso($id)) {
+                $errores["t{$id}-ini"] = "El turno de {$t['nombre']} está en curso y su horario no se puede cambiar ahora.";
+            }
+
             if (!isset($errores["t{$id}-ini"]) && !isset($errores["t{$id}-fin"]) && $inicio >= $fin) {
                 $errores["t{$id}-fin"] = 'Debe terminar después de empezar.';
             }
-            $nuevos[$id] = ['inicio' => "{$inicio}:00", 'fin' => "{$fin}:00", 'nombre' => $t['nombre']];
         }
 
         // Los turnos no se cruzan: cada uno empieza cuando el anterior ya terminó
@@ -158,7 +272,6 @@ final class ConfigController extends Controller
             return $this->pantalla(['errores' => $errores, 'turnos' => $mostrar], 422);
         }
 
-        $cambios = [];
         DB::transaccion(function () use ($turnos, $nuevos, &$cambios): void {
             foreach ($turnos as $t) {
                 $n = $nuevos[(int) $t['id']];
@@ -233,9 +346,10 @@ final class ConfigController extends Controller
             'h1' => 'Configuración',
             'css' => ['modulos.css'],
             'js' => ['config.js'],
-            'errores' => [],
-            'negocio' => Negocio::obtener(),
-            'fiscal' => ParametrosFiscales::obtener(),
+        'errores' => [],
+        'viejo' => [],
+        'negocio' => Negocio::obtener(),
+        'fiscal' => ParametrosFiscales::obtener(),
             'turnos' => Turno::todos(),
             'leyendas' => (int) DB::valor('SELECT COUNT(*) FROM leyendas WHERE activo = 1'),
         ], $estado);
