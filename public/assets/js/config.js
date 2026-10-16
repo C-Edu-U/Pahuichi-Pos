@@ -1,87 +1,55 @@
-/* Configuración (demo): guardado por sección, leyendas, impresoras y respaldo. */
+/* Configuración: validación previa de los formularios (el servidor valida igual). */
 (function () {
   'use strict';
 
   var P = window.Pahuichi;
   var $ = function (id) { return document.getElementById(id); };
-  var LEYENDAS = [
-    'El proveedor deberá entregar el producto en las modalidades y términos ofertados o convenidos.',
-    'Tienes derecho a recibir información sobre las características y contenidos de los productos que consumes.',
-    'Está prohibido importar, distribuir o comercializar productos expirados o prontos a expirar.',
-    'Tienes derecho a un trato equitativo sin discriminación en la oferta de productos.',
-    'El proveedor debe exhibir certificaciones de habilitación o documentos que acrediten la calidad de sus productos.',
-    'Tienes derecho a la reposición o devolución del producto si no cumple lo ofertado.',
-    'El proveedor debe brindar atención sin discriminación, con trato cordial y oportuno.',
-    'Tienes derecho a denunciar las infracciones a tus derechos como consumidor.'
-  ];
 
-  function pintarLeyendas() {
-    var ul = $('lista-leyendas');
-    ul.innerHTML = '';
-    LEYENDAS.forEach(function (t, i) {
-      var li = document.createElement('li');
-      li.className = 'leyenda-fila';
-      li.innerHTML = '<span class="num leyenda-fila__n"></span><p></p><button class="interruptor-boton" type="button" role="switch" aria-checked="true"></button>';
-      li.children[0].textContent = i + 1;
-      li.children[1].textContent = 'Ley N° 453: ' + t;
-      li.children[2].setAttribute('aria-label', 'Leyenda ' + (i + 1) + ' activa');
-      ul.appendChild(li);
+  function validar(form, reglas, e) {
+    var primero = null;
+    Object.keys(reglas).forEach(function (id) {
+      var mensaje = reglas[id]($(id).value.trim());
+      P.marcarCampo(id, mensaje);
+      if (mensaje && !primero) primero = id;
+    });
+    if (primero) { e.preventDefault(); $(primero).focus(); }
+  }
+
+  var negocio = $('negocio');
+  if (negocio) {
+    negocio.addEventListener('submit', function (e) {
+      validar(negocio, {
+        'n-razon': function (v) { return v ? '' : 'Escribe la razón social.'; },
+        'n-comercial': function (v) { return v ? '' : 'Escribe el nombre comercial.'; },
+        'n-nit': function (v) { return /^\d{7,13}$/.test(v.replace(/\s/g, '')) ? '' : 'El NIT tiene solo números, entre 7 y 13 dígitos.'; },
+        'n-direccion': function (v) { return v ? '' : 'Escribe la dirección.'; },
+        'n-municipio': function (v) { return v ? '' : 'Escribe el municipio.'; }
+      }, e);
+      var logo = $('n-logo').files[0];
+      if (!e.defaultPrevented && logo && logo.size > 1048576) {
+        P.marcarCampo('n-logo', 'La imagen pesa más de 1 MB. Elige una más liviana.');
+        e.preventDefault();
+        $('n-logo').focus();
+      }
     });
   }
 
-  $('lista-leyendas').addEventListener('click', function (e) {
-    var s = e.target.closest('[role="switch"]');
-    if (!s) return;
-    var activas = document.querySelectorAll('#lista-leyendas [aria-checked="true"]').length;
-    var on = s.getAttribute('aria-checked') !== 'true';
-    if (!on && activas <= 8) { P.aviso('Deben quedar al menos 8 leyendas activas.'); return; }
-    s.setAttribute('aria-checked', String(on));
-  });
-
-  $('form-leyenda').addEventListener('submit', function (e) {
-    e.preventDefault();
-    var texto = $('l-texto').value.trim();
-    P.marcarCampo('l-texto', texto ? '' : 'Escribe el texto de la leyenda.');
-    if (!texto) { $('l-texto').focus(); return; }
-    LEYENDAS.push(texto.replace(/^Ley N° 453:\s*/i, ''));
-    pintarLeyendas();
-    this.reset();
-    P.aviso('Leyenda agregada.');
-  });
-
-  document.querySelectorAll('form[data-guardar]').forEach(function (form) {
-    form.addEventListener('submit', function (e) {
-      e.preventDefault();
-      if (form.id === 'negocio') {
-        var errores = {
-          'n-nit': /^\d{7,13}$/.test($('n-nit').value.trim()) ? '' : 'El NIT tiene solo números, entre 7 y 13 dígitos.',
-          'n-razon': $('n-razon').value.trim() ? '' : 'Escribe la razón social.'
-        };
-        var primero = null;
-        Object.keys(errores).forEach(function (id) { P.marcarCampo(id, errores[id]); if (errores[id] && !primero) primero = id; });
-        if (primero) { $(primero).focus(); return; }
-      }
-      P.aviso(form.getAttribute('data-guardar'));
+  var fiscal = $('fiscal');
+  if (fiscal) {
+    ['f-cuis', 'f-control'].forEach(function (id) {
+      $(id).addEventListener('input', function () { this.value = this.value.toUpperCase(); });
     });
-  });
-
-  document.querySelectorAll('[data-prueba]').forEach(function (b) {
-    b.addEventListener('click', function () {
-      P.aviso('Página de prueba enviada a la impresora de ' + b.closest('.impresora').querySelector('.impresora__nombre').textContent.toLowerCase() + '.');
+    fiscal.addEventListener('submit', function (e) {
+      validar(fiscal, {
+        'f-sucursal': function (v) { return /^\d{1,4}$/.test(v) ? '' : 'Escribe un número de 0 a 9999.'; },
+        'f-pv': function (v) { return /^\d{1,4}$/.test(v) ? '' : 'Escribe un número de 0 a 9999.'; },
+        'f-cuis': function (v) { return /^[A-Z0-9]{4,20}$/.test(v) ? '' : 'El CUIS tiene de 4 a 20 letras o números.'; },
+        'f-control': function (v) { return /^[A-F0-9]{8,40}$/.test(v) ? '' : 'El código de control tiene de 8 a 40 caracteres hexadecimales (0-9 y A-F).'; },
+        'f-vigencia': function (v) { return v ? '' : 'Elige la fecha y la hora de vigencia.'; },
+        'f-inicial': function (v) { return /^[1-9]\d{0,8}$/.test(v) ? '' : 'El número inicial es un entero desde 1.'; }
+      }, e);
     });
-  });
+  }
 
-  $('respaldar').addEventListener('click', function () {
-    var b = this;
-    b.setAttribute('aria-busy', 'true');
-    b.disabled = true;
-    window.setTimeout(function () {
-      b.removeAttribute('aria-busy');
-      b.disabled = false;
-      $('ultimo-respaldo').textContent = 'Hoy, 12:41 · 2,4 MB';
-      P.aviso('Copia de seguridad creada.');
-    }, 900);
-  });
-
-  pintarLeyendas();
+  window.PahuichiConfig = { validar: validar };
 })();

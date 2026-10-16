@@ -2,77 +2,112 @@
 
 Punto de venta web para un restaurante de comida típica cruceña. Está pensado para la hora pico: una venta de tres ítems cobrada en efectivo en 15 segundos o menos, y una venta favorita con cobro exacto en 4 toques o menos.
 
-## Estado actual: demo visual
+PHP 8.2 con MVC propio, MariaDB 11 y una interfaz en HTML, CSS y JavaScript propios (PWA). Todo se levanta con `docker compose up`.
 
-Todas las pantallas del producto, en **HTML, CSS y JavaScript propios** y sin backend. Los datos son de ejemplo y las reglas de negocio se simulan en el navegador para mostrar cada estado. El CSS y el JavaScript son los definitivos; el marcado pasa después a las vistas PHP.
+## Instalación
 
-Etapa siguiente: PHP 8.2 con MVC propio, MariaDB y PWA, todo con `docker compose up` y HTTPS en la red local.
+Requisitos: [Docker Desktop](https://www.docker.com/products/docker-desktop/) (Windows o macOS) o Docker Engine con Compose (Linux).
 
-## Cómo verla
+```bash
+git clone https://github.com/C-Edu-U/Pahuichi-Pos.git
+cd Pahuichi-Pos
+docker compose up --build
+```
 
-Abre `public/login.html` en el navegador, o sirve la carpeta para probar también la PWA: `npx serve public`.
+La primera vez tarda unos minutos: construye la imagen de PHP, instala las dependencias, crea las tablas y carga los datos de prueba. Cuando el log muestre `resuming normal operations`, abre **https://localhost:8443**.
+
+- El certificado es autofirmado: el navegador avisa la primera vez («Avanzado» → «Continuar»). Para uno de confianza en la red local, ver [docker/certs/LEEME.md](docker/certs/LEEME.md).
+- Desde otra PC, tablet o celular de la misma red: `https://<IP-de-esta-PC>:8443`.
+- Para cambiar puertos o claves, copia `.env.example` como `.env` y edítalo.
+
+### Comandos útiles
+
+| Qué | Comando |
+|---|---|
+| Levantar en segundo plano | `docker compose up -d` |
+| Ver el log | `docker compose logs -f app` |
+| Detener | `docker compose down` |
+| Volver a los datos de prueba | `docker compose exec app php bin/consola.php reiniciar` |
+| Borrar todo, incluida la base | `docker compose down -v` |
+| Pruebas automáticas | `docker compose exec app composer test` |
+| Estado del sistema | https://localhost:8443/salud |
+
+La base también se puede revisar con un cliente SQL en `127.0.0.1:3307` (usuario `pahuichi`, clave `pahuichi_local`, salvo que `.env` diga otra cosa).
+
+## Usuarios de prueba
 
 | Rol | Cómo entrar | Pantalla de entrada |
 |---|---|---|
-| Cajero | PIN **4821** en el teclado de la caja | Punto de venta |
-| Administrador | Usuario `admin`, cualquier contraseña | Tablero |
-| Mesero | Usuario `luis`, cualquier contraseña | Tomar pedido |
+| Cajero | PIN **4821** (Mariela) o **7350** (Jorge) en «Caja con PIN» | Punto de venta |
+| Administrador | Usuario `admin`, contraseña `Pahuichi2026` | Tablero |
+| Mesero | Usuario `luis`, contraseña `Pahuichi2026` | Pedidos |
 | Cocina | Usuario `teresa` | No entra al panel: recibe la comanda impresa |
 
-- **Cambiar de rol:** el selector «Demo: ver como» de la barra superior, o `?rol=cajero` en la URL. Si un rol abre a mano la URL de un módulo ajeno, ve «acceso denegado» y ningún dato.
-- **PIN y contraseña de demostración:** la autorización del administrador (anular, descuento manual) usa el PIN `1234`.
-- **Reiniciar la demo:** los estados (caja, QR, ventas en espera, ventas cobradas) se guardan en el navegador. Para empezar de cero, borra los datos del sitio.
+Los cajeros también tienen la contraseña `Pahuichi2026`. El PIN de autorización del administrador es `1234` (lo usarán la anulación y el descuento manual).
 
-### Recorrido sugerido
+## Estado: Sprint 1
 
-1. Entra como cajero con el PIN 4821.
-2. En el POS, toca Majadito, Picante y Mocochinchi, y luego «Efectivo exacto» (F8). La venta queda cobrada y el combo se aplica solo.
-3. Cobra el «Producto de prueba QR» con QR y un número de comprobante. Repite el comprobante `BNB-55120` para ver el rechazo.
-4. Cambia a administrador y confirma o rechaza los pagos en Conciliación QR.
-5. En Ventas y facturas abre los tickets de una venta y verifica la factura con su QR.
-6. Cierra la caja: el conteo es ciego y el resumen muestra la diferencia.
-7. En QR del día usa «Simular medianoche» y vuelve al POS.
-
-## Pantallas
-
-| Pantalla | Archivo | Historias |
+| Historia | Qué hace | Dónde |
 |---|---|---|
-| Inicio de sesión con PIN o contraseña | `public/login.html` | HU-02 |
-| Tablero del día (administrador) y del turno (cajero) | `public/panel/tablero.html` | HU-64 |
-| Punto de venta | `public/panel/pos.html` | HU-21, 28 a 34, 37, 39, 40, 42, 46 a 51 |
-| Caja: apertura, movimientos, cierre ciego y arqueo | `public/panel/caja.html` | HU-20 a 27 |
-| Ventas y facturas, anulación con PIN | `public/panel/ventas.html` | HU-43, 44 |
-| Tickets: comanda, copia de caja y factura | `public/panel/tickets.html` | HU-54 a 59, 62 |
-| Verificación de facturas (pública) | `public/verificar.html` | HU-60 |
-| Conciliación QR | `public/panel/conciliacion.html` | HU-41, 43 |
-| QR del día | `public/panel/qr.html` | HU-38 |
-| Clientes | `public/panel/clientes.html` | HU-32, 51 |
-| Catálogo: productos, formulario y categorías | `public/panel/productos.html`, `producto-form.html`, `categorias.html` | HU-13 a 19 |
-| Promociones y simulador | `public/panel/promociones.html`, `promocion-form.html` | HU-46 a 52 |
-| Reportes y Libro de Ventas | `public/panel/reportes.html` | HU-63 |
-| Usuarios | `public/panel/usuarios.html` | HU-03 |
-| Configuración: negocio, fiscal, leyendas, turnos, impresoras, respaldos | `public/panel/config.html` | HU-07 a 12 |
-| Cola de impresión | `public/panel/impresion.html` | HU-53 |
-| Bitácora | `public/panel/bitacora.html` | HU-05 |
-| Pedidos del mesero | `public/panel/mesero.html` | HU-35 |
-| Pantalla del cliente | `public/cliente.html` | HU-45 |
+| HU-01 | `docker compose up` con HTTPS, base MVC, migraciones y datos de prueba | todo el proyecto |
+| HU-02 | Login con contraseña o PIN, bloqueo de 15 min tras 5 fallos, cierre por inactividad salvo el cajero | `/login` |
+| HU-03 | Alta de usuarios, rol, activar y desactivar, desbloquear, reseteo de contraseña y PIN | `/usuarios` |
+| HU-04 | Permisos por rol en cada ruta, 403 con registro en la bitácora y menú filtrado | `config/permisos.php` |
+| HU-08 | Datos del negocio con logo | `/config#negocio` |
+| HU-09 | Parámetros fiscales simulados y aviso de CUFD vencido | `/config#fiscal` |
+| HU-11 | Horario de los turnos | `/config#turnos` |
+| HU-13 | Categorías con orden y color de la paleta | `/catalogo/categorias` |
+| HU-14 | Productos; favorito y agotado de un toque | `/catalogo/productos` |
+| HU-20 | Abrir caja con turno, cajero y fondo; una sola caja abierta | `/caja` |
+| HU-21 | Sin caja abierta, el POS muestra «Abrir caja» | `/pos` |
 
-## Estructura
+El resto de los módulos muestra «Próximamente» con sus historias. Toda acción sensible queda en la tabla `bitacora` (su pantalla llega con HU-05).
+
+### Guía para el QA
+
+Los escenarios Gherkin del Sprint 1 tienen prueba automática en `tests/Integracion/` (`docker compose exec app composer test`). Para revisarlos a mano:
+
+1. **Instalación limpia:** `docker compose down -v` y `docker compose up --build`; luego https://localhost:8443/salud muestra la base migrada con 5 usuarios y 25 productos.
+2. **Login del cajero con PIN:** PIN 4821 → entra al punto de venta.
+3. **Bloqueo por intentos:** usuario `luis` con una contraseña errada 5 veces → bloqueado hasta dentro de 15 minutos. Como `admin`, en Usuarios aparece «Bloqueado hasta» y se puede desbloquear.
+4. **Permiso validado en el servidor:** como cajero, escribe a mano https://localhost:8443/usuarios → «acceso denegado» sin datos.
+5. **Sin caja no se vende:** como cajero, el punto de venta muestra «Abrir caja».
+6. **Una sola caja:** con dos navegadores (o una ventana de incógnito), deja a Jorge (PIN 7350) en «Abrir caja» con el turno de noche. En el otro, abre la caja de medio día con Mariela. Luego envía el formulario de Jorge → el sistema lo impide y explica que primero se debe cerrar y arquear la caja de medio día.
+
+Para repetir las pruebas desde cero: `docker compose exec app php bin/consola.php reiniciar`. El CUFD de los datos de prueba vence a las 23:59 del día en que se cargaron; al día siguiente la configuración lo muestra como vencido, que es lo esperado.
+
+## Arquitectura
 
 ```
-public/
-  login.html, verificar.html, cliente.html, manifest.json, sw.js
-  panel/              páginas del panel (generadas, ver herramientas/panel)
-  assets/css/         tokens, base, components, layout, pages, modulos, pos, tickets, print
-  assets/js/          app.js (permisos, menú, utilidades), una por pantalla, datos.js,
-                      promociones-motor.js, numero-letras.js, vendor/qrcode.js
-  assets/img/         sprite de íconos, ícono de la app, QR de cobro de ejemplo
-herramientas/
-  panel/              marco común + fragmento por pantalla (LEEME.md)
-  iconos.mjs          arma el sprite de íconos
+public/                 única carpeta expuesta
+  index.php             front controller: toda petición entra por aquí
+  assets/               CSS, JS, fuentes e íconos
+app/
+  Core/                 App, Router, Controller, Vista, DB, Sesion, Csrf, Migrador, Reloj
+  Middleware/           filtros antes del controlador (CSRF en todo POST)
+  Controllers/          reciben la petición y eligen la vista
+  Models/               consultas a la base, con sentencias preparadas
+  Services/             reglas de negocio
+  Views/                plantillas PHP: layouts/ y una carpeta por módulo
+  rutas.php             todas las rutas
+config/                 app.php, modulos.php (menú), permisos y paleta
+database/
+  migraciones/          .sql numeradas; se aplican solas al arrancar
+  seeds.sql             datos de prueba, solo si la base está vacía
+docker/                 imagen de PHP con Apache y HTTPS, arranque e init de MariaDB
+tests/                  PHPUnit: Unit/ e Integracion/
+demo/                   demo visual estática de todas las pantallas (referencia)
 ```
 
-Atajos del punto de venta: **F2** buscar, **F4** cobrar, **F8** efectivo exacto, **Esc** cancelar.
+Flujo de una petición: `public/index.php` → `Router` → middleware → `Controller` → `Model` o `Service` → `Vista` dentro de su layout.
+
+- Los módulos que aún no tienen su historia implementada muestran la pantalla «Próximamente» con sus historias (`config/modulos.php`).
+- Cada cambio de esquema es una migración nueva en `database/migraciones/`; las ya aplicadas no se editan.
+- Toda salida variable de las vistas pasa por `e()`; todo formulario POST lleva `csrf_campo()`.
+
+## Demo visual
+
+`demo/` guarda la demo estática con todas las pantallas del producto final y datos simulados en el navegador. Es la referencia para portar cada pantalla a su vista PHP. Se abre directo: `demo/login.html`. Sus páginas del panel se arman con [herramientas/panel](herramientas/panel/LEEME.md).
 
 Más detalle del diseño en [DESIGN.md](DESIGN.md).
 
@@ -80,4 +115,7 @@ Más detalle del diseño en [DESIGN.md](DESIGN.md).
 
 - Íconos: [Tabler Icons](https://tabler.io/icons), MIT.
 - Tipografía de marca: Archivo, SIL Open Font License.
-- Generador de QR: [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) de Kazuhiko Arase, MIT.
+- Generador de QR de la demo: [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) de Kazuhiko Arase, MIT.
+- Imagen de PHP: [php](https://hub.docker.com/_/php) oficial; extensiones con [docker-php-extension-installer](https://github.com/mlocati/docker-php-extension-installer), MIT.
+- Base de datos: [MariaDB](https://mariadb.org/), GPL v2.
+- Pruebas: [PHPUnit](https://phpunit.de/), BSD-3.

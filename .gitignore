@@ -1,9 +1,15 @@
-# Credenciales locales
-config/config.local.php
+# Credenciales y certificados locales
+.env
+docker/certs/*.crt
+docker/certs/*.key
+docker/certs/*.pem
 
-# Base de datos local y registros
-storage/*.sqlite
-storage/logs/*
+# Dependencias y archivos que genera el sistema
+vendor/
+storage/subidas/*
+!storage/subidas/.gitkeep
+.phpunit.cache/
+.phpunit.result.cache
 
 # Configuración local del editor y de herramientas
 .claude/

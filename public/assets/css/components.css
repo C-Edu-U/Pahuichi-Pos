@@ -204,6 +204,15 @@
   transition: border-color var(--dur-corta) ease, box-shadow var(--dur-corta) ease;
 }
 
+/* Dato fijo con forma de campo (por ejemplo, el cajero de su propia caja) */
+.control--fijo {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  background: var(--fondo-alterno);
+  border-color: var(--color-borde);
+}
+
 .control::placeholder {
   color: var(--color-texto-3);
   opacity: 1;
@@ -761,6 +770,12 @@ select.control {
   border-top: 1px solid var(--color-borde);
 }
 
+/* Tres o más acciones: una por línea, la principal arriba y Cancelar al final */
+.modal__acciones--columna {
+  flex-direction: column-reverse;
+  flex-wrap: nowrap;
+}
+
 /* --------------------------------------------------------------------------
    Estado vacío: dice qué pasó y cómo seguir
    -------------------------------------------------------------------------- */
@@ -1118,6 +1133,17 @@ select.control {
 .pestana .punto-categoria {
   margin-right: 2px;
 }
+
+/* Paleta cerrada de categorías (config/paleta.php): la categoría guarda su
+   color y la vista pone la clase; nunca un estilo en línea (CSP) */
+.cat--ambar { --cat: #8a5300; --muestra: #8a5300; }
+.cat--azul { --cat: #1062a8; --muestra: #1062a8; }
+.cat--ciruela { --cat: #8e2c7c; --muestra: #8e2c7c; }
+.cat--vino { --cat: #6e2a1e; --muestra: #6e2a1e; }
+.cat--oliva { --cat: #3f6f1f; --muestra: #3f6f1f; }
+.cat--gris { --cat: #4f5a54; --muestra: #4f5a54; }
+.cat--verde { --cat: #13603e; --muestra: #13603e; }
+.cat--pizarra { --cat: #4a6fb5; --muestra: #4a6fb5; }
 
 /* Interruptor como botón (role="switch"): área de 44 px, riel dibujado dentro */
 .interruptor-boton {

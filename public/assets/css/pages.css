@@ -591,6 +591,12 @@
   max-width: 6rem;
 }
 
+.nueva-categoria__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-1);
+}
+
 .tabla--categorias .acciones-fila .boton {
   font-size: var(--texto-sm);
 }
@@ -671,6 +677,12 @@
   flex-wrap: wrap;
   gap: var(--esp-1);
   margin-top: var(--esp-1);
+}
+
+/* Página suelta, sin menú (errores 404 y 500) */
+.contenido--suelto {
+  margin-inline: auto;
+  max-width: 48rem;
 }
 
 /* ==========================================================================

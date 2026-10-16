@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import path from 'node:path';
 
-const dataJs = fs.readFileSync(path.join(process.cwd(), 'public/assets/js/datos.js'), 'utf8');
+const dataJs = fs.readFileSync(path.join(process.cwd(), 'demo/assets/js/datos.js'), 'utf8');
 const memoria = new Map();
 function iniciar(almacenamiento = memoria) {
   const storage = {

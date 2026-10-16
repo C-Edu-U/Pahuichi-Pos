@@ -1,0 +1,286 @@
+/* ==========================================================================
+   Pahuichi POS · Tickets: comanda, copia de caja y factura
+   Papel térmico de 76 mm (por defecto) o 58 mm. En pantalla se ven lado a
+   lado como vista previa; al imprimir sale cada ticket en su hoja.
+   ========================================================================== */
+
+.contenido--tickets {
+  max-width: none;
+  min-height: calc(100dvh - var(--barra-alto));
+  background: var(--fondo-alterno);
+}
+
+.tickets-herramientas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-2);
+  margin-bottom: var(--esp-2);
+}
+
+.tickets-herramientas .volver {
+  margin: 0;
+}
+
+.tickets-herramientas__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-1);
+}
+
+.tickets-aviso {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-1);
+  margin-bottom: var(--esp-2);
+  font-size: var(--texto-sm);
+  color: var(--color-texto-2);
+}
+
+.tickets {
+  --papel: 76mm;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--esp-4);
+}
+
+.tickets--58 {
+  --papel: 58mm;
+}
+
+.ticket-col {
+  display: grid;
+  gap: var(--esp-1);
+}
+
+.ticket-col__titulo {
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-semi);
+  color: var(--color-texto-2);
+}
+
+.ticket-col__titulo span {
+  font-weight: var(--peso-normal);
+}
+
+/* El ticket imita el papel térmico: monoespaciado y en negro */
+.ticket {
+  width: var(--papel);
+  padding: 4mm 3mm 6mm;
+  background: #fff;
+  color: #000;
+  box-shadow: var(--sombra-2);
+  font-family: ui-monospace, "Cascadia Mono", Consolas, "Courier New", monospace;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.tickets--58 .ticket {
+  font-size: 9.5px;
+}
+
+.ticket p,
+.ticket dl,
+.ticket dd,
+.ticket ul {
+  margin: 0;
+}
+
+.ticket ul {
+  padding: 0;
+  list-style: none;
+}
+
+.ticket__centro { text-align: center; }
+.ticket__fuerte { font-weight: 700; }
+.ticket__chico { font-size: 0.9em; }
+
+.ticket__separador {
+  margin: 2mm 0;
+  border-top: 1px dashed #000;
+}
+
+.ticket__reimpresion {
+  margin-bottom: 2mm !important;
+  padding: 1mm;
+  border: 2px solid #000;
+  font-size: 1.3em;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  text-align: center;
+}
+
+.ticket__datos div,
+.ticket__totales div {
+  display: flex;
+  justify-content: space-between;
+  gap: 2mm;
+}
+
+.ticket__datos dt {
+  font-weight: 700;
+}
+
+.ticket__datos dd {
+  text-align: right;
+}
+
+.ticket__datos--apilado div {
+  display: block;
+  text-align: center;
+}
+
+.ticket__datos--apilado dd {
+  text-align: center;
+}
+
+.ticket__cuf {
+  word-break: break-all;
+}
+
+.ticket__lineas li {
+  display: flex;
+  justify-content: space-between;
+  gap: 2mm;
+}
+
+.ticket__lineas--factura li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas:
+    "codigo desc desc"
+    "unidad unidad unidad"
+    "calculo calculo sub";
+  column-gap: 1.5mm;
+  margin-bottom: 1.5mm;
+}
+
+.ticket__codigo { grid-area: codigo; font-weight: 700; }
+.ticket__desc { grid-area: desc; }
+.ticket__unidad { grid-area: unidad; }
+.ticket__calculo { grid-area: calculo; }
+.ticket__sub { grid-area: sub; font-weight: 700; text-align: right; }
+
+.ticket__literal {
+  margin-top: 1.5mm !important;
+}
+
+.factura__academica {
+  margin: 1mm 0 2mm !important;
+  padding: 1mm;
+  border: 1px solid #000;
+  font-weight: 800;
+  text-align: center;
+}
+
+.ticket--factura .factura__academica:last-child {
+  margin: 2mm 0 0 !important;
+}
+
+.ticket__qr {
+  width: 3.2cm;
+  margin: 2mm auto;
+}
+
+.ticket__qr svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.ticket a {
+  color: #000;
+}
+
+/* Comanda: el número de pedido se lee desde lejos */
+.comanda__pedido {
+  font-size: 3.2em;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+}
+
+.comanda__destino {
+  margin: 2mm 0 1mm !important;
+  padding: 1mm;
+  background: #000;
+  color: #fff;
+  font-size: 1.6em;
+  font-weight: 800;
+  text-align: center;
+}
+
+.comanda__hora {
+  margin-bottom: 2mm !important;
+  text-align: center;
+}
+
+.comanda__items li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 2mm;
+  padding: 1.5mm 0;
+  border-top: 1px dashed #000;
+  font-size: 1.35em;
+  font-weight: 700;
+}
+
+.comanda__nota {
+  grid-column: 2;
+  font-size: 0.85em;
+  font-weight: 700;
+}
+
+.comanda__vacia {
+  display: block !important;
+  font-size: 1em !important;
+  font-weight: 400 !important;
+}
+
+/* --------------------------------------------------------------------------
+   Impresión: cada ticket en su hoja del ancho del papel
+   -------------------------------------------------------------------------- */
+@page {
+  size: 76mm auto;
+  margin: 0;
+}
+
+@media print {
+  .panel--tickets .cabecera,
+  .tickets-herramientas,
+  .tickets-aviso,
+  .ticket-col__titulo {
+    display: none !important;
+  }
+
+  .contenido--tickets {
+    padding: 0 !important;
+    background: none;
+  }
+
+  .tickets {
+    display: block;
+  }
+
+  .ticket {
+    box-shadow: none;
+    break-after: page;
+  }
+
+  .solo-factura .ticket-col:not(:last-child) {
+    display: none;
+  }
+}
+
+/* Las líneas del detalle de la factura van compactas, como en el rollo */
+.ticket__lineas--factura li {
+  row-gap: 0;
+  align-items: baseline;
+}
+
+.ticket__lineas--factura li > span {
+  line-height: 1.35;
+}

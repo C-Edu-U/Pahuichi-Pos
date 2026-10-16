@@ -1,26 +1,19 @@
-/* Service worker de Pahuichi POS: guarda los recursos de la interfaz para
-   que el POS cargue rápido y siga abriendo sin red. Las ventas hechas sin
-   conexión las guarda la página (IndexedDB) y se reenvían al volver. */
-const VERSION = 'pahuichi-v2';
+/* Service worker de Pahuichi POS: guarda los recursos de la interfaz (CSS, JS,
+   fuentes e imágenes) para que cargue rápido. Las páginas no se guardan: traen
+   datos del usuario y siempre se piden al servidor. */
+const VERSION = 'pahuichi-v3';
 const RECURSOS = [
-  'login.html',
-  'manifest.json',
-  'assets/css/tokens.css',
-  'assets/css/base.css',
-  'assets/css/components.css',
-  'assets/css/layout.css',
-  'assets/css/pages.css',
-  'assets/css/modulos.css',
-  'assets/css/pos.css',
-  'assets/js/iconos.js',
-  'assets/js/app.js',
-  'assets/js/datos.js',
-  'assets/js/promociones-motor.js',
-  'assets/js/pos.js',
-  'assets/img/icono.svg',
-  'assets/img/qr-cobro-demo.svg',
-  'assets/fonts/archivo-variable-latin.woff2',
-  'panel/pos.html'
+  '/manifest.json',
+  '/assets/css/tokens.css',
+  '/assets/css/base.css',
+  '/assets/css/components.css',
+  '/assets/css/layout.css',
+  '/assets/css/pages.css',
+  '/assets/css/modulos.css',
+  '/assets/css/pos.css',
+  '/assets/js/app.js',
+  '/assets/img/icono.svg',
+  '/assets/fonts/archivo-variable-latin.woff2'
 ];
 
 self.addEventListener('install', (e) => {
@@ -35,9 +28,10 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-// Primero la red (datos frescos); si no hay conexión, lo guardado
+// Recursos: primero la red (versión fresca); sin conexión, lo guardado
 self.addEventListener('fetch', (e) => {
-  if (e.request.method !== 'GET') return;
+  const url = new URL(e.request.url);
+  if (e.request.method !== 'GET' || url.origin !== self.location.origin || !url.pathname.startsWith('/assets/')) return;
   e.respondWith(
     fetch(e.request)
       .then((r) => {
