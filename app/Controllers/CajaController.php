@@ -9,6 +9,7 @@ use App\Core\Controller;
 use App\Core\Peticion;
 use App\Core\Respuesta;
 use App\Core\Sesion;
+use App\Models\Bitacora;
 use App\Models\Caja;
 use App\Models\Turno;
 use App\Services\CajaService;
@@ -54,6 +55,29 @@ final class CajaController extends Controller
 
         // El cajero sigue directo al punto de venta; el administrador ve la caja abierta
         return $this->redirigirConAviso($usuario['rol'] === 'cajero' ? '/pos' : '/caja', 'Caja abierta.');
+    }
+
+    public function cerrar(Peticion $peticion): Respuesta
+    {
+        $usuario = Auth::usuario();
+        try {
+            (new CajaService())->cerrar((int) $usuario['id'], $usuario['rol']);
+        } catch (DomainException $e) {
+            Sesion::flash('bloqueo', $e->getMessage());
+            return $this->redirigir('/caja');
+        }
+        return $this->redirigirConAviso('/caja', 'Caja cerrada.');
+    }
+
+    public function limpiarHistorial(): Respuesta
+    {
+        $usuario = Auth::usuario();
+        if ($usuario['rol'] !== 'administrador') {
+            return $this->redirigirConAviso('/caja', 'Solo el administrador puede limpiar el historial.');
+        }
+        $borradas = (new CajaService())->limpiarHistorial();
+        Bitacora::registrar('caja.limpiar_historial', 'cajas', null, ['borradas' => $borradas]);
+        return $this->redirigirConAviso('/caja', "Historial limpiado: {$borradas} caja(s) cerrada(s) borrada(s).");
     }
 
     private function pantalla(array $datos = [], int $estado = 200): Respuesta

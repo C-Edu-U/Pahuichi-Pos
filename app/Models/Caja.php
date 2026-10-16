@@ -37,4 +37,14 @@ final class Caja
             [$turnoId, $fecha, $cajeroId, $abiertaPor, $fondo, $abiertaEn],
         );
     }
+
+    public static function cerrar(int $id): void
+    {
+        DB::consulta('UPDATE cajas SET estado = ? WHERE id = ?', ['cerrada', $id]);
+    }
+
+    public static function eliminarCerradas(): int
+    {
+        return (int) DB::consulta('DELETE FROM cajas WHERE estado = ?', ['cerrada'])->rowCount();
+    }
 }
