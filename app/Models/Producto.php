@@ -59,6 +59,12 @@ final class Producto
         );
     }
 
+    /** HU-15: el nombre proviene exclusivamente del servicio de imágenes. */
+    public static function guardarFoto(int $id, ?string $nombre): void
+    {
+        DB::consulta('UPDATE productos SET foto = ? WHERE id = ?', [$nombre, $id]);
+    }
+
     /** Marca de un toque: favorito o agotado. */
     public static function marcar(int $id, string $campo, bool $valor): void
     {

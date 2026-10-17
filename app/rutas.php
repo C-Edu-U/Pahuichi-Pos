@@ -54,6 +54,7 @@ $catalogo = ['auth', 'permiso:modulo.catalogo'];
 $editarCatalogo = [...$catalogo, 'permiso:catalogo.editar'];
 $router->get('/catalogo', [InicioController::class, 'catalogo'], $catalogo);
 $router->get('/catalogo/productos', [ProductoController::class, 'index'], $catalogo);
+$router->get('/catalogo/productos/{id}/foto', [ProductoController::class, 'foto'], $catalogo);
 $router->get('/catalogo/productos/nuevo', [ProductoController::class, 'nuevo'], $editarCatalogo);
 $router->post('/catalogo/productos/nuevo', [ProductoController::class, 'crear'], $editarCatalogo);
 $router->get('/catalogo/productos/{id}/editar', [ProductoController::class, 'editar'], $editarCatalogo);
