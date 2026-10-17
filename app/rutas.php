@@ -12,6 +12,7 @@ use App\Controllers\AuthController;
 use App\Controllers\CajaController;
 use App\Controllers\CategoriaController;
 use App\Controllers\ConfigController;
+use App\Controllers\FacturaController;
 use App\Controllers\InicioController;
 use App\Controllers\ModuloController;
 use App\Controllers\PosController;
@@ -72,6 +73,17 @@ $router->post('/caja/abrir', [CajaController::class, 'abrir'], ['auth', 'permiso
 
 // Punto de venta (HU-21): sin caja abierta no se vende
 $router->get('/pos', [PosController::class, 'index'], ['auth', 'permiso:modulo.pos', 'caja']);
+
+// Leyendas y soporte de venta/factura (HU-10)
+$router->post('/config/leyendas', [ConfigController::class, 'agregarLeyenda'], $config);
+$router->post('/config/leyendas/{id}/estado', [ConfigController::class, 'estadoLeyenda'], $config);
+$router->post('/pos/cobrar', [PosController::class, 'cobrar'], ['auth', 'permiso:modulo.pos', 'caja']);
+$ventas = ['auth', 'permiso:modulo.ventas'];
+$router->get('/ventas', [FacturaController::class, 'index'], $ventas);
+$router->get('/facturas/{id}', [FacturaController::class, 'mostrar'], $ventas);
+$router->post('/facturas/{id}/reimpresion', [FacturaController::class, 'reimprimir'], $ventas);
+// Ruta pública del QR propio; verifica NIT, CUF, número e importe, sin acciones de escritura.
+$router->get('/verificar', [FacturaController::class, 'verificar']);
 
 // Módulos aún sin construir: pantalla «próximamente»
 foreach (Config::get('modulos') as $clave => $m) {

@@ -1,0 +1,13 @@
+/* HU-10: conservar los colores de demo usando la paleta de categorías real. */
+.producto-pos.cat--ambar { --cat: #8a5300; }
+.producto-pos.cat--azul { --cat: #1062a8; }
+.producto-pos.cat--ciruela { --cat: #8e2c7c; }
+.producto-pos.cat--vino { --cat: #6e2a1e; }
+.producto-pos.cat--oliva { --cat: #3f6f1f; }
+.producto-pos.cat--gris { --cat: #4f5a54; }
+.producto-pos.cat--verde { --cat: #13603e; }
+.producto-pos.cat--pizarra { --cat: #4a6fb5; }
+
+/* Mantener ambos botones dentro del panel también con fuentes más anchas. */
+.contenido--pos .totales__acciones { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); }
+.contenido--pos .boton-cobro { min-width: 0; padding-inline: var(--esp-1); white-space: normal; }

@@ -18,3 +18,7 @@ $css = $css ?? [];
   <link rel="stylesheet" href="/assets/css/<?= e($hoja) ?>">
 <?php endforeach; ?>
   <link rel="stylesheet" href="/assets/css/print.css" media="print">
+
+<?php foreach (($cssFinal ?? []) as $hoja): ?>
+  <link rel="stylesheet" href="/assets/css/<?= e($hoja) ?>">
+<?php endforeach; ?>

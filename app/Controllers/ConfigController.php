@@ -11,6 +11,9 @@ use App\Core\Peticion;
 use App\Core\Respuesta;
 use App\Models\Bitacora;
 use App\Models\Negocio;
+use App\Models\Leyenda;
+use App\Models\Factura;
+use App\Services\LeyendaService;
 use App\Models\ParametrosFiscales;
 use App\Models\Turno;
 use App\Services\Imagenes;
@@ -225,6 +228,35 @@ final class ConfigController extends Controller
         return $cambios;
     }
 
+    public function agregarLeyenda(Peticion $peticion): Respuesta
+    {
+        $entrada = $peticion->entrada('texto');
+        $texto = is_string($entrada) ? $entrada : '';
+        try {
+            LeyendaService::agregar($texto);
+        } catch (DomainException $e) {
+            return $this->pantalla(['errores' => ['l-texto' => $e->getMessage()], 'leyendaTexto' => $texto], 422);
+        }
+        return $this->redirigirConAviso('/config#leyendas', 'Leyenda agregada.');
+    }
+
+    public function estadoLeyenda(Peticion $peticion): Respuesta
+    {
+        try {
+            if (!in_array($peticion->entrada('activo'), ['0', '1'], true)) {
+                throw new DomainException('Estado de leyenda inválido.');
+            }
+            LeyendaService::estado((int) $peticion->parametro('id'), $peticion->entrada('activo') === '1');
+        } catch (DomainException $e) {
+            return $peticion->esperaJson()
+                ? Respuesta::json(['error' => $e->getMessage()], 422)
+                : $this->pantalla(['errorLeyendas' => $e->getMessage()], 422);
+        }
+        return $peticion->esperaJson()
+            ? Respuesta::json(['aviso' => 'Estado de la leyenda guardado.'])
+            : $this->redirigirConAviso('/config#leyendas', 'Estado de la leyenda guardado.');
+    }
+
     private function pantalla(array $datos = [], int $estado = 200): Respuesta
     {
         return $this->vista('config/index', $datos + [
@@ -232,12 +264,15 @@ final class ConfigController extends Controller
             'modulo' => 'config',
             'h1' => 'Configuración',
             'css' => ['modulos.css'],
-            'js' => ['config.js'],
+            'js' => ['config.js', 'leyendas.js'],
             'errores' => [],
             'negocio' => Negocio::obtener(),
-            'fiscal' => ParametrosFiscales::obtener(),
+            'fiscal' => (static function (): array {
+                $f = ParametrosFiscales::obtener();
+                return $f + ['proximo_numero' => Factura::proximoNumero($f)];
+            })(),
             'turnos' => Turno::todos(),
-            'leyendas' => (int) DB::valor('SELECT COUNT(*) FROM leyendas WHERE activo = 1'),
+            'leyendas' => Leyenda::todas(),
         ], $estado);
     }
 }

@@ -1,0 +1,15 @@
+/* HU-10: ajustes de impresión sobre las clases originales de demo. */
+@page { size: 76mm auto; margin: 0; }
+@media print {
+  body.panel--tickets { display: block !important; margin: 0 !important; padding: 0 !important; }
+  .panel--tickets .riel, .panel--tickets .velo, .panel--tickets .cabecera,
+  .panel--tickets .saltar-contenido, .panel--tickets .aviso-flotante { display: none !important; }
+  .panel--tickets .marco { display: block; min-height: 0; margin: 0; padding: 0; }
+  .panel--tickets .contenido--tickets { padding: 0 !important; }
+  .panel--tickets .tickets { display: block; }
+  .panel--tickets .ticket { margin: 0; box-shadow: none; }
+  .panel--tickets.solo-factura .ticket-col:not(:last-child) { display: none !important; }
+  .panel--tickets .ticket-col:last-child .ticket { break-after: auto; }
+  .panel--tickets.sin-comanda #col-comanda { display: none !important; }
+}
+/* Colores de categorías: variables de la paleta cerrada del proyecto. */
