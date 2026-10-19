@@ -61,6 +61,7 @@ Los cajeros también tienen la contraseña `Pahuichi2026`. El PIN de autorizaci�
 | HU-20 | Abrir caja con turno, cajero y fondo; una sola caja abierta | `/caja` |
 | HU-21 | Sin caja abierta, el POS muestra «Abrir caja» | `/pos` |
 | HU-28 | Cuadrícula del POS: favoritos primero, categorías con su color, búsqueda por nombre o código; agotado visible sin poder venderse | `/pos` |
+| HU-29 | Carrito: un toque agrega y otro suma; +, − y quitar por línea; total siempre visible; cancelar pedido con confirmación | `/pos` |
 
 El resto de los módulos muestra «Próximamente» con sus historias. Toda acción sensible queda en la tabla `bitacora` (su pantalla llega con HU-05).
 

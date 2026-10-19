@@ -14,6 +14,7 @@ use App\Services\CajaService;
 /**
  * Punto de venta. El middleware «caja» ya garantizó que hay una caja abierta (HU-21).
  * HU-28: cuadrícula de productos con favoritos primero, categorías y búsqueda.
+ * HU-29: carrito en el navegador (carrito.js); el precio que vale al cobrar lo fija el servidor en el Sprint 3.
  */
 final class PosController extends Controller
 {
@@ -33,7 +34,7 @@ final class PosController extends Controller
             'modulo' => 'pos',
             'h1' => 'Punto de venta',
             'css' => ['pos.css'],
-            'js' => ['pos.js'],
+            'js' => ['carrito.js', 'pos.js'],
             'claseBody' => 'panel--pos',
             'rielPlegado' => true,
             'caja' => CajaService::abierta(),
