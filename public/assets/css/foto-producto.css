@@ -1,0 +1,9 @@
+/* HU-15. Conserva las clases y la presentación de la demo. */
+.producto-celda__foto img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+.producto-pos__foto { position: relative; }
+.producto-pos__foto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+.foto-acciones { display: flex; flex-wrap: wrap; gap: var(--esp-1); margin-top: var(--esp-1); }
+#camara-video { display: block; object-fit: cover; }
+@media (max-width: 639px) {
+  #form-producto .formulario__acciones { flex-wrap: wrap; }
+}
