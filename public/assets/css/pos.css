@@ -134,8 +134,12 @@
   }
 }
 
-.producto-pos {
+/* Color por defecto sin especificidad: lo reemplaza la clase cat--* de su categoría */
+:where(.producto-pos) {
   --cat: var(--tinta-700);
+}
+
+.producto-pos {
   position: relative;
   display: grid;
   grid-template-rows: auto 1fr auto;
@@ -714,6 +718,13 @@
 
 .totales__qr-vencido .icono {
   margin-top: 2px;
+}
+
+/* Aviso discreto bajo los botones (por ejemplo, lo que aún no está disponible) */
+.totales__nota {
+  margin-top: var(--esp-1);
+  font-size: var(--texto-sm);
+  color: var(--color-texto-2);
 }
 
 /* --------------------------------------------------------------------------
