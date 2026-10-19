@@ -94,11 +94,8 @@ $fecha = static fn (string $momento): string => (new DateTimeImmutable($momento)
               Cierre ciego: el efectivo esperado se muestra recién en el resumen, después de contar. Llega con HU-23 a HU-26.
             </p>
             <div class="panel-bloque__pie">
-              <form class="form-inline" method="post" action="/caja/cerrar" onsubmit="return confirm('¿Cerrar esta caja? Después no se podrán registrar ventas hasta abrir otra.')">
-                <?= csrf_campo() ?>
-                <button class="boton boton--peligro" type="submit"><?= icono('cerrar') ?> Cerrar caja</button>
-              </form>
-              <a class="boton boton--primario" href="/pos"><?= icono('pos') ?> Ir al punto de venta</a>
+              <a class="boton boton--primario" href="/caja/cierre"><?= icono('billete') ?> Contar y cerrar caja</a>
+              <a class="boton boton--fantasma" href="/pos"><?= icono('pos') ?> Ir al punto de venta</a>
             </div>
           </div>
         </section>

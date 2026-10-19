@@ -10,10 +10,12 @@ use App\Core\Peticion;
 use App\Core\Respuesta;
 use App\Core\Sesion;
 use App\Models\Bitacora;
+use App\Models\Arqueo;
 use App\Models\Caja;
 use App\Models\MovimientoCaja;
 use App\Models\Turno;
 use App\Services\CajaService;
+use App\Services\ConteoService;
 use App\Services\MovimientoCajaService;
 use DomainException;
 
@@ -101,6 +103,59 @@ final class CajaController extends Controller
         }
 
         return $this->redirigirConAviso('/caja', $tipo === 'ingreso' ? 'Ingreso registrado.' : 'Egreso registrado.');
+    }
+
+    /** Cierre ciego: conteo por denominación (HU-23). No muestra el efectivo esperado. */
+    public function cierre(Peticion $peticion): Respuesta
+    {
+        $abierta = CajaService::abierta();
+        if ($abierta === null) {
+            return $this->redirigirConAviso('/caja', 'No hay una caja abierta.');
+        }
+
+        $conteo = Arqueo::porCaja((int) $abierta['id']);
+
+        return $this->vista('caja/conteo', [
+            'titulo' => 'Cerrar caja',
+            'modulo' => 'caja',
+            'h1' => 'Cerrar caja',
+            'css' => ['modulos.css'],
+            'js' => ['conteo.js'],
+            'abierta' => $abierta,
+            'conteo' => $conteo,
+            'denominaciones' => Arqueo::DENOMINACIONES,
+            'errores' => [],
+        ]);
+    }
+
+    /** Guarda el conteo por denominación (HU-23). */
+    public function conteo(Peticion $peticion): Respuesta
+    {
+        $abierta = CajaService::abierta();
+        if ($abierta === null) {
+            return $this->redirigirConAviso('/caja', 'No hay una caja abierta.');
+        }
+
+        $enviados = is_array($peticion->datos['conteo'] ?? null) ? $peticion->datos['conteo'] : [];
+
+        try {
+            $total = (new ConteoService())->registrar((int) $abierta['id'], $enviados, Auth::usuario());
+        } catch (DomainException $e) {
+            return $this->vista('caja/conteo', [
+                'titulo' => 'Cerrar caja',
+                'modulo' => 'caja',
+                'h1' => 'Cerrar caja',
+                'css' => ['modulos.css'],
+                'js' => ['conteo.js'],
+                'abierta' => $abierta,
+                'conteo' => null,
+                'denominaciones' => Arqueo::DENOMINACIONES,
+                'errores' => ['conteo' => $e->getMessage()],
+                'viejo' => $enviados,
+            ], 422);
+        }
+
+        return $this->redirigirConAviso('/caja/cierre', 'Conteo registrado: Bs ' . number_format($total, 2, ',', '.'));
     }
 
     public function cerrar(Peticion $peticion): Respuesta
