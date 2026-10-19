@@ -214,7 +214,7 @@ $fecha = static fn (string $momento): string => (new DateTimeImmutable($momento)
       </section>
 <?php endif; ?>
       <?php if ($historial !== [] && puede('caja.limpiar_historial')): ?>
-        <form class="form-inline" method="post" action="/caja/limpiar-historial" onsubmit="return confirm('¿Borrar todas las cajas cerradas del historial? Esta acción no se deshace.')">
+        <form class="form-inline" method="post" action="/caja/limpiar-historial" onsubmit="return confirm('¿Borrar todas las cajas cerradas del historial y también sus arqueos, movimientos y ventas? Esta acción no se deshace.')">
           <?= csrf_campo() ?>
           <button class="boton boton--peligro" type="submit"><?= icono('borrar') ?> Limpiar historial de cajas cerradas</button>
         </form>

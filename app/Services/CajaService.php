@@ -109,10 +109,22 @@ final class CajaService
         ]);
     }
 
-    /** Borra del historial todas las cajas cerradas. Solo administrador. */
+    /**
+     * Borra del historial todas las cajas cerradas y todo lo que cuelga de ellas
+     * (arqueos, movimientos y ventas). Solo el administrador.
+     *
+     * El Sprint 2 colgó esas tablas de la caja por llave foránea, así que hay que
+     * borrarlas antes o la base rechaza el borrado de las cajas.
+     */
     public function limpiarHistorial(): int
     {
-        return Caja::eliminarCerradas();
+        return DB::transaccion(static function (): int {
+            $cerradas = "SELECT id FROM cajas WHERE estado = 'cerrada'";
+            DB::consulta("DELETE FROM arqueos WHERE caja_id IN ({$cerradas})");
+            DB::consulta("DELETE FROM movimientos_caja WHERE caja_id IN ({$cerradas})");
+            DB::consulta("DELETE FROM ventas WHERE caja_id IN ({$cerradas})");
+            return Caja::eliminarCerradas();
+        });
     }
 
     private function sinCajaAbierta(): void

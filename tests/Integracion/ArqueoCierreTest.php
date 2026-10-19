@@ -8,6 +8,7 @@ use App\Core\DB;
 use App\Core\Reloj;
 use App\Models\Arqueo;
 use App\Models\Bitacora;
+use App\Models\Caja;
 use Tests\CasoPrueba;
 
 /** HU-24: arqueo automático y resumen de cierre. */
@@ -146,5 +147,29 @@ final class ArqueoCierreTest extends CasoPrueba
         $a = Arqueo::porCaja($this->cajaId);
         $this->assertNotNull($a);
         $this->assertSame(330.00, $a['total_contado']);
+    }
+
+    /**
+     * Escenario: Limpiar historial
+     *   Dado una caja cerrada con arqueo y ventas
+     *   Cuando el administrador limpia el historial
+     *   Entonces se borran la caja, su arqueo y sus ventas
+     */
+    public function testLimpiarHistorialBorraLaCajaYSusArqueos(): void
+    {
+        $this->venta('efectivo', 'pagado', 100.00);
+        $this->contar(1, 0, 10); // 200 + 100 = 300
+        $this->assertRedirige('/caja/arqueo', $this->post('/caja/arqueo', ['observacion' => '']));
+
+        $this->entrarComo('admin');
+        $r = $this->post('/caja/limpiar-historial');
+
+        $this->assertRedirige('/caja', $r);
+        $this->assertNull(Caja::buscar($this->cajaId));
+        $this->assertNull(Arqueo::porCaja($this->cajaId));
+        $this->assertSame(0, (int) DB::valor('SELECT COUNT(*) FROM arqueos WHERE caja_id = ?', [$this->cajaId]));
+        $this->assertSame(0, (int) DB::valor('SELECT COUNT(*) FROM ventas WHERE caja_id = ?', [$this->cajaId]));
+        $this->assertSame(0, (int) DB::valor('SELECT COUNT(*) FROM movimientos_caja WHERE caja_id = ?', [$this->cajaId]));
+        $this->assertCount(1, Bitacora::ultimos('caja.limpiar_historial'));
     }
 }
