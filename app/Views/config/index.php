@@ -144,7 +144,7 @@ $cufdVigente = !isset($errores['f-vigencia']) && ParametrosFiscales::cufdVigente
                 <dd><?= $cufdVigente
                     ? '<span class="insignia insignia--ok">Vigente hoy</span>'
                     : '<span class="insignia insignia--aviso">Vencido: no corresponde al día de hoy</span>' ?></dd>
-                <dt>Próxima factura</dt><dd class="num">N° <?= e($fiscal['proximo_numero'] ?? $fiscal['numero_inicial']) ?></dd>
+                <dt>Próxima factura</dt><dd class="num">N° <?= e($fiscal['numero_inicial']) ?></dd>
               </dl>
             </div>
             <div class="panel-bloque__pie">

@@ -18,6 +18,7 @@ return [
     ],
     'ventas' => [
         'grupo' => 1, 'ruta' => '/ventas', 'icono' => 'ventas', 'texto' => 'Ventas y facturas',
+        'pendiente' => ['historias' => 'HU-44, HU-56', 'texto' => 'Ventas del turno, reimpresión de tickets y anulación con PIN.'],
     ],
     'mesero' => [
         'grupo' => 1, 'ruta' => '/mesero', 'icono' => 'mesa', 'texto' => 'Pedidos',

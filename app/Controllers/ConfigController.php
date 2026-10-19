@@ -12,7 +12,6 @@ use App\Core\Respuesta;
 use App\Models\Bitacora;
 use App\Models\Negocio;
 use App\Models\Leyenda;
-use App\Models\Factura;
 use App\Services\LeyendaService;
 use App\Models\ParametrosFiscales;
 use App\Models\Turno;
@@ -267,10 +266,7 @@ final class ConfigController extends Controller
             'js' => ['config.js', 'leyendas.js'],
             'errores' => [],
             'negocio' => Negocio::obtener(),
-            'fiscal' => (static function (): array {
-                $f = ParametrosFiscales::obtener();
-                return $f + ['proximo_numero' => Factura::proximoNumero($f)];
-            })(),
+            'fiscal' => ParametrosFiscales::obtener(),
             'turnos' => Turno::todos(),
             'leyendas' => Leyenda::todas(),
         ], $estado);
