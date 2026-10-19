@@ -973,7 +973,46 @@
 }
 
 .tabla--bitacora td:nth-child(5) {
-  min-width: 18rem;
+  min-width: 12rem;
+}
+
+.tabla--bitacora td:last-child {
+  white-space: nowrap;
+}
+
+.tabla--bitacora td:nth-child(2),
+.tabla--bitacora td:nth-child(4) {
+  min-width: 8rem;
+}
+
+/* Los campos de fecha no deben ensanchar su columna en el celular */
+.filtros .control {
+  min-width: 0;
+}
+
+.filtros__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-1);
+  grid-column: 1 / -1;
+}
+
+/* Paginación: anterior, estado y siguiente en una fila */
+.paginacion {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--esp-2);
+  margin-top: var(--esp-3);
+}
+
+.paginacion > :last-child {
+  justify-self: end;
+}
+
+.paginacion__estado {
+  font-size: var(--texto-sm);
+  color: var(--color-texto-2);
 }
 
 @media (prefers-reduced-motion: reduce) {
