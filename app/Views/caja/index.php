@@ -191,19 +191,21 @@ $fecha = static fn (string $momento): string => (new DateTimeImmutable($momento)
                 <th scope="col">Fecha y turno</th>
                 <th scope="col">Cajero</th>
                 <th scope="col">Abierta</th>
-                <th scope="col" class="col-num">Fondo</th>
-                <th scope="col">Estado</th>
-              </tr>
-            </thead>
-            <tbody>
+                  <th scope="col" class="col-num">Fondo</th>
+                  <th scope="col">Estado</th>
+                  <th scope="col"><span class="visualmente-oculto">Reporte</span></th>
+                </tr>
+              </thead>
+              <tbody>
 <?php foreach ($historial as $c): ?>
-              <tr>
-                <td><span class="tabla__principal"><?= e((new DateTimeImmutable($c['fecha']))->format('d/m')) ?> · <?= e($c['turno']) ?></span><span class="tabla__secundario num"><?= e(Turno::horario($c)) ?></span></td>
-                <td><?= e($c['cajero']) ?></td>
-                <td class="num"><?= e($fecha($c['abierta_en'])) ?></td>
-                <td class="col-num num"><?= bs($c['fondo_inicial']) ?></td>
-                <td><?= $c['estado'] === 'abierta' ? '<span class="insignia insignia--ok">Abierta</span>' : '<span class="insignia insignia--neutra">Cerrada</span>' ?></td>
-              </tr>
+                <tr>
+                  <td><span class="tabla__principal"><?= e((new DateTimeImmutable($c['fecha']))->format('d/m')) ?> · <?= e($c['turno']) ?></span><span class="tabla__secundario num"><?= e(Turno::horario($c)) ?></span></td>
+                  <td><?= e($c['cajero']) ?></td>
+                  <td class="num"><?= e($fecha($c['abierta_en'])) ?></td>
+                  <td class="col-num num"><?= bs($c['fondo_inicial']) ?></td>
+                  <td><?= $c['estado'] === 'abierta' ? '<span class="insignia insignia--ok">Abierta</span>' : '<span class="insignia insignia--neutra">Cerrada</span>' ?></td>
+                  <td><?php if ($c['estado'] === 'cerrada'): ?><a class="boton boton--fantasma" href="/caja/reporte/<?= (int) $c['id'] ?>"><?= icono('imprimir') ?> Reporte</a><?php endif; ?></td>
+                </tr>
 <?php endforeach; ?>
             </tbody>
           </table>

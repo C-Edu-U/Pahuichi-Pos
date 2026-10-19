@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Controller;
+use App\Core\ErrorHttp;
 use App\Core\Peticion;
 use App\Core\Respuesta;
 use App\Core\Sesion;
@@ -13,6 +14,7 @@ use App\Models\Bitacora;
 use App\Models\Arqueo;
 use App\Models\Caja;
 use App\Models\MovimientoCaja;
+use App\Models\Negocio;
 use App\Models\Turno;
 use App\Services\ArqueoService;
 use App\Services\CajaService;
@@ -241,6 +243,41 @@ final class CajaController extends Controller
         }
 
         return $this->redirigirConAviso('/caja/arqueo', 'Caja cerrada y arqueada.');
+    }
+
+    /** Reporte de cierre: se imprime y se guarda en PDF (HU-25). */
+    public function reporte(Peticion $peticion): Respuesta
+    {
+        $id = (int) $peticion->parametro('id');
+        $caja = Caja::buscar($id);
+        if ($caja === null) {
+            throw ErrorHttp::noEncontrado();
+        }
+        $conteo = Arqueo::porCaja($id);
+        if ($conteo === null) {
+            return $this->redirigirConAviso('/caja', 'Esa caja todavía no tiene arqueo.');
+        }
+
+        $esperado = $conteo['efectivo_esperado'] !== null
+            ? (float) $conteo['efectivo_esperado']
+            : ArqueoService::esperado($caja);
+        $diferencia = $conteo['diferencia'] !== null
+            ? (float) $conteo['diferencia']
+            : ArqueoService::diferencia((float) $conteo['total_contado'], $esperado);
+        $resumen = $conteo['resumen'] ?: ArqueoService::resumen($id);
+
+        return $this->vista('caja/reporte', [
+            'titulo' => 'Reporte de cierre',
+            'css' => ['reporte-cierre.css'],
+            'js' => ['reporte.js'],
+            'caja' => $caja,
+            'conteo' => $conteo,
+            'esperado' => $esperado,
+            'diferencia' => $diferencia,
+            'resumen' => $resumen,
+            'movimientos' => MovimientoCaja::porCaja($id),
+            'negocio' => Negocio::obtener(),
+        ], 200, 'layouts/simple');
     }
 
     public function cerrar(Peticion $peticion): Respuesta

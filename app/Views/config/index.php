@@ -221,7 +221,7 @@ $cufdVigente = !isset($errores['f-vigencia']) && ParametrosFiscales::cufdVigente
             </div>
             <div class="panel-bloque__pie">
               <button class="boton boton--primario" type="submit">Guardar cambios</button>
-              <button class="boton boton--secundario" type="submit" name="accion" value="agregar">Agregar turno</button>
+              <button class="boton boton--fantasma" type="submit" name="accion" value="agregar">Agregar turno</button>
               <button class="boton boton--peligro" type="submit" name="accion" value="eliminar" onclick="return confirm('¿Eliminar los turnos marcados?')">Eliminar marcados</button>
             </div>
           </form>

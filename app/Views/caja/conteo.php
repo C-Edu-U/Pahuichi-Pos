@@ -37,7 +37,7 @@ $total = Arqueo::totalContado($conteoGuardado);
           </dl>
         </div>
         <div class="panel-bloque__pie">
-          <a class="boton boton--secundario" href="/caja/cierre">Volver a contar</a>
+          <a class="boton boton--fantasma" href="/caja/cierre">Volver a contar</a>
         </div>
       </section>
 <?php endif; ?>
@@ -96,7 +96,7 @@ $total = Arqueo::totalContado($conteoGuardado);
         <div class="panel-bloque__pie">
           <button class="boton boton--primario" type="submit"><?= icono('check') ?> Guardar el conteo</button>
 <?php if ($conteo !== null): ?>
-          <a class="boton boton--secundario" href="/caja/arqueo">Ver el arqueo</a>
+          <a class="boton boton--fantasma" href="/caja/arqueo">Ver el arqueo</a>
 <?php endif; ?>
           <a class="boton boton--fantasma" href="/caja">Volver a caja</a>
         </div>
