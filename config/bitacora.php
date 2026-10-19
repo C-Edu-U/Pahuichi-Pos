@@ -42,6 +42,9 @@ return [
         'config.turnos' => ['Horario de turnos', 'configuracion', 'neutra'],
         'config.turnos.agregar' => ['Turno agregado', 'configuracion', 'neutra'],
         'config.turnos.eliminar' => ['Turno eliminado', 'configuracion', 'aviso'],
+        'leyenda.alta' => ['Leyenda agregada', 'configuracion', 'neutra'],
+        'leyenda.activar' => ['Leyenda activada', 'configuracion', 'neutra'],
+        'leyenda.desactivar' => ['Leyenda desactivada', 'configuracion', 'aviso'],
 
         'categoria.alta' => ['Categoría nueva', 'catalogo', 'neutra'],
         'categoria.edicion' => ['Categoría editada', 'catalogo', 'neutra'],
@@ -89,6 +92,6 @@ return [
         'precio' => 'Precio', 'turno' => 'Turno', 'cajero' => 'Cajero', 'usuario' => 'Usuario',
         'rol' => 'Rol', 'modo' => 'Con', 'intentos' => 'Intentos', 'hasta' => 'Hasta',
         'ruta' => 'Ruta', 'metodo' => 'Método', 'permiso' => 'Permiso', 'favorito' => 'Favorito',
-        'agotado' => 'Agotado', 'borradas' => 'Cajas borradas', 'mediodia' => 'Medio día', 'noche' => 'Noche',
+        'agotado' => 'Agotado', 'borradas' => 'Cajas borradas', 'texto' => 'Texto', 'activo' => 'Activa', 'mediodia' => 'Medio día', 'noche' => 'Noche',
     ],
 ];

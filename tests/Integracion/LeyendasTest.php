@@ -72,4 +72,64 @@ final class LeyendasTest extends CasoPrueba
         $this->assertSame(403, $this->post('/config/leyendas', ['texto' => 'No autorizado'])->estado);
         $this->assertSame(403, $this->post('/config/leyendas/1/estado', ['activo' => '0'])->estado);
     }
+
+    /**
+     * Escenario: elección al azar para cada factura
+     *   Dado un catálogo con leyendas activas e inactivas
+     *   Cuando se elige la leyenda de una factura
+     *   Entonces sale siempre una activa, y no siempre la misma
+     */
+    public function testAlAzarSoloEligeEntreLasActivas(): void
+    {
+        LeyendaService::agregar('Novena.');
+        LeyendaService::agregar('Décima.');
+        $todas = Leyenda::todas();
+        LeyendaService::estado((int) $todas[0]['id'], false);
+        LeyendaService::estado((int) $todas[1]['id'], false);
+        $activas = array_map('intval', array_column(DB::filas('SELECT id FROM leyendas WHERE activo = 1'), 'id'));
+        $this->assertCount(8, $activas);
+
+        $elegidas = [];
+        for ($i = 0; $i < 200; $i++) {
+            $l = Leyenda::alAzar();
+            $this->assertContains((int) $l['id'], $activas);
+            $this->assertStringStartsWith('Ley N° 453: ', $l['texto']);
+            $elegidas[(int) $l['id']] = true;
+        }
+        $this->assertGreaterThan(1, count($elegidas), 'La elección varía entre las activas');
+    }
+
+    public function testUnaLeyendaRecienAgregadaPuedeSerElegida(): void
+    {
+        $id = LeyendaService::agregar('Única activa en esta prueba.');
+        DB::consulta('UPDATE leyendas SET activo = 0 WHERE id <> ?', [$id]);
+
+        $l = Leyenda::alAzar();
+        $this->assertSame($id, (int) $l['id']);
+        $this->assertSame('Ley N° 453: Única activa en esta prueba.', $l['texto']);
+    }
+
+    public function testSinLeyendasActivasNoSeEligeNinguna(): void
+    {
+        DB::consulta('UPDATE leyendas SET activo = 0');
+
+        $this->expectException(\DomainException::class);
+        $this->expectExceptionMessage('No hay leyendas activas');
+        Leyenda::alAzar();
+    }
+
+    /** Integración con HU-05: los cambios al catálogo se ven en la bitácora con su nombre. */
+    public function testLosCambiosSeVenEnLaBitacora(): void
+    {
+        $this->post('/config/leyendas', ['texto' => 'Tienes derecho a un comprobante.']);
+        $id = (int) DB::valor('SELECT MAX(id) FROM leyendas');
+        $this->post("/config/leyendas/$id/estado", ['activo' => '0']);
+
+        $r = $this->get('/bitacora', ['accion' => 'grupo:configuracion']);
+
+        $this->assertStringContainsString('>Leyenda agregada</span>', $r->cuerpo);
+        $this->assertStringContainsString('Texto: Ley N° 453: Tienes derecho a un comprobante.', $r->cuerpo);
+        $this->assertStringContainsString('>Leyenda desactivada</span>', $r->cuerpo);
+        $this->assertStringContainsString('Activa: sí → no', $r->cuerpo);
+    }
 }
