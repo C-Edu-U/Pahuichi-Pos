@@ -66,7 +66,7 @@ $puedeAgotado = puede('catalogo.agotado');
             <tr data-categoria="<?= (int) $p['categoria_id'] ?>" data-favorito="<?= (int) $favorito ?>" data-agotado="<?= (int) $agotado ?>" data-activo="<?= (int) $activo ?>" data-cocina="<?= (int) $p['va_a_cocina'] ?>" data-busqueda="<?= e($p['nombre'] . ' ' . $p['nombre_corto'] . ' ' . $p['codigo']) ?>">
               <td>
                 <div class="producto-celda">
-                  <span class="producto-celda__foto <?= e($clase) ?>" aria-hidden="true"><?= icono('productos') ?></span>
+                  <span class="producto-celda__foto <?= e($clase) ?>" aria-hidden="true"><?php if (!empty($p['foto'])): ?><img src="/catalogo/productos/<?= (int) $p['id'] ?>/foto?v=<?= e($p['foto']) ?>" alt="" width="44" height="44"><?php else: ?><?= icono('productos') ?><?php endif; ?></span>
                   <span><span class="tabla__principal"><?= e($p['nombre']) ?></span><span class="tabla__secundario"><span class="codigo"><?= e($p['codigo']) ?></span> · <?= e($p['nombre_corto']) ?></span></span>
                 </div>
               </td>

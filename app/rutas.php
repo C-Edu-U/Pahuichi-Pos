@@ -9,6 +9,7 @@ declare(strict_types=1);
  */
 
 use App\Controllers\AuthController;
+use App\Controllers\BitacoraController;
 use App\Controllers\CajaController;
 use App\Controllers\CategoriaController;
 use App\Controllers\ConfigController;
@@ -57,6 +58,7 @@ $catalogo = ['auth', 'permiso:modulo.catalogo'];
 $editarCatalogo = [...$catalogo, 'permiso:catalogo.editar'];
 $router->get('/catalogo', [InicioController::class, 'catalogo'], $catalogo);
 $router->get('/catalogo/productos', [ProductoController::class, 'index'], $catalogo);
+$router->get('/catalogo/productos/{id}/foto', [ProductoController::class, 'foto'], $catalogo);
 $router->get('/catalogo/productos/nuevo', [ProductoController::class, 'nuevo'], $editarCatalogo);
 $router->post('/catalogo/productos/nuevo', [ProductoController::class, 'crear'], $editarCatalogo);
 $router->get('/catalogo/productos/{id}/editar', [ProductoController::class, 'editar'], $editarCatalogo);
@@ -75,6 +77,9 @@ $router->post('/caja/abrir', [CajaController::class, 'abrir'], ['auth', 'permiso
 
 // Punto de venta (HU-21): sin caja abierta no se vende
 $router->get('/pos', [PosController::class, 'index'], ['auth', 'permiso:modulo.pos', 'caja']);
+
+// Bitácora (HU-05): solo lectura, solo el administrador
+$router->get('/bitacora', [BitacoraController::class, 'index'], ['auth', 'permiso:modulo.bitacora']);
 
 // Módulos aún sin construir: pantalla «próximamente»
 foreach (Config::get('modulos') as $clave => $m) {
