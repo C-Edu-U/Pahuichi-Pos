@@ -150,6 +150,35 @@ final class ArqueoCierreTest extends CasoPrueba
     }
 
     /**
+     * Escenario: Reabrir caja
+     *   Dado una caja cerrada y arqueada
+     *   Cuando el administrador la reabre
+     *   Entonces vuelve a estar abierta y sin arqueo, para cerrar el turno otra vez
+     */
+    public function testElAdministradorReabreUnaCajaCerrada(): void
+    {
+        $this->venta('efectivo', 'pagado', 100.00);
+        $this->contar(1, 0, 10); // 300
+        $this->assertRedirige('/caja/arqueo', $this->post('/caja/arqueo', ['observacion' => '']));
+
+        $this->entrarComo('admin');
+        $r = $this->post('/caja/reabrir/' . $this->cajaId);
+
+        $this->assertRedirige('/caja', $r);
+        $caja = Caja::buscar($this->cajaId);
+        $this->assertNotNull($caja);
+        $this->assertSame('abierta', $caja['estado']);
+        $this->assertNull($caja['cerrada_en']);
+        $this->assertNull(Arqueo::porCaja($this->cajaId));
+        $this->assertCount(1, Bitacora::ultimos('caja.reabrir'));
+
+        // Con la caja reabierta el cajero vuelve a contar y a cerrar el turno
+        $this->entrarComo('mariela', 'pin');
+        $this->contar(1, 0, 10);
+        $this->assertRedirige('/caja/arqueo', $this->post('/caja/arqueo', ['observacion' => '']));
+    }
+
+    /**
      * Escenario: Limpiar historial
      *   Dado una caja cerrada con arqueo y ventas
      *   Cuando el administrador limpia el historial

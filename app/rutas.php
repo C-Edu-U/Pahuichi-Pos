@@ -77,6 +77,7 @@ $router->post('/caja/conteo', [CajaController::class, 'conteo'], ['auth', 'permi
 $router->get('/caja/arqueo', [CajaController::class, 'arqueo'], ['auth', 'permiso:modulo.caja']);
 $router->post('/caja/arqueo', [CajaController::class, 'confirmarArqueo'], ['auth', 'permiso:modulo.caja']);
 $router->get('/caja/reporte/{id}', [CajaController::class, 'reporte'], ['auth', 'permiso:modulo.caja']);
+$router->post('/caja/reabrir/{id}', [CajaController::class, 'reabrir'], ['auth', 'permiso:caja.reabrir']);
 $router->post('/caja/limpiar-historial', [CajaController::class, 'limpiarHistorial'], ['auth', 'permiso:caja.limpiar_historial']);
 
 // Punto de venta (HU-21): sin caja abierta no se vende

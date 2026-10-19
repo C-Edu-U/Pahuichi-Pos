@@ -300,6 +300,18 @@ final class CajaController extends Controller
         return $this->redirigirConAviso('/caja', 'Caja cerrada.');
     }
 
+    /** Reabre una caja cerrada para repetir el turno (solo administrador). */
+    public function reabrir(Peticion $peticion): Respuesta
+    {
+        try {
+            (new CajaService())->reabrir((int) $peticion->parametro('id'));
+        } catch (DomainException $e) {
+            Sesion::flash('bloqueo', $e->getMessage());
+            return $this->redirigir('/caja');
+        }
+        return $this->redirigirConAviso('/caja', 'Caja reabierta: el turno vuelve a estar disponible.');
+    }
+
     public function limpiarHistorial(): Respuesta
     {
         $usuario = Auth::usuario();
