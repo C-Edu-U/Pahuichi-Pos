@@ -106,9 +106,79 @@ $fecha = static fn (string $momento): string => (new DateTimeImmutable($momento)
         <section class="caja__movimientos" aria-labelledby="t-movimientos">
           <div class="seccion__cabeza">
             <h2 id="t-movimientos">Ingresos y egresos</h2>
-            <span class="insignia insignia--aviso">Próximamente · HU-22</span>
+            <span class="insignia insignia--neutra">HU-22</span>
           </div>
-          <p class="cabeza-pagina__texto">Movimientos de efectivo durante el turno, con monto, motivo y responsable.</p>
+
+          <form class="panel-bloque" id="form-movimiento" method="post" action="/caja/movimientos" novalidate>
+            <?= csrf_campo() ?>
+            <div class="panel-bloque__cabecera">
+              <h3 class="panel-bloque__titulo">Registrar movimiento</h3>
+            </div>
+            <div class="panel-bloque__cuerpo formulario-rapido__campos">
+              <div class="campo">
+                <label class="campo__etiqueta" for="mov-tipo">Tipo</label>
+                <select class="control" id="mov-tipo" name="tipo"<?= campo_error($errores, 'tipo') ?>>
+                  <option value="egreso"<?= $viejo['tipo'] === 'egreso' ? ' selected' : '' ?>>Egreso (sale dinero)</option>
+                  <option value="ingreso"<?= $viejo['tipo'] === 'ingreso' ? ' selected' : '' ?>>Ingreso (entra dinero)</option>
+                </select>
+                <?= mensaje_error($errores, 'tipo') ?>
+              </div>
+              <div class="campo">
+                <label class="campo__etiqueta" for="mov-monto">Monto</label>
+                <div class="control-grupo">
+                  <span class="control-grupo__prefijo" aria-hidden="true">Bs</span>
+                  <input class="control control--numero" id="mov-monto" name="monto" type="text" inputmode="decimal" value="<?= e($viejo['monto']) ?>" autocomplete="off"<?= campo_error($errores, 'monto') ?>>
+                </div>
+                <?= mensaje_error($errores, 'monto') ?>
+              </div>
+              <div class="campo campo--ancho">
+                <label class="campo__etiqueta" for="mov-motivo">Motivo</label>
+                <input class="control" id="mov-motivo" name="motivo" type="text" maxlength="200" value="<?= e($viejo['motivo']) ?>" placeholder="Compra de hielo"<?= campo_error($errores, 'motivo') ?>>
+                <?= mensaje_error($errores, 'motivo') ?>
+              </div>
+            </div>
+            <div class="panel-bloque__pie">
+              <button class="boton boton--primario" type="submit">Registrar</button>
+            </div>
+          </form>
+
+<?php if ($movimientos !== []): ?>
+          <dl class="resumen resumen--sin-borde">
+            <div class="resumen__fila"><dt>Ingresos del turno</dt><dd class="num"><?= bs($totales['ingresos']) ?></dd></div>
+            <div class="resumen__fila"><dt>Egresos del turno</dt><dd class="num"><?= bs($totales['egresos']) ?></dd></div>
+            <div class="resumen__fila"><dt>Efectivo en caja por movimientos</dt><dd class="num"><?= bs($totales['neto']) ?></dd></div>
+          </dl>
+
+          <div class="tabla-contenedor">
+            <table class="tabla tabla--fichas">
+              <caption class="visualmente-oculto">Movimientos de efectivo del turno</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Hora</th>
+                  <th scope="col">Tipo</th>
+                  <th scope="col" class="col-num">Monto</th>
+                  <th scope="col">Motivo</th>
+                  <th scope="col">Responsable</th>
+                </tr>
+              </thead>
+              <tbody>
+<?php foreach ($movimientos as $m): ?>
+                <tr>
+                  <td class="num"><?= e(substr($m['creado_en'], 11, 5)) ?></td>
+                  <td><?= $m['tipo'] === 'ingreso'
+                      ? '<span class="insignia insignia--ok">Ingreso</span>'
+                      : '<span class="insignia insignia--aviso">Egreso</span>' ?></td>
+                  <td class="col-num num"><?= bs($m['monto']) ?></td>
+                  <td><?= e($m['motivo']) ?></td>
+                  <td><?= e($m['usuario']) ?></td>
+                </tr>
+<?php endforeach; ?>
+              </tbody>
+            </table>
+          </div>
+<?php else: ?>
+          <p class="cabeza-pagina__texto">Todavía no hay ingresos ni egresos en este turno.</p>
+<?php endif; ?>
         </section>
       </div>
 <?php endif; ?>

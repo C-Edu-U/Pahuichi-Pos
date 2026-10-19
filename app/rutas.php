@@ -70,6 +70,7 @@ $router->post('/catalogo/categorias/{id}/estado', [CategoriaController::class, '
 $router->get('/caja', [CajaController::class, 'index'], ['auth', 'permiso:modulo.caja']);
 $router->post('/caja/abrir', [CajaController::class, 'abrir'], ['auth', 'permiso:modulo.caja']);
 $router->post('/caja/cerrar', [CajaController::class, 'cerrar'], ['auth', 'permiso:modulo.caja']);
+$router->post('/caja/movimientos', [CajaController::class, 'movimiento'], ['auth', 'permiso:caja.movimiento']);
 $router->post('/caja/limpiar-historial', [CajaController::class, 'limpiarHistorial'], ['auth', 'permiso:caja.limpiar_historial']);
 
 // Punto de venta (HU-21): sin caja abierta no se vende

@@ -11,8 +11,10 @@ use App\Core\Respuesta;
 use App\Core\Sesion;
 use App\Models\Bitacora;
 use App\Models\Caja;
+use App\Models\MovimientoCaja;
 use App\Models\Turno;
 use App\Services\CajaService;
+use App\Services\MovimientoCajaService;
 use DomainException;
 
 /** Caja (HU-20): apertura con turno, cajero y fondo inicial. */
@@ -57,6 +59,50 @@ final class CajaController extends Controller
         return $this->redirigirConAviso($usuario['rol'] === 'cajero' ? '/pos' : '/caja', 'Caja abierta.');
     }
 
+    /** Ingreso o egreso de efectivo durante el turno (HU-22). */
+    public function movimiento(Peticion $peticion): Respuesta
+    {
+        $usuario = Auth::usuario();
+        $abierta = CajaService::abierta();
+        if ($abierta === null) {
+            return $this->redirigirConAviso('/caja', 'No hay una caja abierta.');
+        }
+
+        $tipo = (string) $peticion->entrada('tipo');
+        $motivo = trim((string) $peticion->entrada('motivo'));
+        $montoTexto = trim((string) $peticion->entrada('monto'));
+        $monto = leer_monto($montoTexto);
+
+        $errores = [];
+        if (!in_array($tipo, MovimientoCajaService::TIPOS, true)) {
+            $errores['tipo'] = 'Elige si es un ingreso o un egreso.';
+        }
+        if ($monto === null || $monto <= 0) {
+            $errores['monto'] = 'Escribe el monto, por ejemplo 50,00.';
+        }
+        if (mb_strlen($motivo) < 3) {
+            $errores['motivo'] = 'Escribe el motivo del movimiento.';
+        }
+
+        if ($errores) {
+            return $this->pantalla([
+                'errores' => $errores,
+                'viejo' => ['turno_id' => 0, 'cajero_id' => 0, 'fondo' => '300,00', 'tipo' => $tipo, 'monto' => $montoTexto, 'motivo' => $motivo],
+            ], 422);
+        }
+
+        try {
+            (new MovimientoCajaService())->registrar((int) $abierta['id'], $tipo, (float) $monto, $motivo, $usuario);
+        } catch (DomainException $e) {
+            return $this->pantalla([
+                'errores' => ['monto' => $e->getMessage()],
+                'viejo' => ['turno_id' => 0, 'cajero_id' => 0, 'fondo' => '300,00', 'tipo' => $tipo, 'monto' => $montoTexto, 'motivo' => $motivo],
+            ], 422);
+        }
+
+        return $this->redirigirConAviso('/caja', $tipo === 'ingreso' ? 'Ingreso registrado.' : 'Egreso registrado.');
+    }
+
     public function cerrar(Peticion $peticion): Respuesta
     {
         $usuario = Auth::usuario();
@@ -84,20 +130,30 @@ final class CajaController extends Controller
     {
         $turnos = Turno::activos();
         $sugerido = CajaService::turnoSugerido($turnos);
+        $abierta = CajaService::abierta();
         return $this->vista('caja/index', $datos + [
             'titulo' => 'Caja',
             'modulo' => 'caja',
             'h1' => 'Caja',
             'css' => ['modulos.css'],
             'js' => ['caja.js'],
-            'abierta' => CajaService::abierta(),
+            'abierta' => $abierta,
             'turnos' => $turnos,
             'cajeros' => CajaService::cajeros(),
             'usuario' => Auth::usuario(),
             'historial' => Caja::ultimas(),
+            'movimientos' => $abierta !== null ? MovimientoCaja::porCaja((int) $abierta['id']) : [],
+            'totales' => $abierta !== null ? MovimientoCaja::totales((int) $abierta['id']) : ['ingresos' => 0.0, 'egresos' => 0.0, 'neto' => 0.0],
             'errores' => [],
             'bloqueo' => null,
-            'viejo' => ['turno_id' => (int) ($sugerido['id'] ?? 0), 'cajero_id' => 0, 'fondo' => '300,00'],
+            'viejo' => [
+                'turno_id' => (int) ($sugerido['id'] ?? 0),
+                'cajero_id' => 0,
+                'fondo' => '300,00',
+                'tipo' => 'egreso',
+                'monto' => '',
+                'motivo' => '',
+            ],
         ], $estado);
     }
 }
