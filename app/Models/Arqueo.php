@@ -38,6 +38,9 @@ final class Arqueo
         }
         $fila['denominaciones'] = json_decode((string) $fila['denominaciones'], true) ?: [];
         $fila['total_contado'] = (float) $fila['total_contado'];
+        $fila['efectivo_esperado'] = $fila['efectivo_esperado'] !== null ? (float) $fila['efectivo_esperado'] : null;
+        $fila['diferencia'] = $fila['diferencia'] !== null ? (float) $fila['diferencia'] : null;
+        $fila['resumen'] = $fila['resumen'] !== null ? (json_decode((string) $fila['resumen'], true) ?: []) : [];
         return $fila;
     }
 
@@ -47,6 +50,24 @@ final class Arqueo
             'INSERT INTO arqueos (caja_id, denominaciones, total_contado, creado_en) VALUES (?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE denominaciones = VALUES(denominaciones), total_contado = VALUES(total_contado), creado_en = VALUES(creado_en)',
             [$cajaId, json_encode($conteo, JSON_UNESCAPED_UNICODE), $total, $creadoEn],
+        );
+    }
+
+    /** Guarda el resultado del arqueo: esperado, diferencia, resumen y cierre. */
+    public static function guardarCierre(int $cajaId, float $esperado, float $diferencia, array $resumen, string $observacion, string $cerradoEn): void
+    {
+        DB::consulta(
+            'UPDATE arqueos
+             SET efectivo_esperado = ?, diferencia = ?, resumen = ?, observacion = ?, cerrado_en = ?
+             WHERE caja_id = ?',
+            [
+                $esperado,
+                $diferencia,
+                json_encode($resumen, JSON_UNESCAPED_UNICODE),
+                $observacion !== '' ? $observacion : null,
+                $cerradoEn,
+                $cajaId,
+            ],
         );
     }
 

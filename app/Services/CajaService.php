@@ -100,7 +100,7 @@ final class CajaService
             throw new DomainException('Solo puedes cerrar tu propia caja.');
         }
 
-        DB::consulta('UPDATE cajas SET estado = ? WHERE id = ?', ['cerrada', (int) $abierta['id']]);
+        Caja::cerrar((int) $abierta['id'], Reloj::sql());
 
         Bitacora::registrar('caja.cierre', 'cajas', (int) $abierta['id'], [
             'turno' => $abierta['turno'],

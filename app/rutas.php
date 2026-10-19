@@ -73,6 +73,8 @@ $router->post('/caja/cerrar', [CajaController::class, 'cerrar'], ['auth', 'permi
 $router->post('/caja/movimientos', [CajaController::class, 'movimiento'], ['auth', 'permiso:caja.movimiento']);
 $router->get('/caja/cierre', [CajaController::class, 'cierre'], ['auth', 'permiso:modulo.caja']);
 $router->post('/caja/conteo', [CajaController::class, 'conteo'], ['auth', 'permiso:modulo.caja']);
+$router->get('/caja/arqueo', [CajaController::class, 'arqueo'], ['auth', 'permiso:modulo.caja']);
+$router->post('/caja/arqueo', [CajaController::class, 'confirmarArqueo'], ['auth', 'permiso:modulo.caja']);
 $router->post('/caja/limpiar-historial', [CajaController::class, 'limpiarHistorial'], ['auth', 'permiso:caja.limpiar_historial']);
 
 // Punto de venta (HU-21): sin caja abierta no se vende

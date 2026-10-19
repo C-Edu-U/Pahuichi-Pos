@@ -30,6 +30,17 @@ final class Caja
         return DB::filas(self::SELECT . ' ORDER BY c.abierta_en DESC LIMIT ' . max(1, $cantidad));
     }
 
+    /** Última caja cerrada, para mostrar su arqueo. */
+    public static function ultimaCerrada(): ?array
+    {
+        return DB::fila(self::SELECT . " WHERE c.estado = 'cerrada' ORDER BY c.cerrada_en DESC, c.id DESC LIMIT 1");
+    }
+
+    public static function buscar(int $id): ?array
+    {
+        return DB::fila(self::SELECT . ' WHERE c.id = ?', [$id]);
+    }
+
     public static function crear(int $turnoId, string $fecha, int $cajeroId, int $abiertaPor, float $fondo, string $abiertaEn): int
     {
         return DB::insertar(
@@ -38,9 +49,9 @@ final class Caja
         );
     }
 
-    public static function cerrar(int $id): void
+    public static function cerrar(int $id, ?string $cerradaEn = null): void
     {
-        DB::consulta('UPDATE cajas SET estado = ? WHERE id = ?', ['cerrada', $id]);
+        DB::consulta('UPDATE cajas SET estado = ?, cerrada_en = ? WHERE id = ?', ['cerrada', $cerradaEn, $id]);
     }
 
     public static function eliminarCerradas(): int

@@ -14,6 +14,7 @@ use App\Models\Arqueo;
 use App\Models\Caja;
 use App\Models\MovimientoCaja;
 use App\Models\Turno;
+use App\Services\ArqueoService;
 use App\Services\CajaService;
 use App\Services\ConteoService;
 use App\Services\MovimientoCajaService;
@@ -156,6 +157,90 @@ final class CajaController extends Controller
         }
 
         return $this->redirigirConAviso('/caja/cierre', 'Conteo registrado: Bs ' . number_format($total, 2, ',', '.'));
+    }
+
+    /** Arqueo automático y resumen de cierre (HU-24). */
+    public function arqueo(Peticion $peticion): Respuesta
+    {
+        $abierta = CajaService::abierta();
+        if ($abierta !== null) {
+            $conteo = Arqueo::porCaja((int) $abierta['id']);
+            if ($conteo === null) {
+                return $this->redirigirConAviso('/caja/cierre', 'Cuenta el efectivo antes de arquear.');
+            }
+            $esperado = ArqueoService::esperado($abierta);
+            $diferencia = ArqueoService::diferencia((float) $conteo['total_contado'], $esperado);
+
+            return $this->vista('caja/arqueo', [
+                'titulo' => 'Arqueo de caja',
+                'modulo' => 'caja',
+                'h1' => 'Arqueo de caja',
+                'css' => ['modulos.css'],
+                'js' => [],
+                'caja' => $abierta,
+                'conteo' => $conteo,
+                'esperado' => $esperado,
+                'diferencia' => $diferencia,
+                'resumen' => ArqueoService::resumen((int) $abierta['id']),
+                'movimientos' => MovimientoCaja::porCaja((int) $abierta['id']),
+                'cerrada' => false,
+                'observacion' => '',
+                'errores' => [],
+            ]);
+        }
+
+        // Sin caja abierta: se muestra el arqueo de la última caja cerrada.
+        $caja = Caja::ultimaCerrada();
+        if ($caja === null) {
+            return $this->redirigirConAviso('/caja', 'No hay ninguna caja cerrada todavía.');
+        }
+        $conteo = Arqueo::porCaja((int) $caja['id']);
+        if ($conteo === null) {
+            return $this->redirigirConAviso('/caja', 'No hay ninguna caja cerrada todavía.');
+        }
+
+        return $this->vista('caja/arqueo', [
+            'titulo' => 'Arqueo de caja',
+            'modulo' => 'caja',
+            'h1' => 'Arqueo de caja',
+            'css' => ['modulos.css'],
+            'js' => [],
+            'caja' => $caja,
+            'conteo' => $conteo,
+            'esperado' => (float) ($conteo['efectivo_esperado'] ?? 0),
+            'diferencia' => (float) ($conteo['diferencia'] ?? 0),
+            'resumen' => $conteo['resumen'] ?: ArqueoService::resumen((int) $caja['id']),
+            'movimientos' => MovimientoCaja::porCaja((int) $caja['id']),
+            'cerrada' => true,
+            'observacion' => (string) ($conteo['observacion'] ?? ''),
+            'errores' => [],
+        ]);
+    }
+
+    /** Confirma el cierre: guarda la diferencia y el resumen, y cierra la caja (HU-24). */
+    public function confirmarArqueo(Peticion $peticion): Respuesta
+    {
+        $abierta = CajaService::abierta();
+        if ($abierta === null) {
+            return $this->redirigirConAviso('/caja', 'No hay una caja abierta.');
+        }
+        $conteo = Arqueo::porCaja((int) $abierta['id']);
+        if ($conteo === null) {
+            return $this->redirigirConAviso('/caja/cierre', 'Cuenta el efectivo antes de arquear.');
+        }
+
+        $esperado = ArqueoService::esperado($abierta);
+        $diferencia = ArqueoService::diferencia((float) $conteo['total_contado'], $esperado);
+        $resumen = ArqueoService::resumen((int) $abierta['id']);
+        $observacion = trim((string) $peticion->entrada('observacion'));
+
+        try {
+            (new ArqueoService())->confirmarCierre((int) $abierta['id'], $esperado, $diferencia, $resumen, $observacion);
+        } catch (DomainException $e) {
+            return $this->redirigirConAviso('/caja/cierre', $e->getMessage());
+        }
+
+        return $this->redirigirConAviso('/caja/arqueo', 'Caja cerrada y arqueada.');
     }
 
     public function cerrar(Peticion $peticion): Respuesta
