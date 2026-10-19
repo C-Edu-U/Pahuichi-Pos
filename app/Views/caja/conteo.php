@@ -12,7 +12,7 @@ $viejo = $viejo ?? [];
 $total = Arqueo::totalContado($conteoGuardado);
 ?>
     <main class="contenido" id="contenido">
-      <div class="aviso-pagina aviso-pagina--ciego" role="note">
+      <div class="aviso-pagina" role="note">
         <span class="aviso-pagina__icono" aria-hidden="true"><?= icono('ocultar', 'icono--lg') ?></span>
         <p class="aviso-pagina__codigo">Cierre ciego</p>
         <h2 class="aviso-pagina__titulo">Cuenta el efectivo sin ver lo que debería haber</h2>

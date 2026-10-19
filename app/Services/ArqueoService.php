@@ -54,8 +54,8 @@ final class ArqueoService
     {
         $resumen = Venta::resumen($cajaId);
         $movimientos = MovimientoCaja::totales($cajaId);
-        $resumen['mov_ingresos'] = $movimientos['ingresos'];
-        $resumen['mov_egresos'] = $movimientos['egresos'];
+        $resumen['mov_ingresos'] = number_format((float) $movimientos['ingresos'], 2, '.', '');
+        $resumen['mov_egresos'] = number_format((float) $movimientos['egresos'], 2, '.', '');
         return $resumen;
     }
 

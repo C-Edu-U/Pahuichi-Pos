@@ -41,22 +41,29 @@ final class Venta
             [$cajaId],
         ) ?? [];
 
+        $efectivo = (float) ($fila['efectivo'] ?? 0);
+        $qrConfirmado = (float) ($fila['qr_confirmado'] ?? 0);
+        $qrPendiente = (float) ($fila['qr_pendiente'] ?? 0);
+        $qrRechazado = (float) ($fila['qr_rechazado'] ?? 0);
+        $tarjeta = (float) ($fila['tarjeta'] ?? 0);
+        $otro = (float) ($fila['otro'] ?? 0);
+
         $resumen = [
             'ventas' => (int) ($fila['ventas'] ?? 0),
-            'total' => (float) ($fila['total'] ?? 0),
-            'efectivo' => (float) ($fila['efectivo'] ?? 0),
-            'qr_confirmado' => (float) ($fila['qr_confirmado'] ?? 0),
-            'qr_pendiente' => (float) ($fila['qr_pendiente'] ?? 0),
-            'qr_rechazado' => (float) ($fila['qr_rechazado'] ?? 0),
-            'tarjeta' => (float) ($fila['tarjeta'] ?? 0),
-            'otro' => (float) ($fila['otro'] ?? 0),
-            'descuentos' => (float) ($fila['descuentos'] ?? 0),
-            'anuladas' => (float) ($fila['anuladas'] ?? 0),
+            'total' => self::monto((float) ($fila['total'] ?? 0)),
+            'efectivo' => self::monto($efectivo),
+            'qr_confirmado' => self::monto($qrConfirmado),
+            'qr_pendiente' => self::monto($qrPendiente),
+            'qr_rechazado' => self::monto($qrRechazado),
+            'tarjeta' => self::monto($tarjeta),
+            'otro' => self::monto($otro),
+            'descuentos' => self::monto((float) ($fila['descuentos'] ?? 0)),
+            'anuladas' => self::monto((float) ($fila['anuladas'] ?? 0)),
         ];
 
         $resumen['por_metodo'] = [
             'Efectivo' => $resumen['efectivo'],
-            'QR' => $resumen['qr_confirmado'] + $resumen['qr_pendiente'] + $resumen['qr_rechazado'],
+            'QR' => self::monto($qrConfirmado + $qrPendiente + $qrRechazado),
             'Tarjeta' => $resumen['tarjeta'],
             'Otro' => $resumen['otro'],
         ];
@@ -67,6 +74,12 @@ final class Venta
         ];
 
         return $resumen;
+    }
+
+    /** Monto con dos decimales y en texto: el resumen queda guardado sin perder centavos. */
+    private static function monto(float $valor): string
+    {
+        return number_format($valor, 2, '.', '');
     }
 
     public static function deCaja(int $cajaId): array

@@ -169,6 +169,7 @@ $cufdVigente = !isset($errores['f-vigencia']) && ParametrosFiscales::cufdVigente
                     Eliminar este turno
                   </label>
                   <p class="campo__ayuda">Solo se puede eliminar si no tiene cajas hoy y no está en curso.</p>
+                  <?= mensaje_error($errores, "e{$id}") ?>
                 </div>
                 <div class="campo">
                   <label class="campo__etiqueta" for="t<?= $id ?>-ini">Desde</label>
@@ -186,6 +187,8 @@ $cufdVigente = !isset($errores['f-vigencia']) && ParametrosFiscales::cufdVigente
 <?php endif; ?>
               </fieldset>
 <?php endforeach; ?>
+
+              <?= isset($errores['eliminar_general']) ? '<p class="alerta alerta--peligro campo--ancho" role="alert">' . e($errores['eliminar_general']) . '</p>' : '' ?>
 
               <fieldset class="turno turno--nuevo">
                 <legend>Agregar turno</legend>
@@ -217,12 +220,12 @@ $cufdVigente = !isset($errores['f-vigencia']) && ParametrosFiscales::cufdVigente
                 </div>
                 <?= isset($errores['nuevo_general']) ? '<p class="alerta alerta--peligro campo--ancho" role="alert">' . e($errores['nuevo_general']) . '</p>' : '' ?>
               </fieldset>
-              <p class="config__nota">Un turno no abre si la caja del anterior no está cerrada y arqueada. Un turno en curso no se puede editar ni eliminar.</p>
+              <p class="config__nota">Un turno no abre si la caja del anterior no está cerrada y arqueada. Un turno en curso no se puede editar ni eliminar. El turno siempre termina después de empezar: 23:59 es hasta medianoche.</p>
             </div>
             <div class="panel-bloque__pie">
               <button class="boton boton--primario" type="submit">Guardar cambios</button>
-              <button class="boton boton--fantasma" type="submit" name="accion" value="agregar">Agregar turno</button>
-              <button class="boton boton--peligro" type="submit" name="accion" value="eliminar" onclick="return confirm('¿Eliminar los turnos marcados?')">Eliminar marcados</button>
+              <button class="boton boton--fantasma" type="submit" name="agregar" value="1">Agregar turno</button>
+              <button class="boton boton--peligro" type="submit" name="eliminar" value="1" onclick="return confirm('¿Eliminar los turnos marcados?')">Eliminar marcados</button>
             </div>
           </form>
 

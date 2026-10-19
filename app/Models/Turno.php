@@ -6,8 +6,6 @@ namespace App\Models;
 
 use App\Core\DB;
 use App\Core\Reloj;
-use DateTimeImmutable;
-use DateTimeZone;
 
 /** Turnos de caja (HU-11): medio día y noche, con horario configurable. */
 final class Turno
@@ -64,10 +62,11 @@ final class Turno
 
     public static function tieneCajasHoy(int $id): bool
     {
-        $hoy = (new DateTimeImmutable('now', new DateTimeZone('America/La_Paz')))->format('Y-m-d');
+        $hoy = Reloj::ahora()->format('Y-m-d');
         return (int) DB::valor('SELECT COUNT(*) FROM cajas WHERE turno_id = ? AND fecha = ?', [$id, $hoy]) > 0;
     }
 
+    /** El turno está en curso ahora (la base no admite turnos que crucen la medianoche). */
     public static function estaEnCurso(int $id): bool
     {
         $t = self::buscar($id);
