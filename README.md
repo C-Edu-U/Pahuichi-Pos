@@ -62,6 +62,7 @@ Los cajeros también tienen la contraseña `Pahuichi2026`. El PIN de autorizaci�
 | HU-21 | Sin caja abierta, el POS muestra «Abrir caja» | `/pos` |
 | HU-05 | Bitácora de solo lectura con filtros por fecha, usuario, acción y acciones sensibles | `/bitacora` |
 | HU-28 | Cuadrícula del POS: favoritos primero, categorías con su color, búsqueda por nombre o código; agotado visible sin poder venderse | `/pos` |
+| HU-29 | Carrito: un toque agrega y otro suma; +, − y quitar por línea; total siempre visible; cancelar pedido con confirmación | `/pos` |
 
 El resto de los módulos muestra «Próximamente» con sus historias. Toda acción sensible queda en la bitácora; al registrar una acción nueva, agrégala a `config/bitacora.php` para que se vea con su nombre.
 

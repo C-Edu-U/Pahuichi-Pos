@@ -1,6 +1,6 @@
 <?php
 /**
- * Punto de venta con caja abierta (HU-28). Variables: $caja, $productos (activos, favoritos
+ * Punto de venta con caja abierta: cuadrícula (HU-28) y carrito (HU-29). Variables: $caja, $productos (activos, favoritos
  * primero), $categorias (activas con productos), $hayFavoritos.
  * Los datos de cada producto van en data-* para el JS (la CSP no permite scripts en línea).
  */
@@ -81,7 +81,7 @@ $datos = array_map(static fn (array $p): array => [
             <ul class="lineas" id="lineas" role="list" aria-label="Ítems del pedido"></ul>
             <div class="lineas-vacio" id="lineas-vacio">
               <?= icono('carrito', 'icono--lg') ?>
-              <p id="lineas-vacio-texto">El carrito llega con HU-29: por ahora la cuadrícula solo muestra los productos.</p>
+              <p id="lineas-vacio-texto">Toca un producto para agregarlo. Otro toque suma una unidad.</p>
             </div>
 
             <div class="totales">
@@ -96,10 +96,28 @@ $datos = array_map(static fn (array $p): array => [
                 </button>
               </div>
               <p class="totales__nota" id="cobro-pendiente">El cobro llega en el Sprint 3 (HU-37).</p>
+              <div class="totales__secundarias">
+                <button class="boton boton--fantasma" type="button" id="vaciar" data-abrir-modal="modal-vaciar" disabled>
+                  <?= icono('basura', 'icono--sm') ?>Cancelar pedido
+                </button>
+              </div>
             </div>
           </div>
         </section>
       </div>
+
+      <dialog class="modal" id="modal-vaciar" aria-labelledby="modal-vaciar-titulo" aria-describedby="modal-vaciar-texto">
+        <form method="dialog">
+          <div class="modal__cuerpo">
+            <h2 class="modal__titulo" id="modal-vaciar-titulo">¿Cancelar el pedido?</h2>
+            <p class="modal__texto" id="modal-vaciar-texto">Se quitan todos los ítems del pedido.</p>
+          </div>
+          <div class="modal__acciones">
+            <button class="boton" type="submit" value="seguir" autofocus>Seguir vendiendo</button>
+            <button class="boton boton--peligro" type="submit" value="vaciar">Cancelar pedido</button>
+          </div>
+        </form>
+      </dialog>
 
       <p class="visualmente-oculto" aria-live="polite" id="anuncio"></p>
     </main>
