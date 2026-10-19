@@ -173,22 +173,7 @@ final class CajaController extends Controller
             $esperado = ArqueoService::esperado($abierta);
             $diferencia = ArqueoService::diferencia((float) $conteo['total_contado'], $esperado);
 
-            return $this->vista('caja/arqueo', [
-                'titulo' => 'Arqueo de caja',
-                'modulo' => 'caja',
-                'h1' => 'Arqueo de caja',
-                'css' => ['modulos.css'],
-                'js' => [],
-                'caja' => $abierta,
-                'conteo' => $conteo,
-                'esperado' => $esperado,
-                'diferencia' => $diferencia,
-                'resumen' => ArqueoService::resumen((int) $abierta['id']),
-                'movimientos' => MovimientoCaja::porCaja((int) $abierta['id']),
-                'cerrada' => false,
-                'observacion' => '',
-                'errores' => [],
-            ]);
+            return $this->pantallaArqueo($abierta, $conteo, $esperado, $diferencia, false, [], '');
         }
 
         // Sin caja abierta: se muestra el arqueo de la última caja cerrada.
@@ -201,22 +186,15 @@ final class CajaController extends Controller
             return $this->redirigirConAviso('/caja', 'No hay ninguna caja cerrada todavía.');
         }
 
-        return $this->vista('caja/arqueo', [
-            'titulo' => 'Arqueo de caja',
-            'modulo' => 'caja',
-            'h1' => 'Arqueo de caja',
-            'css' => ['modulos.css'],
-            'js' => [],
-            'caja' => $caja,
-            'conteo' => $conteo,
-            'esperado' => (float) ($conteo['efectivo_esperado'] ?? 0),
-            'diferencia' => (float) ($conteo['diferencia'] ?? 0),
-            'resumen' => $conteo['resumen'] ?: ArqueoService::resumen((int) $caja['id']),
-            'movimientos' => MovimientoCaja::porCaja((int) $caja['id']),
-            'cerrada' => true,
-            'observacion' => (string) ($conteo['observacion'] ?? ''),
-            'errores' => [],
-        ]);
+        return $this->pantallaArqueo(
+            $caja,
+            $conteo,
+            (float) ($conteo['efectivo_esperado'] ?? 0),
+            (float) ($conteo['diferencia'] ?? 0),
+            true,
+            [],
+            (string) ($conteo['observacion'] ?? ''),
+        );
     }
 
     /** Confirma el cierre: guarda la diferencia y el resumen, y cierra la caja (HU-24). */
@@ -236,6 +214,14 @@ final class CajaController extends Controller
         $resumen = ArqueoService::resumen((int) $abierta['id']);
         $observacion = trim((string) $peticion->entrada('observacion'));
 
+        // HU-26: una diferencia igual o mayor al umbral obliga a explicar.
+        if ($observacion === '' && ArqueoService::exigeObservacion($diferencia)) {
+            $faltante = $diferencia < 0;
+            $errores['observacion'] = 'La diferencia es de Bs ' . number_format(abs($diferencia), 2, ',', '.')
+                . '. Escribe una observación para explicar el ' . ($faltante ? 'faltante' : 'sobrante') . '.';
+            return $this->pantallaArqueo($abierta, $conteo, $esperado, $diferencia, false, $errores, $observacion, 422);
+        }
+
         try {
             (new ArqueoService())->confirmarCierre((int) $abierta['id'], $esperado, $diferencia, $resumen, $observacion);
         } catch (DomainException $e) {
@@ -243,6 +229,28 @@ final class CajaController extends Controller
         }
 
         return $this->redirigirConAviso('/caja/arqueo', 'Caja cerrada y arqueada.');
+    }
+
+    /** Pantalla del arqueo: comparación, resumen y confirmación del cierre. */
+    private function pantallaArqueo(array $caja, array $conteo, float $esperado, float $diferencia, bool $cerrada, array $errores = [], string $observacion = '', int $estado = 200): Respuesta
+    {
+        return $this->vista('caja/arqueo', [
+            'titulo' => 'Arqueo de caja',
+            'modulo' => 'caja',
+            'h1' => 'Arqueo de caja',
+            'css' => ['modulos.css'],
+            'js' => [],
+            'caja' => $caja,
+            'conteo' => $conteo,
+            'esperado' => $esperado,
+            'diferencia' => $diferencia,
+            'resumen' => $conteo['resumen'] ?: ArqueoService::resumen((int) $caja['id']),
+            'movimientos' => MovimientoCaja::porCaja((int) $caja['id']),
+            'cerrada' => $cerrada,
+            'observacion' => $observacion,
+            'umbral' => ArqueoService::umbralObservacion(),
+            'errores' => $errores,
+        ], $estado);
     }
 
     /** Reporte de cierre: se imprime y se guarda en PDF (HU-25). */

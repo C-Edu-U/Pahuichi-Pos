@@ -1,7 +1,8 @@
 <?php
 /**
  * Caja. Variables: $abierta (caja abierta o null), $turnos, $cajeros, $usuario, $historial,
- * $errores, $bloqueo (motivo por el que no se pudo abrir), $viejo (turno_id, cajero_id, fondo).
+ * $errores, $bloqueo (motivo por el que no se pudo abrir), $viejo (turno_id, cajero_id, fondo,
+ * tipo, monto, motivo), $movimientos, $totales.
  */
 use App\Models\Turno;
 

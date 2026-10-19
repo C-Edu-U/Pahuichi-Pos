@@ -32,9 +32,7 @@
   if (monto) {
     formatear(monto);
     $('form-movimiento').addEventListener('submit', function (e) {
-      var ok = P.leerMonto(monto.value) !== null;
-      P.marcarCampo('monto', ok ? '' : 'Escribe el monto, por ejemplo 50,00.');
-      if (!ok) { e.preventDefault(); monto.focus(); }
+      if (P.leerMonto(monto.value) === null) { e.preventDefault(); monto.focus(); }
     });
   }
 })();

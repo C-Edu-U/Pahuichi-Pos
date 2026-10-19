@@ -226,9 +226,33 @@ $cufdVigente = !isset($errores['f-vigencia']) && ParametrosFiscales::cufdVigente
             </div>
           </form>
 
-<?php $pendiente('impresoras', 'Impresoras', 'HU-12', 'Ancho de 76 o 58 mm, columnas y qué ticket imprime cada una.'); ?>
+<?php
+$pendiente('impresoras', 'Impresoras', 'HU-12', 'Ancho de 76 o 58 mm, columnas y qué ticket imprime cada una.');
+?>
 
-<?php $pendiente('caja-cobro', 'Caja y cobro', 'HU-26, HU-38', 'Umbral de la observación obligatoria en el cierre (Bs 10) y monto fijo del QR del día (Bs 0,50).'); ?>
+          <form class="panel-bloque config__seccion" id="caja-cobro" method="post" action="/config/caja-cobro" novalidate aria-labelledby="t-caja-cobro">
+            <?= csrf_campo() ?>
+            <div class="panel-bloque__cabecera">
+              <h2 class="panel-bloque__titulo" id="t-caja-cobro">Caja y cobro</h2>
+            </div>
+            <div class="panel-bloque__cuerpo formulario-rapido__campos">
+              <div class="campo">
+                <label class="campo__etiqueta" for="f-umbral">Umbral de la observación obligatoria</label>
+                <div class="control-grupo">
+                  <span class="control-grupo__prefijo" aria-hidden="true">Bs</span>
+                  <input class="control control--numero" id="f-umbral" name="umbral_observacion" type="text" inputmode="decimal" value="<?= e(bs($umbralObservacion)) ?>"<?= campo_error($errores, 'f-umbral', 'f-umbral-ayuda') ?>>
+                </div>
+                <p class="campo__ayuda" id="f-umbral-ayuda">Si la diferencia del arqueo llega a este monto, el cajero tiene que escribir una observación antes de cerrar.</p>
+                <?= mensaje_error($errores, 'f-umbral') ?>
+              </div>
+            </div>
+            <div class="panel-bloque__pie">
+              <button class="boton boton--primario" type="submit">Guardar</button>
+            </div>
+            <div class="panel-bloque__cuerpo">
+              <p class="config__nota">El monto fijo del QR del día llega con HU-38.</p>
+            </div>
+          </form>
 
           <section class="panel-bloque config__seccion" id="seguridad" aria-labelledby="t-seguridad">
             <div class="panel-bloque__cabecera">

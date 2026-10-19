@@ -8,6 +8,7 @@ use App\Core\Reloj;
 use App\Models\Arqueo;
 use App\Models\Bitacora;
 use App\Models\Caja;
+use App\Models\Configuracion;
 use App\Models\MovimientoCaja;
 use App\Models\Venta;
 use DomainException;
@@ -34,6 +35,18 @@ final class ArqueoService
     public static function diferencia(float $totalContado, float $esperado): float
     {
         return round($totalContado - $esperado, 2);
+    }
+
+    /** Umbral configurable: a partir de esta diferencia la observación es obligatoria (HU-26). */
+    public static function umbralObservacion(): float
+    {
+        return Configuracion::umbralObservacion();
+    }
+
+    /** La diferencia es igual o mayor al umbral: el cajero tiene que explicar. */
+    public static function exigeObservacion(float $diferencia): bool
+    {
+        return abs($diferencia) >= self::umbralObservacion();
     }
 
     /** Resumen del turno: ventas, medios de pago, QR, descuentos y anulaciones. */

@@ -11,6 +11,7 @@ use App\Core\Peticion;
 use App\Core\Reloj;
 use App\Core\Respuesta;
 use App\Models\Bitacora;
+use App\Models\Configuracion;
 use App\Models\Negocio;
 use App\Models\ParametrosFiscales;
 use App\Models\Turno;
@@ -287,6 +288,31 @@ final class ConfigController extends Controller
         return $this->redirigirConAviso('/config#turnos', 'Turnos guardados.');
     }
 
+    /** Umbral de la observación obligatoria al cerrar la caja (HU-26). */
+    public function cajaCobro(Peticion $peticion): Respuesta
+    {
+        $texto = trim((string) $peticion->entrada('umbral_observacion'));
+        $valor = leer_monto($texto);
+
+        $errores = [];
+        if ($valor === null || $valor < 0) {
+            $errores['f-umbral'] = 'Escribe el umbral en bolivianos, por ejemplo 10,00.';
+        } elseif ($valor > 99999.99) {
+            $errores['f-umbral'] = 'El umbral va de Bs 0,00 a Bs 99.999,99.';
+        }
+
+        if ($errores) {
+            return $this->pantalla(['errores' => $errores], 422);
+        }
+
+        $antes = Configuracion::umbralObservacion();
+        Configuracion::guardar(Configuracion::UMBRAL_OBSERVACION, number_format((float) $valor, 2, '.', ''));
+        Bitacora::registrar('config.caja_cobro', 'configuracion', null, [
+            'umbral_observacion' => ['antes' => $antes, 'despues' => (float) $valor],
+        ]);
+        return $this->redirigirConAviso('/config#caja-cobro', 'Caja y cobro guardados.');
+    }
+
     /** Logo del negocio (también lo usarán la factura y la pantalla del cliente). */
     public function logo(Peticion $peticion): Respuesta
     {
@@ -351,6 +377,7 @@ final class ConfigController extends Controller
         'negocio' => Negocio::obtener(),
         'fiscal' => ParametrosFiscales::obtener(),
             'turnos' => Turno::todos(),
+            'umbralObservacion' => Configuracion::umbralObservacion(),
             'leyendas' => (int) DB::valor('SELECT COUNT(*) FROM leyendas WHERE activo = 1'),
         ], $estado);
     }

@@ -100,7 +100,7 @@ $sobrante = $diferencia > 0;
 <?php endif; ?>
 
 <?php if ($cerrada): ?>
-        <div class="alerta alerta--ok" role="status">
+        <div class="alerta alerta--info" role="status">
           <?= icono('check') ?>
           <p class="alerta__titulo">Caja cerrada y arqueada</p>
           <p class="alerta__texto">Cerrada el <?= e(fecha_corta($conteo['cerrado_en'])) ?><?= $observacion !== '' ? ' · Observación: ' . e($observacion) : '' ?></p>
@@ -118,8 +118,9 @@ $sobrante = $diferencia > 0;
           <div class="panel-bloque__cuerpo">
             <div class="campo campo--ancho">
               <label class="campo__etiqueta" for="observacion">Observación</label>
-              <input class="control" id="observacion" name="observacion" type="text" maxlength="255" value="<?= e($observacion) ?>">
-              <p class="campo__ayuda">Explica cualquier diferencia entre lo contado y lo esperado.</p>
+              <input class="control" id="observacion" name="observacion" type="text" maxlength="255" value="<?= e($observacion) ?>"<?= campo_error($errores, 'observacion') ?>>
+              <p class="campo__ayuda" id="observacion-ayuda">Explica la diferencia entre lo contado y lo esperado. Es obligatoria cuando la diferencia es de Bs <?= bs($umbral ?? 10) ?> o más.</p>
+              <?= mensaje_error($errores, 'observacion') ?>
             </div>
           </div>
           <div class="panel-bloque__pie">

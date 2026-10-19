@@ -46,6 +46,7 @@ $config = ['auth', 'permiso:modulo.config'];
 $router->get('/config', [ConfigController::class, 'index'], $config);
 $router->post('/config/negocio', [ConfigController::class, 'negocio'], $config);
 $router->post('/config/fiscal', [ConfigController::class, 'fiscal'], $config);
+$router->post('/config/caja-cobro', [ConfigController::class, 'cajaCobro'], $config);
 $router->post('/config/turnos', [ConfigController::class, 'turnos'], $config);
 $router->get('/negocio/logo', [ConfigController::class, 'logo']);
 
