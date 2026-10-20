@@ -40,6 +40,7 @@ return [
         'config.negocio' => ['Datos del negocio', 'configuracion', 'neutra'],
         'config.fiscal' => ['Parámetros fiscales', 'configuracion', 'aviso'],
         'config.turnos' => ['Horario de turnos', 'configuracion', 'neutra'],
+        'config.turnos.nombre' => ['Nombre del turno cambiado', 'configuracion', 'aviso'],
         'config.turnos.agregar' => ['Turno agregado', 'configuracion', 'neutra'],
         'config.turnos.eliminar' => ['Turno eliminado', 'configuracion', 'aviso'],
         'leyenda.alta' => ['Leyenda agregada', 'configuracion', 'neutra'],
@@ -93,5 +94,6 @@ return [
         'rol' => 'Rol', 'modo' => 'Con', 'intentos' => 'Intentos', 'hasta' => 'Hasta',
         'ruta' => 'Ruta', 'metodo' => 'Método', 'permiso' => 'Permiso', 'favorito' => 'Favorito',
         'agotado' => 'Agotado', 'borradas' => 'Cajas borradas', 'texto' => 'Texto', 'activo' => 'Activa', 'mediodia' => 'Medio día', 'noche' => 'Noche',
+        'clave' => 'Clave', 'horario' => 'Horario', 'inicio' => 'Desde', 'fin' => 'Hasta',
     ],
 ];

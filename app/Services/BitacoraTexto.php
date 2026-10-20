@@ -74,9 +74,31 @@ final class BitacoraTexto
                 : ($id !== null ? "#{$id}" : 'varias')),
             'negocio' => 'Datos del negocio',
             'parametros_fiscales' => 'Parámetros fiscales',
-            'turnos' => 'Turnos',
+            // El nombre que se guardó en el momento de la acción: el turno puede estar borrado
+            'turnos' => 'Turno: ' . (self::nombreDe($f) ?? ($id !== null ? "#{$id}" : 'horario')),
             default => $f['entidad'] . ($id !== null ? " #{$id}" : ''),
         };
+    }
+
+    /**
+     * Nombre de la entidad en el momento de la acción: primero el que quedó
+     * guardado en la fila, después el que está en la base ahora, y al final el
+     * que aparece en el detalle (sirve para las filas escritas antes del
+     * nombre guardado).
+     */
+    private static function nombreDe(array $f): ?string
+    {
+        $guardado = $f['entidad_nombre'] ?? null;
+        if (is_string($guardado) && $guardado !== '') {
+            return $guardado;
+        }
+        $actual = $f['entidad_turno'] ?? null;
+        if (is_string($actual) && $actual !== '') {
+            return $actual;
+        }
+        $detalle = json_decode((string) ($f['detalle'] ?? ''), true);
+        $nombre = is_array($detalle) ? ($detalle['nombre'] ?? null) : null;
+        return is_string($nombre) && $nombre !== '' ? $nombre : null;
     }
 
     /** Detalle en una línea: «Precio: Bs 40,00 → Bs 42,00 · Código: PL-01». */
