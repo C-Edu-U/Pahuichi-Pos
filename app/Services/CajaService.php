@@ -89,6 +89,32 @@ final class CajaService
         return $id;
     }
 
+    /** Cierra la caja abierta. Solo el cajero que la abrió o un administrador. */
+    public function cerrar(int $quienCierraId, string $quienCierraRol): void
+    {
+        $abierta = Caja::abierta();
+        if ($abierta === null) {
+            throw new DomainException('No hay una caja abierta para cerrar.');
+        }
+        if ($quienCierraRol !== 'administrador' && (int) $abierta['cajero_id'] !== $quienCierraId) {
+            throw new DomainException('Solo puedes cerrar tu propia caja.');
+        }
+
+        DB::consulta('UPDATE cajas SET estado = ? WHERE id = ?', ['cerrada', (int) $abierta['id']]);
+
+        Bitacora::registrar('caja.cierre', 'cajas', (int) $abierta['id'], [
+            'turno' => $abierta['turno'],
+            'cajero' => $abierta['cajero'],
+            'fondo_inicial' => number_format((float) $abierta['fondo_inicial'], 2, '.', ''),
+        ]);
+    }
+
+    /** Borra del historial todas las cajas cerradas. Solo administrador. */
+    public function limpiarHistorial(): int
+    {
+        return Caja::eliminarCerradas();
+    }
+
     private function sinCajaAbierta(): void
     {
         $abierta = Caja::abierta();
