@@ -64,6 +64,21 @@ Dado que el administrador modifica la hora de inicio de un turno y guarda, enton
 
 Dado que un cajero abre caja, cuando elige el turno, entonces solo puede elegir los turnos configurados. Un turno que no existe se rechaza con «Elige un turno de la lista.».
 
+## Complemento con HU-20 (caja)
+
+Las dos historias van juntas: el turno que se configura aquí es el mismo que usa la caja. La parte de configuración de esta entrega y el código de HU-20 (abrir, cerrar y limpiar historial) viven en la misma rama, `feature/HU-20-caja`.
+
+| Paso | Dónde | Qué se ve |
+| --- | --- | --- |
+| 1. Configurar el turno | Configuración > Turnos | La ficha del turno con su nombre y su horario, escritos como los ve el cajero. |
+| 2. Abrir la caja | Caja > Abrir caja | La lista sale con el horario de cada turno («Noche · 18:00 a 23:59») y el turno de la hora queda elegido. Un turno inexistente o inactivo se rechaza con «Elige un turno de la lista.». |
+| 3. Trabajar | Punto de venta | La caja abierta muestra el turno y su horario. Solo puede haber una caja abierta a la vez. |
+| 4. Cerrar la caja | Caja > Cerrar caja | El cierre lo hace el cajero que la abrió o un administrador; si no hay caja abierta, avisa «No hay una caja abierta para cerrar.». |
+| 5. Historial | Caja > Cajas recientes | Cada caja sale con su turno y su horario. El administrador puede limpiar el historial de cajas cerradas. |
+| 6. Volver a configurar | Configuración > Turnos | Un turno que ya tiene cajas no se puede eliminar: la llave foránea de la base lo impide y la pantalla lo explica. |
+
+La bitácora guarda las dos historias con el nombre del turno: `config.turnos` (horario), `config.turnos.nombre` (nombre), `config.turnos.agregar`, `config.turnos.eliminar`, `caja.apertura` y `caja.cierre`.
+
 ## Evidencias y definición de hecho
 
 - La prueba automática cubre los tres escenarios: `docker compose exec app composer test` (198 pruebas).
