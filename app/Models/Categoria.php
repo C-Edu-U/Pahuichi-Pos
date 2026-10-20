@@ -56,6 +56,13 @@ final class Categoria
         return min(99, (int) DB::valor('SELECT COALESCE(MAX(orden), 0) + 1 FROM categorias'));
     }
 
+    /** Ícono del producto sin foto, según su categoría (cubiertos si no se reconoce). */
+    public static function icono(string $nombre): string
+    {
+        $clave = strtolower(strtr($nombre, ['á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'Á' => 'a', 'É' => 'e', 'Í' => 'i', 'Ó' => 'o', 'Ú' => 'u']));
+        return ['refrescos' => 'vaso', 'sodas' => 'botella', 'vinos' => 'copa', 'postres' => 'helado', 'prueba' => 'qr'][$clave] ?? 'productos';
+    }
+
     /** Clase CSS del color (cat--ambar...). */
     public static function clase(string $color): string
     {

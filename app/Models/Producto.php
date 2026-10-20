@@ -31,6 +31,21 @@ final class Producto
         );
     }
 
+    /**
+     * Productos que se venden (HU-28): activos y de categorías activas.
+     * Favoritos primero; después por el orden de la categoría y por nombre.
+     */
+    public static function paraPos(): array
+    {
+        return DB::filas(
+            'SELECT p.id, p.codigo, p.nombre, p.nombre_corto, p.precio, p.foto, p.favorito, p.agotado,
+                    p.categoria_id, c.nombre AS categoria, c.color AS categoria_color
+             FROM productos p JOIN categorias c ON c.id = p.categoria_id
+             WHERE p.activo = 1 AND c.activo = 1
+             ORDER BY p.favorito DESC, c.orden, c.nombre, p.nombre'
+        );
+    }
+
     public static function buscar(int $id): ?array
     {
         return DB::fila('SELECT * FROM productos WHERE id = ?', [$id]);
@@ -57,6 +72,12 @@ final class Producto
              activo = ?, favorito = ?, va_a_cocina = ?, agotado = ? WHERE id = ?',
             [...self::valores($d), $id],
         );
+    }
+
+    /** HU-15: el nombre proviene exclusivamente del servicio de imágenes. */
+    public static function guardarFoto(int $id, ?string $nombre): void
+    {
+        DB::consulta('UPDATE productos SET foto = ? WHERE id = ?', [$nombre, $id]);
     }
 
     /** Marca de un toque: favorito o agotado. */

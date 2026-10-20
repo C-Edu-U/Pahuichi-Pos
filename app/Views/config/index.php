@@ -1,5 +1,5 @@
 <?php
-/** Configuración. Variables: $negocio, $fiscal, $turnos, $errores, $leyendas (cantidad activa) */
+/** Configuración. Variables: $negocio, $fiscal, $turnos, $errores, $leyendas (catálogo) */
 use App\Core\Config;
 use App\Models\ParametrosFiscales;
 use App\Models\Turno;
@@ -152,7 +152,7 @@ $cufdVigente = !isset($errores['f-vigencia']) && ParametrosFiscales::cufdVigente
             </div>
           </form>
 
-<?php $pendiente('leyendas', 'Leyendas de la Ley N° 453', 'HU-10', "Hay {$leyendas} leyendas cargadas. Cada factura tomará una al azar entre las activas."); ?>
+<?php require __DIR__ . '/_leyendas.php'; ?>
 
           <form class="panel-bloque config__seccion" id="turnos" method="post" action="/config/turnos" novalidate aria-labelledby="t-turnos">
             <?= csrf_campo() ?>

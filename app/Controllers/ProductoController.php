@@ -12,6 +12,10 @@ use App\Core\Respuesta;
 use App\Models\Bitacora;
 use App\Models\Categoria;
 use App\Models\Producto;
+use App\Services\FotoProducto;
+use App\Services\Imagenes;
+use DomainException;
+use Throwable;
 
 /**
  * Productos (HU-14). Administrador y cajero ven el catálogo; solo el
@@ -19,13 +23,14 @@ use App\Models\Producto;
  */
 final class ProductoController extends Controller
 {
+    private ?string $fotoPreparada = null;
     public function index(Peticion $peticion): Respuesta
     {
         return $this->vista('catalogo/productos', [
             'titulo' => 'Catálogo',
             'modulo' => 'catalogo',
             'h1' => 'Catálogo',
-            'css' => ['modulos.css'],
+            'css' => ['modulos.css', 'foto-producto.css'],
             'js' => ['productos.js'],
             'productos' => Producto::listar(),
             'categorias' => Categoria::todas(),
@@ -62,7 +67,11 @@ final class ProductoController extends Controller
             return $this->formulario(null, ['codigo' => $codigo] + $d, $errores);
         }
 
-        $id = Producto::crear($codigo, $d);
+        try {
+            $id = $this->guardarConFoto(null, $codigo, $d, $peticion);
+        } catch (DomainException $e) {
+            return $this->formulario(null, ['codigo' => $codigo] + $d, ['foto' => $e->getMessage()]);
+        }
         Bitacora::registrar('producto.alta', 'productos', $id, ['codigo' => $codigo, 'nombre' => $d['nombre'], 'precio' => $d['precio']]);
         return $this->guardado($d);
     }
@@ -75,7 +84,11 @@ final class ProductoController extends Controller
             return $this->formulario($p, ['codigo' => $p['codigo']] + $d, $errores);
         }
 
-        Producto::actualizar((int) $p['id'], $d);
+        try {
+            $this->guardarConFoto($p, $p['codigo'], $d, $peticion);
+        } catch (DomainException $e) {
+            return $this->formulario($p, ['codigo' => $p['codigo']] + $d, ['foto' => $e->getMessage()]);
+        }
         if (bs($p['precio']) !== bs($d['precio'])) {
             Bitacora::registrar('producto.precio', 'productos', (int) $p['id'], [
                 'codigo' => $p['codigo'],
@@ -85,6 +98,45 @@ final class ProductoController extends Controller
         }
         Bitacora::registrar('producto.edicion', 'productos', (int) $p['id'], ['codigo' => $p['codigo']]);
         return $this->guardado($d);
+    }
+
+    /** La ruta entrega la foto por id, nunca una ruta enviada por el cliente. */
+    public function foto(Peticion $peticion): Respuesta
+    {
+        $p = $this->producto($peticion);
+        $ruta = !empty($p['foto']) ? Imagenes::ruta($p['foto']) : null;
+        if ($ruta === null) throw ErrorHttp::noEncontrado('Este producto no tiene foto.');
+        return new Respuesta((string) file_get_contents($ruta), 200, [
+            'Content-Type' => Imagenes::tipo($p['foto']),
+            'Cache-Control' => 'private, no-cache', 'X-Content-Type-Options' => 'nosniff',
+        ]);
+    }
+
+    private function guardarConFoto(?array $actual, string $codigo, array $d, Peticion $peticion): int
+    {
+        $nuevo = $this->fotoPreparada !== null ? FotoProducto::guardar($this->fotoPreparada) : null;
+        $anterior = null;
+        $cambia = $nuevo !== null || $peticion->marcado('foto_quitar');
+        try {
+            $id = DB::transaccion(function () use ($actual, $codigo, $d, $cambia, $nuevo, &$anterior): int {
+                if ($actual) {
+                    $id = (int) $actual['id'];
+                    $p = DB::fila('SELECT foto FROM productos WHERE id = ? FOR UPDATE', [$id]);
+                    $anterior = $p['foto'] ?? null;
+                    Producto::actualizar($id, $d);
+                } else { $id = Producto::crear($codigo, $d); }
+                if ($cambia) {
+                    Producto::guardarFoto($id, $nuevo);
+                    Bitacora::registrar('producto.foto', 'productos', $id, ['antes' => $anterior, 'despues' => $nuevo]);
+                }
+                return $id;
+            });
+        } catch (Throwable $e) {
+            Imagenes::borrar($nuevo);
+            throw $e;
+        }
+        if ($cambia) Imagenes::borrar($anterior);
+        return $id;
     }
 
     /** Agotado con un toque: se ve en el POS pero no se vende. No desactiva el producto. */
@@ -142,6 +194,11 @@ final class ProductoController extends Controller
         if (mb_strlen($d['descripcion']) > 200) {
             $errores['descripcion'] = 'Usa hasta 200 caracteres.';
         }
+        $this->fotoPreparada = null;
+        if ($archivo = $peticion->archivo('foto')) {
+            try { $this->fotoPreparada = FotoProducto::recibir($archivo); }
+            catch (DomainException $e) { $errores['foto'] = $e->getMessage(); }
+        }
         // Categoría activa, o la que ya tenía el producto aunque luego se haya desactivado
         $categoria = Categoria::buscar($d['categoria_id']);
         if ($categoria === null || (!(int) $categoria['activo'] && (int) ($actual['categoria_id'] ?? 0) !== $d['categoria_id'])) {
@@ -180,8 +237,8 @@ final class ProductoController extends Controller
             'titulo' => $producto ? 'Editar ' . $producto['nombre'] : $titulo,
             'modulo' => 'catalogo',
             'h1' => $titulo,
-            'css' => ['modulos.css'],
-            'js' => ['producto-form.js'],
+            'css' => ['modulos.css', 'foto-producto.css'],
+            'js' => ['producto-form.js', 'foto-producto.js'],
             'producto' => $producto,
             'v' => $valores,
             'errores' => $errores,
