@@ -8,7 +8,7 @@ use App\Models\Producto;
 $accion = $producto ? '/catalogo/productos/' . (int) $producto['id'] : '/catalogo/productos/nuevo';
 $etiquetas = [
     'codigo' => 'Código', 'categoria' => 'Categoría', 'nombre' => 'Nombre', 'corto' => 'Nombre corto',
-    'precio' => 'Precio', 'unidad' => 'Unidad', 'descripcion' => 'Descripción',
+    'precio' => 'Precio', 'unidad' => 'Unidad', 'descripcion' => 'Descripción', 'foto' => 'Foto',
 ];
 $casillas = [
     'activo' => ['Activo', 'Aparece en el punto de venta.'],
@@ -35,7 +35,7 @@ $casillas = [
       </div>
 <?php endif; ?>
 
-      <form class="formulario" id="form-producto" method="post" action="<?= e($accion) ?>" novalidate>
+      <form class="formulario" id="form-producto" method="post" enctype="multipart/form-data" action="<?= e($accion) ?>" novalidate>
         <?= csrf_campo() ?>
 
         <div class="formulario__principal">
@@ -124,10 +124,7 @@ $casillas = [
         </div>
 
         <div class="formulario__lateral">
-          <section class="grupo-campos" aria-labelledby="t-foto">
-            <h2 class="grupo-campos__titulo" id="t-foto">Foto <span class="insignia insignia--aviso">Próximamente · HU-15</span></h2>
-            <p class="grupo-campos__ayuda">Desde la PC o la cámara del celular, recortada y comprimida a 200 KB. Mientras tanto, el punto de venta muestra el ícono de la categoría.</p>
-          </section>
+          <?php require __DIR__ . '/_foto.php'; ?>
 
           <fieldset class="grupo-campos">
             <legend class="grupo-campos__titulo">En el punto de venta</legend>

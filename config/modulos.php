@@ -49,7 +49,6 @@ return [
     ],
     'bitacora' => [
         'grupo' => 4, 'ruta' => '/bitacora', 'icono' => 'bitacora', 'texto' => 'Bitácora',
-        'pendiente' => ['historias' => 'HU-05', 'texto' => 'Consulta de las acciones sensibles. El registro ya está activo.'],
     ],
     'usuarios' => [
         'grupo' => 5, 'ruta' => '/usuarios', 'icono' => 'usuarios', 'texto' => 'Usuarios',

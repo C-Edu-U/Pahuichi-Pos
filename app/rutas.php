@@ -9,6 +9,7 @@ declare(strict_types=1);
  */
 
 use App\Controllers\AuthController;
+use App\Controllers\BitacoraController;
 use App\Controllers\CajaController;
 use App\Controllers\CategoriaController;
 use App\Controllers\ConfigController;
@@ -41,12 +42,15 @@ $router->post('/usuarios/{id}/desbloquear', [UsuarioController::class, 'desbloqu
 $router->post('/usuarios/{id}/clave', [UsuarioController::class, 'resetearClave'], $usuarios);
 $router->post('/usuarios/{id}/pin', [UsuarioController::class, 'resetearPin'], $usuarios);
 
-// Configuración (HU-08, HU-09, HU-11)
+// Configuración (HU-08, HU-09, HU-10, HU-11)
 $config = ['auth', 'permiso:modulo.config'];
 $router->get('/config', [ConfigController::class, 'index'], $config);
 $router->post('/config/negocio', [ConfigController::class, 'negocio'], $config);
 $router->post('/config/fiscal', [ConfigController::class, 'fiscal'], $config);
 $router->post('/config/turnos', [ConfigController::class, 'turnos'], $config);
+// Leyendas de la Ley 453 (HU-10)
+$router->post('/config/leyendas', [ConfigController::class, 'agregarLeyenda'], $config);
+$router->post('/config/leyendas/{id}/estado', [ConfigController::class, 'estadoLeyenda'], $config);
 $router->get('/negocio/logo', [ConfigController::class, 'logo']);
 
 // Catálogo (HU-13, HU-14): todos los de caja lo ven; solo el administrador lo edita
@@ -54,6 +58,7 @@ $catalogo = ['auth', 'permiso:modulo.catalogo'];
 $editarCatalogo = [...$catalogo, 'permiso:catalogo.editar'];
 $router->get('/catalogo', [InicioController::class, 'catalogo'], $catalogo);
 $router->get('/catalogo/productos', [ProductoController::class, 'index'], $catalogo);
+$router->get('/catalogo/productos/{id}/foto', [ProductoController::class, 'foto'], $catalogo);
 $router->get('/catalogo/productos/nuevo', [ProductoController::class, 'nuevo'], $editarCatalogo);
 $router->post('/catalogo/productos/nuevo', [ProductoController::class, 'crear'], $editarCatalogo);
 $router->get('/catalogo/productos/{id}/editar', [ProductoController::class, 'editar'], $editarCatalogo);
@@ -74,6 +79,9 @@ $router->post('/caja/limpiar-historial', [CajaController::class, 'limpiarHistori
 
 // Punto de venta (HU-21): sin caja abierta no se vende
 $router->get('/pos', [PosController::class, 'index'], ['auth', 'permiso:modulo.pos', 'caja']);
+
+// Bitácora (HU-05): solo lectura, solo el administrador
+$router->get('/bitacora', [BitacoraController::class, 'index'], ['auth', 'permiso:modulo.bitacora']);
 
 // Módulos aún sin construir: pantalla «próximamente»
 foreach (Config::get('modulos') as $clave => $m) {
