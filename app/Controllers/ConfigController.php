@@ -10,6 +10,7 @@ use App\Core\ErrorHttp;
 use App\Core\Peticion;
 use App\Core\Reloj;
 use App\Core\Respuesta;
+use App\Core\Sesion;
 use App\Models\Bitacora;
 use App\Models\Negocio;
 use App\Models\Leyenda;
@@ -120,171 +121,250 @@ final class ConfigController extends Controller
     /** Horario de los turnos (HU-11). 23:59 en el fin significa hasta medianoche (24:00). */
     public function turnos(Peticion $peticion): Respuesta
     {
-        $accion = (string) $peticion->entrada('accion');
-        $turnos = Turno::todos();
+        // La acción se deduce del botón enviado: el formulario no lleva un input oculto de acción.
+        // Cada rama es excluyente: un error al agregar no borra los horarios ya escritos.
+        if (isset($peticion->datos['eliminar'])) {
+            return $this->eliminarTurno((int) $peticion->datos['eliminar']);
+        }
+        if (isset($peticion->datos['agregar'])) {
+            return $this->agregarTurno($peticion);
+        }
+        return $this->editarTurnos($peticion);
+    }
+
+    /** Agrega un turno nuevo (HU-11). La clave se arma sola con el nombre. */
+    private function agregarTurno(Peticion $peticion): Respuesta
+    {
+        $nombre = trim((string) $peticion->entrada('nuevo_nombre'));
+        $inicio = trim((string) $peticion->entrada('nuevo_inicio'));
+        $fin = trim((string) $peticion->entrada('nuevo_fin'));
+        $ordenTexto = trim((string) $peticion->entrada('nuevo_orden'));
+        $viejo = [
+            'nuevo_nombre' => $nombre,
+            'nuevo_inicio' => $inicio,
+            'nuevo_fin' => $fin,
+            'nuevo_orden' => $ordenTexto,
+        ];
+
         $errores = [];
-        $nuevos = [];
-        $eliminar = is_array($peticion->datos['turnos_eliminar'] ?? null) ? $peticion->datos['turnos_eliminar'] : [];
-
-        // Detectar acción por qué campos trae el POST (no hay input oculto de accion).
-        if ($eliminar !== []) {
-            $accion = 'eliminar';
-        } elseif ($peticion->entrada('nueva_clave') !== null) {
-            $accion = 'agregar';
-        } else {
-            $accion = 'editar';
+        if ($nombre === '' || mb_strlen($nombre) > 30) {
+            $errores['nuevo_nombre'] = 'El nombre tiene de 1 a 30 caracteres.';
+        } elseif (DB::valor('SELECT id FROM turnos WHERE nombre = ?', [$nombre]) !== null) {
+            $errores['nuevo_nombre'] = 'Ese nombre de turno ya existe.';
+        }
+        if (!preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $inicio)) {
+            $errores['nuevo_inicio'] = 'Elige la hora de inicio.';
+        }
+        if (!preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $fin)) {
+            $errores['nuevo_fin'] = 'Elige la hora de fin.';
+        }
+        if (!isset($errores['nuevo_inicio'], $errores['nuevo_fin']) && $fin <= $inicio) {
+            $errores['nuevo_fin'] = 'Debe terminar después de empezar.';
+        }
+        if (!preg_match('/^[1-9]\d*$/', $ordenTexto)) {
+            $errores['nuevo_orden'] = 'El orden es un número desde 1.';
         }
 
-        // ---------- AGREGAR turno ----------
-        if ($accion === 'agregar') {
-            $clave = trim((string) $peticion->entrada('nueva_clave'));
-            $nombre = trim((string) $peticion->entrada('nuevo_nombre'));
-            $inicio = trim((string) $peticion->entrada('nuevo_inicio'));
-            $fin = trim((string) $peticion->entrada('nuevo_fin'));
-            $ordenTexto = trim((string) $peticion->entrada('nuevo_orden'));
-
-            if ($clave === '' || !preg_match('/^[a-z0-9_]{3,20}$/', $clave)) {
-                $errores['nueva_clave'] = 'La clave tiene de 3 a 20 letras minúsculas, números o guion bajo.';
-            } elseif (DB::valor('SELECT id FROM turnos WHERE clave = ?', [$clave]) !== null) {
-                $errores['nueva_clave'] = 'Esa clave de turno ya existe.';
-            }
-            if ($nombre === '' || mb_strlen($nombre) > 30) {
-                $errores['nuevo_nombre'] = 'El nombre tiene de 1 a 30 caracteres.';
-            }
-            if (!preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $inicio)) {
-                $errores['nuevo_inicio'] = 'Elige la hora de inicio.';
-            }
-            if (!preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $fin)) {
-                $errores['nuevo_fin'] = 'Elige la hora de fin.';
-            }
-            if (!preg_match('/^[1-9]\d*$/', $ordenTexto)) {
-                $errores['nuevo_orden'] = 'El orden es un número desde 1.';
-            }
-            if (!$errores && $inicio >= $fin) {
-                $errores['nuevo_fin'] = 'Debe terminar después de empezar.';
-            }
-            if (!$errores) {
-                $finDb = $fin === '23:59' ? '24:00:00' : "{$fin}:00";
-                $inicioDb = "{$inicio}:00";
-                // No se cruza con los existentes
-                foreach ($turnos as $t) {
-                    if ($inicioDb < $t['hora_fin'] && $t['hora_inicio'] < $finDb) {
-                        $errores['nuevo_inicio'] = "Se cruza con el turno de {$t['nombre']}.";
-                        break;
-                $anterior = $t;
-            }
-                }
-            }
-            if (!$errores) {
-                try {
-                    Turno::crear($clave, $nombre, $inicioDb, $finDb, (int) $ordenTexto);
-                    Bitacora::registrar('config.turnos.agregar', 'turnos', null, [
-                        'clave' => $clave,
-                        'nombre' => $nombre,
-                        'horario' => Turno::horario(['hora_inicio' => $inicioDb, 'hora_fin' => $finDb]),
-                    ]);
-                    return $this->redirigirConAviso('/config#turnos', 'Turno agregado.');
-                } catch (Throwable $e) {
-                    $errores['nuevo_general'] = 'No se pudo agregar el turno.';
+        $inicioDb = "{$inicio}:00";
+        $finDb = $fin === '23:59' ? '24:00:00' : "{$fin}:00";
+        // El turno nuevo no puede cruzarse con los que ya existen
+        if (!isset($errores['nuevo_inicio'], $errores['nuevo_fin'])) {
+            foreach (Turno::todos() as $t) {
+                if ($inicioDb < $t['hora_fin'] && $t['hora_inicio'] < $finDb) {
+                    $errores['nuevo_inicio'] = "Se cruza con el turno de {$t['nombre']}, que va de " . Turno::hora($t['hora_inicio']) . ' a ' . Turno::hora($t['hora_fin']) . '.';
+                    break;
                 }
             }
         }
-
-        // ---------- ELIMINAR turnos ----------
-        if ($accion === 'eliminar' && $eliminar !== []) {
-            $quedan = count(Turno::activos()) - count(array_filter($eliminar, static fn ($id): bool => Turno::buscar((int) $id) !== null));
-            foreach ($eliminar as $idRaw) {
-                $id = (int) $idRaw;
-                $t = Turno::buscar($id);
-                if ($t === null) {
-                    continue;
-                }
-                if ($quedan <= 0) {
-                    $errores["e{$id}"] = 'No se puede eliminar el último turno.';
-                    continue;
-                }
-                if (Turno::tieneCajasHoy($id)) {
-                    $errores["e{$id}"] = "El turno de {$t['nombre']} ya tiene cajas hoy y no se puede eliminar.";
-                    continue;
-                }
-                if (Turno::estaEnCurso($id)) {
-                    $errores["e{$id}"] = "El turno de {$t['nombre']} está en curso y no se puede eliminar.";
-                    continue;
-                }
-                Turno::eliminar($id);
-                $quedan--;
-                Bitacora::registrar('config.turnos.eliminar', 'turnos', $id, ['nombre' => $t['nombre']]);
-            }
-            if (!$errores) {
-                return $this->redirigirConAviso('/config#turnos', 'Turno(s) eliminado(s).');
-            }
+        if ($errores) {
+            Sesion::flash('aviso', (string) reset($errores));
+            return $this->pantalla(['errores' => $errores, 'viejo' => $viejo], 422);
         }
 
-        // ---------- EDITAR horarios ----------
+        $clave = self::claveDe($nombre);
+        try {
+            $nuevoId = Turno::crear($clave, $nombre, $inicioDb, $finDb, (int) $ordenTexto);
+        } catch (Throwable $e) {
+            Sesion::flash('aviso', 'No se pudo agregar el turno.');
+            return $this->pantalla(['errores' => ['nuevo_general' => 'No se pudo agregar el turno.'], 'viejo' => $viejo], 422);
+        }
+        Bitacora::registrar('config.turnos.agregar', 'turnos', $nuevoId, [
+            'clave' => $clave,
+            'nombre' => $nombre,
+            'horario' => Turno::horario(['hora_inicio' => $inicioDb, 'hora_fin' => $finDb]),
+        ], null, $nombre);
+        return $this->redirigirConAviso('/config#turnos', 'Turno agregado.');
+    }
+
+    /** Elimina un turno (HU-11). */
+    private function eliminarTurno(int $id): Respuesta
+    {
+        $t = $id > 0 ? Turno::buscar($id) : null;
+        if ($t === null) {
+            return $this->rechazarTurno(['eliminar_general' => 'Elige el turno que quieres eliminar.']);
+        }
+        if (count(Turno::activos()) <= 1) {
+            return $this->rechazarTurno(["e{$id}" => 'No se puede eliminar el único turno que queda.']);
+        }
+        if (Turno::tieneCajasHoy($id)) {
+            return $this->rechazarTurno(["e{$id}" => "El turno de {$t['nombre']} ya tiene cajas hoy y no se puede eliminar."]);
+        }
+        if (Turno::tieneCajas($id)) {
+            return $this->rechazarTurno(["e{$id}" => "El turno de {$t['nombre']} ya tiene cajas registradas y no se puede eliminar."]);
+        }
+
+        Turno::eliminar($id);
+        Bitacora::registrar('config.turnos.eliminar', 'turnos', $id, [
+            'nombre' => $t['nombre'],
+            'horario' => Turno::horario($t),
+        ], null, $t['nombre']);
+        return $this->redirigirConAviso('/config#turnos', 'Turno eliminado.');
+    }
+
+    /**
+     * Vuelve a la pantalla con el error y un aviso flotante: el motivo se ve
+     * sin tener que buscarlo bajo el campo.
+     *
+     * @param array<string, string> $errores
+     */
+    private function rechazarTurno(array $errores): Respuesta
+    {
+        Sesion::flash('aviso', (string) reset($errores));
+        return $this->pantalla(['errores' => $errores], 422);
+    }
+
+    /**
+     * Clave interna del turno, armada con el nombre: sin acentos, sin espacios y
+     * única. El administrador no la escribe; el sistema la pone.
+     */
+    private static function claveDe(string $nombre): string
+    {
+        $texto = strtr(mb_strtolower($nombre), [
+            'á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ü' => 'u', 'ñ' => 'n',
+        ]);
+        $base = trim((string) preg_replace('/[^a-z0-9]+/', '_', $texto), '_');
+        if ($base === '') {
+            $base = 'turno';
+        }
+        $base = substr($base, 0, 18);
+        $clave = $base;
+        $n = 1;
+        while (DB::valor('SELECT id FROM turnos WHERE clave = ?', [$clave]) !== null) {
+            $n++;
+            $clave = $base . $n;
+        }
+        return $clave;
+    }
+
+    /** Cambia el horario de los turnos (HU-11). */
+    private function editarTurnos(Peticion $peticion): Respuesta
+    {
+        $turnos = Turno::todos();
         $enviados = is_array($peticion->datos['turnos'] ?? null) ? $peticion->datos['turnos'] : [];
-        $cambios = [];
+        $errores = [];
         $nuevos = [];
 
         foreach ($turnos as $t) {
             $id = (int) $t['id'];
-            $enviado = $enviados[$id] ?? [];
+            $enviado = is_array($enviados[$id] ?? null) ? $enviados[$id] : [];
+            // El nombre viene en el campo de la ficha; si no viene, se deja el que ya tiene
+            $nombre = array_key_exists('nombre', $enviado)
+                ? trim((string) $enviado['nombre'])
+                : $t['nombre'];
             $inicio = trim((string) ($enviado['inicio'] ?? ''));
             $fin = trim((string) ($enviado['fin'] ?? ''));
-            $nuevos[$id] = ['inicio' => '', 'fin' => '', 'nombre' => $t['nombre'], 'clave' => $t['clave']];
+            $nuevos[$id] = [
+                'nombre' => $nombre,
+                'inicio' => $inicio,
+                'fin' => $fin,
+                'inicio_db' => '',
+                'fin_db' => '',
+                'clave' => $t['clave'],
+            ];
 
+            if ($nombre === '' || mb_strlen($nombre) > 30) {
+                $errores["t{$id}-nombre"] = 'El nombre tiene de 1 a 30 caracteres.';
+            }
             if (!preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $inicio)) {
                 $errores["t{$id}-ini"] = 'Elige la hora de inicio.';
             }
             if (!preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $fin)) {
                 $errores["t{$id}-fin"] = 'Elige la hora de fin.';
             }
-            $finDb = $fin === '23:59' ? '24:00:00' : "{$fin}:00";
-            $inicioDb = "{$inicio}:00";
-            $nuevos[$id]['inicio'] = $inicioDb;
-            $nuevos[$id]['fin'] = $finDb;
-
-            // No se puede editar un turno que ya empezó o está en curso (salvo que sea futura modificación permitida)
-            if (!$errores && Turno::estaEnCurso($id)) {
-                $errores["t{$id}-ini"] = "El turno de {$t['nombre']} está en curso y su horario no se puede cambiar ahora.";
-            }
-
-            if (!isset($errores["t{$id}-ini"]) && !isset($errores["t{$id}-fin"]) && $inicio >= $fin) {
+            if (!isset($errores["t{$id}-ini"], $errores["t{$id}-fin"]) && $fin <= $inicio) {
                 $errores["t{$id}-fin"] = 'Debe terminar después de empezar.';
             }
+            if (isset($errores["t{$id}-ini"], $errores["t{$id}-fin"])) {
+                continue;
+            }
+
+            $nuevos[$id]['inicio_db'] = "{$inicio}:00";
+            $nuevos[$id]['fin_db'] = $fin === '23:59' ? '24:00:00' : "{$fin}:00";
+        }
+
+        // El nombre de un turno es único: dos fichas no pueden llamarse igual
+        $vistos = [];
+        foreach ($nuevos as $id => $nuevo) {
+            $clave = mb_strtolower($nuevo['nombre']);
+            if ($clave === '') {
+                continue;
+            }
+            if (isset($vistos[$clave])) {
+                $errores["t{$id}-nombre"] = 'Ese nombre de turno ya existe.';
+            }
+            $vistos[$clave] = $id;
         }
 
         // Los turnos no se cruzan: cada uno empieza cuando el anterior ya terminó
         if (!$errores) {
             $orden = $nuevos;
-            uasort($orden, static fn (array $a, array $b): int => strcmp($a['inicio'], $b['inicio']));
+            uasort($orden, static fn (array $a, array $b): int => strcmp($a['inicio_db'], $b['inicio_db']));
             $anterior = null;
-            foreach ($orden as $id => $t) {
-                if ($anterior !== null && $t['inicio'] < $anterior['fin']) {
-                    $errores["t{$id}-ini"] = "Se cruza con el turno de {$anterior['nombre']}, que termina a las " . substr($anterior['fin'], 0, 5) . '.';
+            foreach ($orden as $idTurno => $tOrden) {
+                if ($anterior !== null && $tOrden['inicio_db'] < $anterior['fin_db']) {
+                    $errores["t{$idTurno}-ini"] = "Se cruza con el turno de {$anterior['nombre']}, que termina a las " . substr($anterior['fin_db'], 0, 5) . '.';
                 }
-                $anterior = $t;
+                $anterior = $tOrden;
             }
         }
 
         if ($errores) {
+            Sesion::flash('aviso', (string) reset($errores));
             $mostrar = array_map(static function (array $t) use ($nuevos): array {
                 $n = $nuevos[(int) $t['id']];
-                return ['hora_inicio' => $n['inicio'], 'hora_fin' => $n['fin']] + $t;
+                return ['hora_inicio' => $n['inicio'], 'hora_fin' => $n['fin'], 'nombre' => $n['nombre']] + $t;
             }, $turnos);
             return $this->pantalla(['errores' => $errores, 'turnos' => $mostrar], 422);
         }
 
-        DB::transaccion(function () use ($turnos, $nuevos, &$cambios): void {
+        $cambios = [];
+        $renombres = [];
+        DB::transaccion(function () use ($turnos, $nuevos, &$cambios, &$renombres): void {
             foreach ($turnos as $t) {
-                $n = $nuevos[(int) $t['id']];
-                if ($n['inicio'] !== $t['hora_inicio'] || $n['fin'] !== $t['hora_fin']) {
-                    Turno::cambiarHorario((int) $t['id'], $n['inicio'], $n['fin']);
-                    $cambios[$t['clave']] = ['antes' => Turno::horario($t), 'despues' => Turno::horario(['hora_inicio' => $n['inicio'], 'hora_fin' => $n['fin']])];
+                $id = (int) $t['id'];
+                $n = $nuevos[$id];
+                if ($n['nombre'] !== $t['nombre']) {
+                    Turno::cambiarNombre($id, $n['nombre']);
+                    $renombres[$id] = $t;
+                }
+                if ($n['inicio_db'] !== $t['hora_inicio'] || $n['fin_db'] !== $t['hora_fin']) {
+                    Turno::cambiarHorario($id, $n['inicio_db'], $n['fin_db']);
+                    $cambios[$id] = $t;
                 }
             }
         });
-        if ($cambios) {
-            Bitacora::registrar('config.turnos', 'turnos', null, $cambios);
+        foreach ($cambios as $id => $t) {
+            $n = $nuevos[$id];
+            Bitacora::registrar('config.turnos', 'turnos', $id, [
+                'antes' => Turno::horario($t),
+                'despues' => Turno::horario(['hora_inicio' => $n['inicio_db'], 'hora_fin' => $n['fin_db']]),
+            ], null, $n['nombre']);
+        }
+        foreach ($renombres as $id => $t) {
+            $n = $nuevos[$id];
+            Bitacora::registrar('config.turnos.nombre', 'turnos', $id, [
+                'nombre' => ['antes' => $t['nombre'], 'despues' => $n['nombre']],
+            ], null, $n['nombre']);
         }
         return $this->redirigirConAviso('/config#turnos', 'Turnos guardados.');
     }
@@ -378,6 +458,8 @@ final class ConfigController extends Controller
             'css' => ['modulos.css'],
             'js' => ['config.js', 'leyendas.js'],
             'errores' => [],
+            'viejo' => [],
+            'ordenTurno' => (int) DB::valor('SELECT COALESCE(MAX(orden), 0) + 1 FROM turnos'),
             'negocio' => Negocio::obtener(),
             'fiscal' => ParametrosFiscales::obtener(),
             'turnos' => Turno::todos(),

@@ -55,7 +55,7 @@ Los cajeros también tienen la contraseña `Pahuichi2026`. El PIN de autorizaci�
 | HU-04 | Permisos por rol en cada ruta, 403 con registro en la bitácora y menú filtrado | `config/permisos.php` |
 | HU-08 | Datos del negocio con logo | `/config#negocio` |
 | HU-09 | Parámetros fiscales simulados y aviso de CUFD vencido | `/config#fiscal` |
-| HU-11 | Horario de los turnos | `/config#turnos` |
+| HU-11 | Turnos configurables: Medio día (11:00 a 16:00) y Noche (18:00 a 23:59); el administrador edita, agrega y elimina el horario | `/config#turnos` |
 | HU-13 | Categorías con orden y color de la paleta | `/catalogo/categorias` |
 | HU-14 | Productos; favorito y agotado de un toque | `/catalogo/productos` |
 | HU-20 | Abrir caja con turno, cajero y fondo; una sola caja abierta | `/caja` |
@@ -77,6 +77,7 @@ Los escenarios Gherkin del Sprint 1 tienen prueba automática en `tests/Integrac
 4. **Permiso validado en el servidor:** como cajero, escribe a mano https://localhost:8443/usuarios → «acceso denegado» sin datos.
 5. **Sin caja no se vende:** como cajero, el punto de venta muestra «Abrir caja».
 6. **Una sola caja:** con dos navegadores (o una ventana de incógnito), deja a Jorge (PIN 7350) en «Abrir caja» con el turno de noche. En el otro, abre la caja de medio día con Mariela. Luego envía el formulario de Jorge → el sistema lo impide y explica que primero se debe cerrar y arquear la caja de medio día.
+7. **Turnos configurables:** como `admin`, en Configuración > Turnos cambia la hora de inicio del turno de medio día y pulsa «Guardar cambios» → en «Abrir caja» el turno aparece con el horario nuevo. La ficha escribe el horario como lo ve el cajero («Medio día · 11:00 a 16:00»), con la misma hora que está marcada (la medianoche se ve 23:59). El nombre del turno se escribe en la misma ficha (no puede quedar vacío ni repetirse). Con «Agregar turno» se abre un modal con el nombre y el horario (el orden lo pone el sistema); la papelera de cada ficha lo elimina con confirmación (ningún turno está bloqueado y no se puede borrar el único turno que queda: el motivo sale en un aviso).
 
 Para repetir las pruebas desde cero: `docker compose exec app php bin/consola.php reiniciar`. El CUFD de los datos de prueba vence a las 23:59 del día en que se cargaron; al día siguiente la configuración lo muestra como vencido, que es lo esperado.
 

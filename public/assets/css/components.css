@@ -614,6 +614,17 @@ select.control {
   margin-top: var(--esp-1);
 }
 
+.alerta__lista {
+  grid-column: 2;
+  margin: var(--esp-05) 0 0;
+  padding-left: 1.1rem;
+  font-size: var(--texto-sm);
+}
+
+.alerta__lista li + li {
+  margin-top: var(--esp-05);
+}
+
 .alerta--aviso {
   --alerta-fondo: var(--ambar-50);
   --alerta-borde: var(--ambar-200);
@@ -890,6 +901,15 @@ select.control {
   font-weight: var(--peso-medio);
   box-shadow: var(--sombra-2);
   transition: opacity var(--dur-media) ease, transform var(--dur-media) var(--ease-out);
+}
+
+/* Avisos con tono: el error se distingue sin depender solo del color */
+.aviso-flotante--error {
+  background: var(--terracota-700);
+}
+
+.aviso-flotante--ok {
+  background: var(--verde-800);
 }
 
 @starting-style {

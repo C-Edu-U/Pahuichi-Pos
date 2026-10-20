@@ -6,8 +6,6 @@ namespace App\Models;
 
 use App\Core\DB;
 use App\Core\Reloj;
-use DateTimeImmutable;
-use DateTimeZone;
 
 /** Turnos de caja (HU-11): medio día y noche, con horario configurable. */
 final class Turno
@@ -32,19 +30,20 @@ final class Turno
         DB::consulta('UPDATE turnos SET hora_inicio = ?, hora_fin = ? WHERE id = ?', [$inicio, $fin, $id]);
     }
 
-    /** «11:00 a 16:00»; el fin 24:00:00 se muestra como 24:00. */
+    /** Cambia el nombre del turno. La clave interna no cambia. */
+    public static function cambiarNombre(int $id, string $nombre): void
+    {
+        DB::consulta('UPDATE turnos SET nombre = ? WHERE id = ?', [$nombre, $id]);
+    }
+
+    /** «11:00 a 16:00». La medianoche se muestra como 23:59, como la marca el administrador. */
     public static function horario(array $t): string
     {
         return self::hora($t['hora_inicio']) . ' a ' . self::hora($t['hora_fin']);
     }
 
+    /** Hora de pantalla: la base guarda 24:00:00 para la medianoche, pero se ve 23:59. */
     public static function hora(string $hora): string
-    {
-        return substr($hora, 0, 5);
-    }
-
-    /** Valor para <input type="time">, que no admite 24:00: se muestra 23:59. */
-    public static function horaControl(string $hora): string
     {
         return $hora === '24:00:00' ? '23:59' : substr($hora, 0, 5);
     }
@@ -62,21 +61,16 @@ final class Turno
         DB::consulta('DELETE FROM turnos WHERE id = ?', [$id]);
     }
 
+    /** El turno ya tiene cajas hoy: no se puede eliminar (la llave foránea lo impide). */
     public static function tieneCajasHoy(int $id): bool
     {
-        $hoy = (new DateTimeImmutable('now', new DateTimeZone('America/La_Paz')))->format('Y-m-d');
+        $hoy = Reloj::ahora()->format('Y-m-d');
         return (int) DB::valor('SELECT COUNT(*) FROM cajas WHERE turno_id = ? AND fecha = ?', [$id, $hoy]) > 0;
     }
 
-    public static function estaEnCurso(int $id): bool
+    /** El turno tiene cajas en cualquier fecha: la llave foránea impide eliminarlo. */
+    public static function tieneCajas(int $id): bool
     {
-        $t = self::buscar($id);
-        if ($t === null) {
-            return false;
-        }
-        $hora = Reloj::ahora()->format('H:i:s');
-        $inicio = $t['hora_inicio'];
-        $fin = $t['hora_fin'] === '24:00:00' ? '23:59:59' : $t['hora_fin'];
-        return $hora >= $inicio && $hora < $fin;
+        return (int) DB::valor('SELECT COUNT(*) FROM cajas WHERE turno_id = ?', [$id]) > 0;
     }
 }

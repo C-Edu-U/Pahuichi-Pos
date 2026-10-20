@@ -17,14 +17,16 @@ final class Bitacora
         int|string|null $entidadId = null,
         ?array $detalle = null,
         ?int $usuarioId = null,
+        ?string $entidadNombre = null,
     ): void {
         DB::insertar(
-            'INSERT INTO bitacora (usuario_id, accion, entidad, entidad_id, detalle, ip) VALUES (?, ?, ?, ?, ?, ?)',
+            'INSERT INTO bitacora (usuario_id, accion, entidad, entidad_id, entidad_nombre, detalle, ip) VALUES (?, ?, ?, ?, ?, ?, ?)',
             [
                 $usuarioId ?? Auth::id(),
                 $accion,
                 $entidad,
                 $entidadId === null ? null : (string) $entidadId,
+                $entidadNombre,
                 $detalle === null ? null : json_encode($detalle, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
                 App::peticion()?->ip ?: null,
             ],
@@ -84,7 +86,8 @@ final class Bitacora
         $filas = DB::filas(
             "SELECT b.*, u.nombre AS usuario_nombre,
                     eu.nombre AS entidad_usuario, ep.codigo AS entidad_codigo, ep.nombre AS entidad_producto,
-                    ec.nombre AS entidad_categoria, ek.fecha AS entidad_caja_fecha, et.nombre AS entidad_caja_turno
+                    ec.nombre AS entidad_categoria, ek.fecha AS entidad_caja_fecha, et.nombre AS entidad_caja_turno,
+                    etr.nombre AS entidad_turno
              FROM bitacora b
              LEFT JOIN usuarios u ON u.id = b.usuario_id
              LEFT JOIN usuarios eu ON b.entidad = 'usuarios' AND eu.id = b.entidad_id
@@ -92,6 +95,7 @@ final class Bitacora
              LEFT JOIN categorias ec ON b.entidad = 'categorias' AND ec.id = b.entidad_id
              LEFT JOIN cajas ek ON b.entidad = 'cajas' AND ek.id = b.entidad_id
              LEFT JOIN turnos et ON et.id = ek.turno_id
+             LEFT JOIN turnos etr ON b.entidad = 'turnos' AND etr.id = b.entidad_id
              {$where}
              ORDER BY b.creado_en DESC, b.id DESC
              LIMIT {$porPagina} OFFSET {$desde}",

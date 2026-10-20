@@ -4,6 +4,41 @@ use App\Core\Config;
 use App\Models\ParametrosFiscales;
 use App\Models\Turno;
 
+// El modal de agregar turno se abre solo si el alta falló, para que se vea el error
+$errorAlta = isset($errores['nuevo_nombre'])
+    || isset($errores['nuevo_inicio'])
+    || isset($errores['nuevo_fin'])
+    || isset($errores['nuevo_orden'])
+    || isset($errores['nuevo_general']);
+
+// Datos de los turnos: resumen del día y avisos
+$listaTurnos = $turnos ?? [];
+$problemasTurnos = [];
+$desdeTurnos = null;
+$hastaTurnos = null;
+foreach ($listaTurnos as $t) {
+    $idTurno = (int) $t['id'];
+    if (isset($errores["e{$idTurno}"])) {
+        $problemasTurnos[] = $errores["e{$idTurno}"];
+    }
+    foreach (["t{$idTurno}-nombre", "t{$idTurno}-ini", "t{$idTurno}-fin"] as $campoTurno) {
+        if (isset($errores[$campoTurno])) {
+            $problemasTurnos[] = $errores[$campoTurno];
+        }
+    }
+    if ($desdeTurnos === null) {
+        $desdeTurnos = Turno::hora($t['hora_inicio']);
+    }
+    $hastaTurnos = Turno::hora($t['hora_fin']);
+}
+if (isset($errores['eliminar_general'])) {
+    $problemasTurnos[] = $errores['eliminar_general'];
+}
+$resumenTurnos = $listaTurnos === []
+    ? 'Todavía no hay turnos: agrega el primero para poder abrir caja.'
+    : count($listaTurnos) . ' ' . (count($listaTurnos) === 1 ? 'turno' : 'turnos')
+        . ' · de ' . $desdeTurnos . ' a ' . $hastaTurnos;
+
 $pendiente = static function (string $id, string $titulo, string $historias, string $texto): void {
     $tituloSeccion = $titulo;
     require __DIR__ . '/_pendiente.php';
@@ -154,77 +189,123 @@ $cufdVigente = !isset($errores['f-vigencia']) && ParametrosFiscales::cufdVigente
 
 <?php require __DIR__ . '/_leyendas.php'; ?>
 
-          <form class="panel-bloque config__seccion" id="turnos" method="post" action="/config/turnos" novalidate aria-labelledby="t-turnos">
-            <?= csrf_campo() ?>
+          <section class="panel-bloque config__seccion" id="turnos" data-turnos aria-labelledby="t-turnos">
             <div class="panel-bloque__cabecera">
-              <h2 class="panel-bloque__titulo" id="t-turnos">Turnos</h2>
+              <div class="turnos__titulos">
+                <h2 class="panel-bloque__titulo" id="t-turnos">Turnos</h2>
+                <p class="turnos__resumen" data-resumen-turnos><?= e($resumenTurnos) ?></p>
+              </div>
+              <button class="boton" type="button" data-abrir-modal="modal-turno">
+                <?= icono('mas') ?> Agregar turno
+              </button>
             </div>
-            <div class="panel-bloque__cuerpo turnos">
-<?php foreach ($turnos as $t): $id = (int) $t['id']; ?>
-              <fieldset class="turno">
-                <legend><?= e($t['nombre']) ?></legend>
-                <div class="campo campo--ancho">
-                  <label class="campo__etiqueta" for="eliminar-turno-<?= $id ?>">
-                    <input class="casilla__input" id="eliminar-turno-<?= $id ?>" name="turnos_eliminar[]" type="checkbox" value="<?= $id ?>">
-                    Eliminar este turno
-                  </label>
-                  <p class="campo__ayuda">Solo se puede eliminar si no tiene cajas hoy y no está en curso.</p>
+<?php if ($problemasTurnos !== []): ?>
+            <div class="alerta alerta--peligro turnos__alerta" role="alert">
+              <?= icono('error') ?>
+              <div>
+                <p class="alerta__titulo">No se pudo guardar el cambio</p>
+                <ul class="alerta__lista">
+<?php foreach ($problemasTurnos as $problemaTurno): ?>
+                  <li><?= e($problemaTurno) ?></li>
+<?php endforeach; ?>
+                </ul>
+              </div>
+            </div>
+<?php endif; ?>
+            <form class="panel-bloque__cuerpo turnos" id="form-turnos" method="post" action="/config/turnos" novalidate>
+              <?= csrf_campo() ?>
+<?php foreach ($listaTurnos as $t): $id = (int) $t['id']; ?>
+              <fieldset class="turno" data-turno="<?= $id ?>" data-nombre="<?= e($t['nombre']) ?>" data-activo="<?= (int) $t['activo'] ?>">
+                <legend class="visualmente-oculto">Turno <?= e($t['nombre']) ?></legend>
+                <div class="turno__cabecera">
+                  <label class="visualmente-oculto" for="t<?= $id ?>-nombre">Nombre del turno</label>
+                  <input class="turno__nombre" id="t<?= $id ?>-nombre" name="turnos[<?= $id ?>][nombre]" type="text" maxlength="30" size="<?= max(6, min(20, mb_strlen($t['nombre']) + 2)) ?>" value="<?= e($t['nombre']) ?>" data-nombre-campo autocomplete="off"<?= campo_error($errores, "t{$id}-nombre") ?>>
+                  <span class="turno__horario" data-horario><?= e(Turno::horario($t)) ?></span>
+                  <span class="insignia insignia--neutra turno__orden" title="Orden en la lista"><?= (int) $t['orden'] ?>.º</span>
                 </div>
+                <?= mensaje_error($errores, "t{$id}-nombre") ?>
                 <div class="campo">
                   <label class="campo__etiqueta" for="t<?= $id ?>-ini">Desde</label>
-                  <input class="control" id="t<?= $id ?>-ini" name="turnos[<?= $id ?>][inicio]" type="time" value="<?= e(Turno::horaControl($t['hora_inicio'])) ?>"<?= campo_error($errores, "t{$id}-ini") ?>>
+                  <input class="control" id="t<?= $id ?>-ini" name="turnos[<?= $id ?>][inicio]" type="time" value="<?= e(Turno::hora($t['hora_inicio'])) ?>"<?= campo_error($errores, "t{$id}-ini") ?>>
                   <?= mensaje_error($errores, "t{$id}-ini") ?>
                 </div>
                 <div class="campo">
                   <label class="campo__etiqueta" for="t<?= $id ?>-fin">Hasta</label>
-                  <input class="control" id="t<?= $id ?>-fin" name="turnos[<?= $id ?>][fin]" type="time" value="<?= e(Turno::horaControl($t['hora_fin'])) ?>"<?= campo_error($errores, "t{$id}-fin", "t{$id}-fin-ayuda") ?>>
-                  <p class="campo__ayuda" id="t<?= $id ?>-fin-ayuda">23:59 es hasta medianoche.</p>
+                  <input class="control" id="t<?= $id ?>-fin" name="turnos[<?= $id ?>][fin]" type="time" value="<?= e(Turno::hora($t['hora_fin'])) ?>"<?= campo_error($errores, "t{$id}-fin") ?>>
                   <?= mensaje_error($errores, "t{$id}-fin") ?>
                 </div>
-<?php if (Turno::estaEnCurso($id)): ?>
-                <p class="campo__ayuda campo__ayuda--aviso">Este turno está en curso ahora: su horario no se puede editar hasta que termine.</p>
-<?php endif; ?>
+                <div class="turno__pie">
+                  <?= mensaje_error($errores, "e{$id}") ?>
+                  <button class="boton boton--icono boton--peligro turno__eliminar" type="button" data-eliminar-turno="<?= $id ?>" data-nombre-turno="<?= e($t['nombre']) ?>" aria-label="Eliminar el turno <?= e($t['nombre']) ?>">
+                    <?= icono('basura') ?>
+                  </button>
+                </div>
               </fieldset>
 <?php endforeach; ?>
-
-              <fieldset class="turno turno--nuevo">
-                <legend>Agregar turno</legend>
-                <div class="campo">
-                  <label class="campo__etiqueta" for="nueva_clave">Clave (p. ej. "madrugada")</label>
-                  <input class="control" id="nueva_clave" name="nueva_clave" type="text" maxlength="20" value="<?= e($viejo['nueva_clave'] ?? '') ?>"<?= campo_error($errores, 'nueva_clave') ?>>
-                  <?= mensaje_error($errores, 'nueva_clave') ?>
-                </div>
-                <div class="campo">
-                  <label class="campo__etiqueta" for="nuevo_nombre">Nombre</label>
-                  <input class="control" id="nuevo_nombre" name="nuevo_nombre" type="text" maxlength="30" value="<?= e($viejo['nuevo_nombre'] ?? '') ?>"<?= campo_error($errores, 'nuevo_nombre') ?>>
-                  <?= mensaje_error($errores, 'nuevo_nombre') ?>
-                </div>
-                <div class="campo">
-                  <label class="campo__etiqueta" for="nuevo_inicio">Desde</label>
-                  <input class="control" id="nuevo_inicio" name="nuevo_inicio" type="time" value="<?= e($viejo['nuevo_inicio'] ?? '') ?>"<?= campo_error($errores, 'nuevo_inicio') ?>>
-                  <?= mensaje_error($errores, 'nuevo_inicio') ?>
-                </div>
-                <div class="campo">
-                  <label class="campo__etiqueta" for="nuevo_fin">Hasta</label>
-                  <input class="control" id="nuevo_fin" name="nuevo_fin" type="time" value="<?= e($viejo['nuevo_fin'] ?? '') ?>"<?= campo_error($errores, 'nuevo_fin') ?>>
-                  <p class="campo__ayuda" id="nuevo_fin-ayuda">23:59 es hasta medianoche.</p>
-                  <?= mensaje_error($errores, 'nuevo_fin') ?>
-                </div>
-                <div class="campo">
-                  <label class="campo__etiqueta" for="nuevo_orden">Orden</label>
-                  <input class="control control--numero" id="nuevo_orden" name="nuevo_orden" type="text" inputmode="numeric" value="<?= e($viejo['nuevo_orden'] ?? '') ?>"<?= campo_error($errores, 'nuevo_orden') ?>>
-                  <?= mensaje_error($errores, 'nuevo_orden') ?>
-                </div>
-                <?= isset($errores['nuevo_general']) ? '<p class="alerta alerta--peligro campo--ancho" role="alert">' . e($errores['nuevo_general']) . '</p>' : '' ?>
-              </fieldset>
-              <p class="config__nota">Un turno no abre si la caja del anterior no está cerrada y arqueada. Un turno en curso no se puede editar ni eliminar.</p>
-            </div>
+              <p class="config__nota">Los turnos se eligen al abrir caja según lo configurado aquí. Un turno no abre si la caja del anterior no está cerrada y arqueada. Cualquier turno se puede editar o eliminar, sin importar la hora. El turno siempre termina después de empezar: 23:59 es hasta medianoche.</p>
+            </form>
             <div class="panel-bloque__pie">
-              <button class="boton boton--primario" type="submit">Guardar cambios</button>
-              <button class="boton boton--secundario" type="submit" name="accion" value="agregar">Agregar turno</button>
-              <button class="boton boton--peligro" type="submit" name="accion" value="eliminar" onclick="return confirm('¿Eliminar los turnos marcados?')">Eliminar marcados</button>
+              <button class="boton boton--primario" type="submit" form="form-turnos">Guardar cambios</button>
             </div>
-          </form>
+
+            <dialog class="modal modal--turno" id="modal-turno" aria-labelledby="t-modal-turno"<?= $errorAlta ? ' data-modal-al-cargar' : '' ?>>
+              <form method="post" action="/config/turnos" novalidate>
+                <?= csrf_campo() ?>
+                <div class="modal__cuerpo">
+                  <h2 class="modal__titulo" id="t-modal-turno">Agregar turno</h2>
+                  <p class="modal__texto">El turno se elige al abrir caja. Escribe el nombre y el horario; la clave y el orden los pone el sistema.</p>
+
+                  <div class="campo">
+                    <label class="campo__etiqueta" for="nuevo_nombre">Nombre</label>
+                    <input class="control" id="nuevo_nombre" name="nuevo_nombre" type="text" maxlength="30" value="<?= e($viejo['nuevo_nombre'] ?? '') ?>"<?= campo_error($errores, 'nuevo_nombre') ?>>
+                    <?= mensaje_error($errores, 'nuevo_nombre') ?>
+                  </div>
+
+                  <div class="turno__campos">
+                    <div class="campo">
+                      <label class="campo__etiqueta" for="nuevo_inicio">Desde</label>
+                      <input class="control" id="nuevo_inicio" name="nuevo_inicio" type="time" value="<?= e($viejo['nuevo_inicio'] ?? '') ?>"<?= campo_error($errores, 'nuevo_inicio') ?>>
+                      <?= mensaje_error($errores, 'nuevo_inicio') ?>
+                    </div>
+                    <div class="campo">
+                      <label class="campo__etiqueta" for="nuevo_fin">Hasta</label>
+                      <input class="control" id="nuevo_fin" name="nuevo_fin" type="time" value="<?= e($viejo['nuevo_fin'] ?? '') ?>"<?= campo_error($errores, 'nuevo_fin') ?>>
+                      <p class="campo__ayuda">23:59 es hasta medianoche.</p>
+                      <?= mensaje_error($errores, 'nuevo_fin') ?>
+                    </div>
+                  </div>
+
+                  <div class="campo">
+                    <label class="campo__etiqueta" for="nuevo_orden">Orden</label>
+                    <input class="control control--numero" id="nuevo_orden" name="nuevo_orden" type="text" inputmode="numeric" value="<?= e($viejo['nuevo_orden'] ?? $ordenTurno) ?>" readonly<?= campo_error($errores, 'nuevo_orden', 'nuevo_orden-ayuda') ?>>
+                    <p class="campo__ayuda" id="nuevo_orden-ayuda">Lo pone el sistema: el turno nuevo entra al final de la lista.</p>
+                    <?= mensaje_error($errores, 'nuevo_orden') ?>
+                  </div>
+
+                  <?= isset($errores['nuevo_general']) ? '<p class="alerta alerta--peligro" role="alert">' . icono('error') . '<span>' . e($errores['nuevo_general']) . '</span></p>' : '' ?>
+                </div>
+                <div class="modal__acciones">
+                  <button class="boton" type="button" data-cerrar-modal>Cancelar</button>
+                  <button class="boton boton--primario" type="submit" name="agregar" value="1">Agregar turno</button>
+                </div>
+              </form>
+            </dialog>
+
+            <dialog class="modal" id="modal-eliminar-turno" aria-labelledby="t-modal-eliminar">
+              <form method="post" action="/config/turnos" novalidate>
+                <?= csrf_campo() ?>
+                <div class="modal__cuerpo">
+                  <h2 class="modal__titulo" id="t-modal-eliminar">Eliminar turno</h2>
+                  <p class="modal__texto">Se va a eliminar el turno <strong id="turno-eliminar-nombre"></strong>. Solo se puede eliminar si no tiene cajas registradas.</p>
+                  <input type="hidden" name="eliminar" id="turno-eliminar-id" value="">
+                </div>
+                <div class="modal__acciones">
+                  <button class="boton" type="button" data-cerrar-modal>Cancelar</button>
+                  <button class="boton boton--peligro" type="submit">Eliminar turno</button>
+                </div>
+              </form>
+            </dialog>
+          </section>
 
 <?php $pendiente('impresoras', 'Impresoras', 'HU-12', 'Ancho de 76 o 58 mm, columnas y qué ticket imprime cada una.'); ?>
 
