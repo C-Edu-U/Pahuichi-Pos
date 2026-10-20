@@ -238,19 +238,17 @@ final class ConfigController extends Controller
             if (!preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $fin)) {
                 $errores["t{$id}-fin"] = 'Elige la hora de fin.';
             }
+            if (isset($errores["t{$id}-ini"]) || isset($errores["t{$id}-fin"])) {
+                continue;
+            }
             $finDb = $fin === '23:59' ? '24:00:00' : "{$fin}:00";
             $inicioDb = "{$inicio}:00";
+            if ($inicio >= $fin) {
+                $errores["t{$id}-fin"] = 'Debe terminar después de empezar.';
+                continue;
+            }
             $nuevos[$id]['inicio'] = $inicioDb;
             $nuevos[$id]['fin'] = $finDb;
-
-            // No se puede editar un turno que ya empezó o está en curso (salvo que sea futura modificación permitida)
-            if (!$errores && Turno::estaEnCurso($id)) {
-                $errores["t{$id}-ini"] = "El turno de {$t['nombre']} está en curso y su horario no se puede cambiar ahora.";
-            }
-
-            if (!isset($errores["t{$id}-ini"]) && !isset($errores["t{$id}-fin"]) && $inicio >= $fin) {
-                $errores["t{$id}-fin"] = 'Debe terminar después de empezar.';
-            }
         }
 
         // Los turnos no se cruzan: cada uno empieza cuando el anterior ya terminó
@@ -258,11 +256,11 @@ final class ConfigController extends Controller
             $orden = $nuevos;
             uasort($orden, static fn (array $a, array $b): int => strcmp($a['inicio'], $b['inicio']));
             $anterior = null;
-            foreach ($orden as $id => $t) {
-                if ($anterior !== null && $t['inicio'] < $anterior['fin']) {
-                    $errores["t{$id}-ini"] = "Se cruza con el turno de {$anterior['nombre']}, que termina a las " . substr($anterior['fin'], 0, 5) . '.';
+            foreach ($orden as $idTurno => $tOrden) {
+                if ($anterior !== null && $tOrden['inicio'] < $anterior['fin']) {
+                    $errores["t{$idTurno}-ini"] = "Se cruza con el turno de {$anterior['nombre']}, que termina a las " . substr($anterior['fin'], 0, 5) . '.';
                 }
-                $anterior = $t;
+                $anterior = $tOrden;
             }
         }
 

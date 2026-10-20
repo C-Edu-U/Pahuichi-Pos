@@ -163,13 +163,6 @@ $cufdVigente = !isset($errores['f-vigencia']) && ParametrosFiscales::cufdVigente
 <?php foreach ($turnos as $t): $id = (int) $t['id']; ?>
               <fieldset class="turno">
                 <legend><?= e($t['nombre']) ?></legend>
-                <div class="campo campo--ancho">
-                  <label class="campo__etiqueta" for="eliminar-turno-<?= $id ?>">
-                    <input class="casilla__input" id="eliminar-turno-<?= $id ?>" name="turnos_eliminar[]" type="checkbox" value="<?= $id ?>">
-                    Eliminar este turno
-                  </label>
-                  <p class="campo__ayuda">Solo se puede eliminar si no tiene cajas hoy y no está en curso.</p>
-                </div>
                 <div class="campo">
                   <label class="campo__etiqueta" for="t<?= $id ?>-ini">Desde</label>
                   <input class="control" id="t<?= $id ?>-ini" name="turnos[<?= $id ?>][inicio]" type="time" value="<?= e(Turno::horaControl($t['hora_inicio'])) ?>"<?= campo_error($errores, "t{$id}-ini") ?>>
@@ -186,43 +179,10 @@ $cufdVigente = !isset($errores['f-vigencia']) && ParametrosFiscales::cufdVigente
 <?php endif; ?>
               </fieldset>
 <?php endforeach; ?>
-
-              <fieldset class="turno turno--nuevo">
-                <legend>Agregar turno</legend>
-                <div class="campo">
-                  <label class="campo__etiqueta" for="nueva_clave">Clave (p. ej. "madrugada")</label>
-                  <input class="control" id="nueva_clave" name="nueva_clave" type="text" maxlength="20" value="<?= e($viejo['nueva_clave'] ?? '') ?>"<?= campo_error($errores, 'nueva_clave') ?>>
-                  <?= mensaje_error($errores, 'nueva_clave') ?>
-                </div>
-                <div class="campo">
-                  <label class="campo__etiqueta" for="nuevo_nombre">Nombre</label>
-                  <input class="control" id="nuevo_nombre" name="nuevo_nombre" type="text" maxlength="30" value="<?= e($viejo['nuevo_nombre'] ?? '') ?>"<?= campo_error($errores, 'nuevo_nombre') ?>>
-                  <?= mensaje_error($errores, 'nuevo_nombre') ?>
-                </div>
-                <div class="campo">
-                  <label class="campo__etiqueta" for="nuevo_inicio">Desde</label>
-                  <input class="control" id="nuevo_inicio" name="nuevo_inicio" type="time" value="<?= e($viejo['nuevo_inicio'] ?? '') ?>"<?= campo_error($errores, 'nuevo_inicio') ?>>
-                  <?= mensaje_error($errores, 'nuevo_inicio') ?>
-                </div>
-                <div class="campo">
-                  <label class="campo__etiqueta" for="nuevo_fin">Hasta</label>
-                  <input class="control" id="nuevo_fin" name="nuevo_fin" type="time" value="<?= e($viejo['nuevo_fin'] ?? '') ?>"<?= campo_error($errores, 'nuevo_fin') ?>>
-                  <p class="campo__ayuda" id="nuevo_fin-ayuda">23:59 es hasta medianoche.</p>
-                  <?= mensaje_error($errores, 'nuevo_fin') ?>
-                </div>
-                <div class="campo">
-                  <label class="campo__etiqueta" for="nuevo_orden">Orden</label>
-                  <input class="control control--numero" id="nuevo_orden" name="nuevo_orden" type="text" inputmode="numeric" value="<?= e($viejo['nuevo_orden'] ?? '') ?>"<?= campo_error($errores, 'nuevo_orden') ?>>
-                  <?= mensaje_error($errores, 'nuevo_orden') ?>
-                </div>
-                <?= isset($errores['nuevo_general']) ? '<p class="alerta alerta--peligro campo--ancho" role="alert">' . e($errores['nuevo_general']) . '</p>' : '' ?>
-              </fieldset>
-              <p class="config__nota">Un turno no abre si la caja del anterior no está cerrada y arqueada. Un turno en curso no se puede editar ni eliminar.</p>
+              <p class="config__nota">Los turnos se seleccionan al abrir caja según lo configurado aquí.</p>
             </div>
             <div class="panel-bloque__pie">
               <button class="boton boton--primario" type="submit">Guardar cambios</button>
-              <button class="boton boton--secundario" type="submit" name="accion" value="agregar">Agregar turno</button>
-              <button class="boton boton--peligro" type="submit" name="accion" value="eliminar" onclick="return confirm('¿Eliminar los turnos marcados?')">Eliminar marcados</button>
             </div>
           </form>
 
