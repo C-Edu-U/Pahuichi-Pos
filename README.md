@@ -43,7 +43,7 @@ La base también se puede revisar con un cliente SQL en `127.0.0.1:3307` (usuari
 | Mesero | Usuario `luis`, contraseña `Pahuichi2026` | Pedidos |
 | Cocina | Usuario `teresa` | No entra al panel: recibe la comanda impresa |
 
-Los cajeros también tienen la contraseña `Pahuichi2026`. El PIN de autorización del administrador es `1234` (lo usarán la anulación y el descuento manual).
+Los cajeros también tienen la contraseña `Pahuichi2026`. El PIN de autorización del administrador es `1234`: autoriza el descuento manual y lo usará la anulación.
 
 ## Estado
 
@@ -64,6 +64,7 @@ Los cajeros también tienen la contraseña `Pahuichi2026`. El PIN de autorizaci�
 | HU-28 | Cuadrícula del POS: favoritos primero, categorías con su color, búsqueda por nombre o código; agotado visible sin poder venderse | `/pos` |
 | HU-29 | Carrito: un toque agrega y otro suma; +, − y quitar por línea; total siempre visible; cancelar pedido con confirmación | `/pos` |
 | HU-10 | Leyendas de la Ley 453: agregar, activar y desactivar con mínimo 8 activas; `Leyenda::alAzar()` elige una para cada factura | `/config#leyendas` |
+| HU-06 | Descuento manual con el PIN del administrador: permiso de un solo uso por 5 minutos, bloqueo tras 5 PIN errados, menor que el subtotal; venta, factura y bitácora guardan monto, motivo y quién autorizó | `/pos` |
 | HU-30 | Tipo de pedido: mesa con su número (1 a 99, sin valor por defecto) o para llevar; la comanda dice «MESA 4» o «PARA LLEVAR» | `/pos` |
 | HU-31 | Nota por ítem para cocina (hasta 60 caracteres, Enter la guarda): sale solo en la comanda; las bebidas y lo que no va a cocina no la ofrecen | `/pos` |
 | HU-33 | Atajos del POS: F2 buscar, F4 cobrar, F8 efectivo exacto, Esc cancelar con confirmación; cada tecla se ve en su botón | `/pos` |
@@ -82,7 +83,8 @@ Los escenarios Gherkin del Sprint 1 tienen prueba automática en `tests/Integrac
 6. **Una sola caja:** con dos navegadores (o una ventana de incógnito), deja a Jorge (PIN 7350) en «Abrir caja» con el turno de noche. En el otro, abre la caja de medio día con Mariela. Luego envía el formulario de Jorge → el sistema lo impide y explica que primero se debe cerrar y arquear la caja de medio día.
 7. **Mesa o para llevar:** agrega un plato y pulsa F8 sin escribir la mesa → no cobra, marca el campo y pide el número. Escribe 4 y cobra: en «Ver tickets» la comanda dice «MESA 4». El pedido siguiente vuelve a pedir la mesa; con «Llevar» la comanda dice «PARA LLEVAR».
 8. **Nota para cocina:** agrega un Majadito y un Mocochinchi. Solo el Majadito tiene el botón de nota: escribe «sin cebolla» y pulsa Enter → la nota queda bajo el plato. Cobra y abre «Ver tickets»: la comanda dice «» SIN CEBOLLA»; la copia de caja y la factura no muestran la nota.
-9. **Atajos del POS:** con la caja abierta, F2 lleva el foco a la búsqueda. Agrega dos productos: F4 abre el cobro y Esc lo cierra sin perder el pedido. Esc dentro de una nota la cierra, Esc en una búsqueda con texto la borra y, después, Esc pide confirmar la cancelación con «Seguir vendiendo» enfocado (Enter no borra el pedido). F8 cobra en efectivo exacto.
+9. **Descuento manual:** con dos Majaditos (Bs 80), «Descuento» → Bs 10, motivo y el PIN 4821 de Mariela → no autoriza y avisa cuántos intentos quedan. Con el PIN 1234 → el pedido muestra subtotal 80, descuento 10 y total 70. Cobra: la copia de caja y la factura muestran el descuento, y en la Bitácora aparece «Descuento manual» con quién autorizó. Un descuento de Bs 80 o más no se acepta.
+10. **Atajos del POS:** con la caja abierta, F2 lleva el foco a la búsqueda. Agrega dos productos: F4 abre el cobro y Esc lo cierra sin perder el pedido. Esc dentro de una nota la cierra, Esc en una búsqueda con texto la borra y, después, Esc pide confirmar la cancelación con «Seguir vendiendo» enfocado (Enter no borra el pedido). F8 cobra en efectivo exacto.
 
 Para repetir las pruebas desde cero: `docker compose exec app php bin/consola.php reiniciar`. El CUFD de los datos de prueba vence a las 23:59 del día en que se cargaron; al día siguiente la configuración lo muestra como vencido, que es lo esperado.
 

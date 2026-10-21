@@ -115,6 +115,10 @@ $datos = array_map(static fn (array $p): array => [
             </div>
 
             <div class="totales">
+              <dl class="totales__lista" id="desglose" hidden>
+                <div><dt>Subtotal</dt><dd class="num" id="t-subtotal">0,00</dd></div>
+                <div class="totales__descuento"><dt>Descuento <span class="totales__motivo" id="t-descuento-motivo"></span></dt><dd class="num" id="t-descuento">0,00</dd></div>
+              </dl>
               <p class="totales__total">
                 <span class="totales__etiqueta">Total</span>
                 <span class="totales__monto"><span class="totales__moneda">Bs</span><span id="t-total">0,00</span></span>
@@ -131,7 +135,7 @@ $datos = array_map(static fn (array $p): array => [
               <div class="totales__secundarias">
                 <button class="boton boton--fantasma" type="button" disabled title="Ventas en espera pendientes"><?= icono('pausa', 'icono--sm') ?>En espera</button>
                 <button class="boton boton--fantasma" type="button" disabled title="Ventas en espera pendientes">Retomar <span class="pestana__cuenta">0</span></button>
-                <button class="boton boton--fantasma" type="button" disabled title="Descuento manual pendiente">Descuento</button>
+                <button class="boton boton--fantasma" type="button" id="descuento" disabled>Descuento</button>
                 <button class="boton boton--fantasma" type="button" id="vaciar" data-abrir-modal="modal-vaciar" aria-keyshortcuts="Escape" disabled>
                   <?= icono('basura', 'icono--sm') ?>Vaciar <kbd class="atajo">Esc</kbd>
                 </button>
@@ -197,6 +201,37 @@ $datos = array_map(static fn (array $p): array => [
 
           <div class="modal__acciones"><button class="boton boton--primario" id="confirmar-cobro" type="button">Confirmar cobro</button></div>
         </div>
+      </dialog>
+
+      <!-- HU-06: descuento manual con el PIN del administrador -->
+      <dialog class="modal" id="modal-descuento" aria-labelledby="descuento-titulo" aria-describedby="descuento-texto">
+        <form method="dialog" id="form-descuento" novalidate>
+          <div class="modal__cuerpo">
+            <h2 class="modal__titulo" id="descuento-titulo">Descuento manual</h2>
+            <p class="modal__texto" id="descuento-texto">Lo autoriza el administrador con su PIN y queda en la bitácora.</p>
+            <div class="campo">
+              <label class="campo__etiqueta" for="descuento-monto">Monto del descuento</label>
+              <div class="control-grupo">
+                <span class="control-grupo__prefijo" aria-hidden="true">Bs</span>
+                <input class="control control--numero" id="descuento-monto" type="text" inputmode="decimal" autocomplete="off" aria-describedby="descuento-subtotal">
+              </div>
+              <p class="campo__ayuda" id="descuento-subtotal">Menor que el subtotal.</p>
+            </div>
+            <div class="campo">
+              <label class="campo__etiqueta" for="descuento-motivo">Motivo</label>
+              <input class="control" id="descuento-motivo" type="text" maxlength="120" autocomplete="off" placeholder="Por ejemplo, demora en cocina">
+            </div>
+            <div class="campo">
+              <label class="campo__etiqueta" for="descuento-pin">PIN del administrador</label>
+              <input class="control" id="descuento-pin" type="password" inputmode="numeric" maxlength="6" autocomplete="off">
+            </div>
+            <p class="campo__error" id="descuento-error" role="alert" hidden></p>
+          </div>
+          <div class="modal__acciones">
+            <button class="boton" type="button" data-cerrar-modal>Cancelar</button>
+            <button class="boton boton--primario" type="submit" id="autorizar-descuento">Autorizar descuento</button>
+          </div>
+        </form>
       </dialog>
 
       <p class="visualmente-oculto" aria-live="polite" id="anuncio"></p>

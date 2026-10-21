@@ -655,6 +655,22 @@
   font-weight: var(--peso-semi);
 }
 
+/* El motivo del descuento cabe en una línea; el monto no se corta */
+.totales__lista .totales__descuento {
+  gap: var(--esp-1);
+}
+
+.totales__descuento dt {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.totales__motivo {
+  color: var(--color-texto-2);
+}
+
 .totales__total {
   display: flex;
   align-items: baseline;

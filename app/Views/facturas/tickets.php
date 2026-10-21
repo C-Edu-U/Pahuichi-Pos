@@ -64,7 +64,7 @@
 <?php foreach ($s['lineas'] as $l): ?><li><span><?= (int) $l['cantidad'] ?> × <?= e($l['nombre']) ?></span><span class="num"><?= bs($l['subtotal']) ?></span></li><?php endforeach; ?>
             </ul>
             <div class="ticket__separador"></div>
-            <dl class="ticket__totales"><div><dt>Subtotal</dt><dd><?= bs($s['subtotal']) ?></dd></div><div class="ticket__fuerte"><dt>TOTAL Bs</dt><dd><?= bs($s['total']) ?></dd></div></dl>
+            <dl class="ticket__totales"><div><dt>Subtotal</dt><dd><?= bs($s['subtotal']) ?></dd></div><?php if ((float) $s['descuento'] > 0): ?><div><dt>Descuento</dt><dd><?= bs($s['descuento']) ?></dd></div><?php endif; ?><div class="ticket__fuerte"><dt>TOTAL Bs</dt><dd><?= bs($s['total']) ?></dd></div></dl>
             <div class="ticket__separador"></div>
             <dl class="ticket__totales"><div><dt>Efectivo</dt><dd><?= bs($s['total']) ?></dd></div><div><dt>Recibido</dt><dd><?= bs($s['recibido']) ?></dd></div><div class="ticket__fuerte"><dt>Cambio</dt><dd><?= bs($s['cambio']) ?></dd></div></dl>
           </article>
