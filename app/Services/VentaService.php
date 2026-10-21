@@ -105,6 +105,7 @@ final class VentaService
                 'cliente' => ['nombre' => 'S/N', 'doc' => '0'], 'cajero' => Auth::usuario()['nombre'], 'negocio' => $negocio, 'fiscal' => $fiscal,
                 'cuf' => Cuf::generar($negocio, $fiscal, $numero, $ahora), 'fecha_emision' => $fecha, 'fecha_larga' => $ahora->format('d/m/Y H:i'),
                 'lineas' => $lineas, 'subtotal' => self::decimal($total), 'descuento' => '0.00', 'total' => self::decimal($total),
+                'literal' => NumeroALetras::convertir($total),
                 'recibido' => self::decimal($rec), 'cambio' => self::decimal($rec - $total), 'leyenda' => $leyenda['texto']];
             $id = Factura::crear($ventaId, $s, (int) $leyenda['id']);
             Bitacora::registrar('venta.cobro', 'ventas', $ventaId, ['factura_id' => $id, 'total' => $s['total'], 'metodo' => 'efectivo', 'leyenda_id' => $leyenda['id']]);
