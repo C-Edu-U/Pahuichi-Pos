@@ -89,6 +89,14 @@
   right: var(--esp-2);
   top: 50%;
   translate: 0 -50%;
+  pointer-events: none;
+}
+
+/* El texto buscado no pasa por debajo de la marca F2 */
+@media (hover: hover) {
+  .control-grupo:has(.control-grupo__atajo) .control {
+    padding-right: var(--esp-6);
+  }
 }
 
 .pos__turno {
@@ -694,9 +702,9 @@
 }
 
 .totales__secundarias {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+  gap: var(--esp-05);
   margin-top: var(--esp-1);
 }
 

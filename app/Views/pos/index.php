@@ -25,7 +25,8 @@ $datos = array_map(static fn (array $p): array => [
             <div class="control-grupo">
               <?= icono('buscar', 'control-grupo__icono') ?>
               <label class="visualmente-oculto" for="pos-buscar">Buscar producto por nombre o código</label>
-              <input class="control" id="pos-buscar" type="search" placeholder="Buscar plato o código" autocomplete="off">
+              <input class="control" id="pos-buscar" type="search" placeholder="Buscar plato o código" autocomplete="off" aria-keyshortcuts="F2">
+              <kbd class="atajo control-grupo__atajo" aria-hidden="true">F2</kbd>
             </div>
             <p class="pos__turno" id="pos-turno"><span class="punto-estado" aria-hidden="true"></span>Caja abierta · <?= e(mb_strtolower($caja['turno'])) ?> desde las <?= e(substr($caja['abierta_en'], 11, 5)) ?> · <?= e($caja['cajero']) ?></p>
           </div>
@@ -117,10 +118,10 @@ $datos = array_map(static fn (array $p): array => [
                 <span class="totales__monto"><span class="totales__moneda">Bs</span><span id="t-total">0,00</span></span>
               </p>
               <div class="totales__acciones">
-                <button class="boton boton--primario boton--grande boton-cobro" type="button" id="efectivo-exacto" disabled>
+                <button class="boton boton--primario boton--grande boton-cobro" type="button" id="efectivo-exacto" aria-keyshortcuts="F8" disabled>
                   <?= icono('billete') ?> Efectivo exacto <kbd class="atajo atajo--claro">F8</kbd>
                 </button>
-                <button class="boton boton--grande boton-cobro" type="button" id="cobrar" disabled>
+                <button class="boton boton--grande boton-cobro" type="button" id="cobrar" aria-keyshortcuts="F4" disabled>
                   <span id="cobrar-texto">Cobrar</span> <kbd class="atajo">F4</kbd>
                 </button>
               </div>
@@ -129,8 +130,8 @@ $datos = array_map(static fn (array $p): array => [
                 <button class="boton boton--fantasma" type="button" disabled title="Ventas en espera pendientes"><?= icono('pausa', 'icono--sm') ?>En espera</button>
                 <button class="boton boton--fantasma" type="button" disabled title="Ventas en espera pendientes">Retomar <span class="pestana__cuenta">0</span></button>
                 <button class="boton boton--fantasma" type="button" disabled title="Descuento manual pendiente">Descuento</button>
-                <button class="boton boton--fantasma" type="button" id="vaciar" data-abrir-modal="modal-vaciar" disabled>
-                  <?= icono('basura', 'icono--sm') ?>Vaciar
+                <button class="boton boton--fantasma" type="button" id="vaciar" data-abrir-modal="modal-vaciar" aria-keyshortcuts="Escape" disabled>
+                  <?= icono('basura', 'icono--sm') ?>Vaciar <kbd class="atajo">Esc</kbd>
                 </button>
               </div>
             </div>
