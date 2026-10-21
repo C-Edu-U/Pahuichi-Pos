@@ -244,12 +244,33 @@
     document.querySelector('.billetes').inert = valor;
     $('cobrar-texto').textContent = pendiente ? 'Reintentar cobro' : 'Cobrar';
   }
+  /* HU-30: mesa (con su número) o para llevar. El número no trae valor por
+     defecto: se escribe en cada pedido para no cobrar en la mesa equivocada. */
+  function elegirTipo(tipo) {
+    tipoPedido = tipo;
+    document.querySelectorAll('[data-tipo]').forEach(function (x) { x.setAttribute('aria-pressed', String(x.getAttribute('data-tipo') === tipo)); });
+    $('mesa').hidden = tipo !== 'mesa';
+    $('mesa').removeAttribute('aria-invalid');
+    errorCobro('');
+  }
+  function exigirMesa() {
+    if (tipoPedido !== 'mesa' || /^[1-9]\d?$/.test($('mesa').value)) return true;
+    errorCobro('Escribe el número de mesa, de 1 a 99, o elige Llevar.');
+    $('mesa').setAttribute('aria-invalid', 'true');
+    $('mesa').focus();
+    return false;
+  }
   document.querySelectorAll('[data-tipo]').forEach(function (b) {
     b.addEventListener('click', function () {
-      tipoPedido = b.getAttribute('data-tipo');
-      document.querySelectorAll('[data-tipo]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
-      $('mesa').hidden = tipoPedido !== 'mesa';
+      elegirTipo(b.getAttribute('data-tipo'));
+      if (tipoPedido === 'mesa') $('mesa').focus();
     });
+  });
+  // Solo cifras y sin ceros a la izquierda: «04» queda en «4»
+  $('mesa').addEventListener('input', function () {
+    var limpio = this.value.replace(/\D/g, '').replace(/^0+/, '');
+    if (limpio !== this.value) this.value = limpio;
+    if (this.hasAttribute('aria-invalid')) { this.removeAttribute('aria-invalid'); errorCobro(''); }
   });
   function cambio() {
     var recibido = Number($('recibido').value.replace(',', '.'));
@@ -264,12 +285,14 @@
   });
   $('cobrar').addEventListener('click', function () {
     if (pendiente) { cobrar(false); return; }
+    if (!exigirMesa()) return;
     $('cobro-total').textContent = P.bs(carrito.total());
     $('recibido').value = carrito.total().toFixed(2);
     errorCobro(''); cambio(); dialogoCobro.showModal(); $('recibido').focus();
   });
   async function cobrar(exacto) {
     if (enviando || (!pendiente && carrito.vacio())) return;
+    if (!pendiente && !exigirMesa()) return;
     errorCobro('');
     if (!pendiente) {
       pendiente = {uuid: crypto.randomUUID(), caja_id: $('pos').getAttribute('data-caja'),
@@ -296,6 +319,8 @@
       enviando = false;
       carrito.vaciar();
       if (dialogoCobro.open) dialogoCobro.close();
+      // El siguiente pedido vuelve a elegir su mesa
+      $('mesa').value = ''; elegirTipo('mesa');
       pintar(); bloquearPedido(false);
       $('venta-lista-titulo').textContent = 'Pedido ' + datos.pedido + ' cobrado';
       $('venta-lista-detalle').textContent = 'Factura N° ' + datos.numero + ' · cambio Bs ' + P.bs(datos.cambio) + ' · lista para imprimir';
