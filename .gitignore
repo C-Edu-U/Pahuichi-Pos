@@ -14,6 +14,7 @@ storage/subidas/*
 # Configuración local del editor y de herramientas
 .claude/
 .impeccable/
+.kilo/
 skills-lock.json
 PRODUCT.md
 .vscode/

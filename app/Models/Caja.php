@@ -27,7 +27,7 @@ final class Caja
 
     public static function ultimas(int $cantidad = 10): array
     {
-        return DB::filas(self::SELECT . ' ORDER BY c.abierta_en DESC LIMIT ' . max(1, $cantidad));
+        return DB::filas(self::SELECT . ' WHERE c.archivada = 0 ORDER BY c.abierta_en DESC LIMIT ' . max(1, $cantidad));
     }
 
     /** Última caja cerrada, para mostrar su arqueo. */
@@ -54,8 +54,9 @@ final class Caja
         DB::consulta('UPDATE cajas SET estado = ?, cerrada_en = ? WHERE id = ?', ['cerrada', $cerradaEn, $id]);
     }
 
-    public static function eliminarCerradas(): int
+    /** Oculta del historial las cajas cerradas; sus datos se conservan (RNF-20). */
+    public static function archivarCerradas(): int
     {
-        return (int) DB::consulta('DELETE FROM cajas WHERE estado = ?', ['cerrada'])->rowCount();
+        return (int) DB::consulta("UPDATE cajas SET archivada = 1 WHERE estado = 'cerrada' AND archivada = 0")->rowCount();
     }
 }

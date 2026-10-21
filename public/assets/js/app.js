@@ -364,9 +364,10 @@
     }
   });
 
-  // Envíos que piden confirmación: <form data-confirmar="¿Seguro?">
+  // Envíos que piden confirmación: <form data-confirmar="¿Seguro?"> o en el botón que envía
   document.addEventListener('submit', function (e) {
-    var texto = e.target.getAttribute && e.target.getAttribute('data-confirmar');
+    var boton = e.submitter;
+    var texto = (boton && boton.getAttribute('data-confirmar')) || (e.target.getAttribute && e.target.getAttribute('data-confirmar'));
     if (texto && !window.confirm(texto)) e.preventDefault();
   });
 

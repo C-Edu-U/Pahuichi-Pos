@@ -26,11 +26,7 @@ final class ObservacionDiferenciaTest extends CasoPrueba
         $this->post('/caja/abrir', ['turno_id' => $this->mediodia, 'fondo' => '200']);
         $this->cajaId = (int) DB::valor("SELECT id FROM cajas WHERE estado = 'abierta'");
         // Venta en efectivo de Bs 1.000: el efectivo esperado queda en 1.200
-        DB::consulta(
-            'INSERT INTO ventas (caja_id, turno_id, usuario_id, fecha, subtotal, descuento, total, metodo_pago, estado_pago, creado_en)
-             VALUES (?, ?, ?, NOW(), 1000.00, 0, 1000.00, \'efectivo\', \'pagado\', NOW())',
-            [$this->cajaId, $this->mediodia, $this->mariela],
-        );
+        $this->ventaDirecta($this->cajaId, $this->mariela, 'efectivo', 'confirmado', 1000.00);
     }
 
     private function contar(int $b200, int $b100, int $b50, int $b10, int $m5): void

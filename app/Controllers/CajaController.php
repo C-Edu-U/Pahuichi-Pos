@@ -318,9 +318,9 @@ final class CajaController extends Controller
         if ($usuario['rol'] !== 'administrador') {
             return $this->redirigirConAviso('/caja', 'Solo el administrador puede limpiar el historial.');
         }
-        $borradas = (new CajaService())->limpiarHistorial();
-        Bitacora::registrar('caja.limpiar_historial', 'cajas', null, ['borradas' => $borradas]);
-        return $this->redirigirConAviso('/caja', "Historial limpiado: {$borradas} caja(s) cerrada(s) borrada(s).");
+        $archivadas = (new CajaService())->limpiarHistorial();
+        Bitacora::registrar('caja.limpiar_historial', 'cajas', null, ['archivadas' => $archivadas]);
+        return $this->redirigirConAviso('/caja', "Historial limpiado: {$archivadas} caja(s) cerrada(s) archivada(s). Sus datos se conservan.");
     }
 
     private function pantalla(array $datos = [], int $estado = 200): Respuesta

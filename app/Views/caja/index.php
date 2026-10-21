@@ -210,7 +210,7 @@ $fecha = static fn (string $momento): string => (new DateTimeImmutable($momento)
                     <a class="boton boton--fantasma" href="/caja/reporte/<?= (int) $c['id'] ?>"><?= icono('imprimir') ?> Reporte</a>
 <?php endif; ?>
 <?php if ($c['estado'] === 'cerrada' && puede('caja.reabrir')): ?>
-                    <form class="form-inline" method="post" action="/caja/reabrir/<?= (int) $c['id'] ?>" onsubmit="return confirm('¿Reabrir esta caja? Se borra su conteo y su arqueo para poder cerrar el turno otra vez.')">
+                    <form class="form-inline" method="post" action="/caja/reabrir/<?= (int) $c['id'] ?>" data-confirmar="¿Reabrir esta caja? Se borra su conteo y su arqueo para poder cerrar el turno otra vez.">
                       <?= csrf_campo() ?>
                       <button class="boton boton--fantasma" type="submit"><?= icono('reintentar') ?> Reabrir</button>
                     </form>
@@ -224,9 +224,9 @@ $fecha = static fn (string $momento): string => (new DateTimeImmutable($momento)
       </section>
 <?php endif; ?>
       <?php if ($historial !== [] && puede('caja.limpiar_historial')): ?>
-        <form class="form-inline" method="post" action="/caja/limpiar-historial" onsubmit="return confirm('¿Borrar todas las cajas cerradas del historial y también sus arqueos, movimientos y ventas? Esta acción no se deshace.')">
+        <form class="form-inline" method="post" action="/caja/limpiar-historial" data-confirmar="¿Ocultar del historial todas las cajas cerradas? Sus arqueos, movimientos y ventas se conservan.">
           <?= csrf_campo() ?>
-          <button class="boton boton--peligro" type="submit"><?= icono('borrar') ?> Limpiar historial de cajas cerradas</button>
+          <button class="boton boton--peligro" type="submit"><?= icono('ocultar') ?> Limpiar historial de cajas cerradas</button>
         </form>
       <?php endif; ?>
     </main>

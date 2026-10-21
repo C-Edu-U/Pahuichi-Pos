@@ -25,11 +25,7 @@ final class ReporteCierreTest extends CasoPrueba
         $this->mariela = (int) DB::valor("SELECT id FROM usuarios WHERE usuario = 'mariela'");
         $this->post('/caja/abrir', ['turno_id' => $this->mediodia, 'fondo' => '200']);
         $this->cajaId = (int) DB::valor("SELECT id FROM cajas WHERE estado = 'abierta'");
-        DB::consulta(
-            'INSERT INTO ventas (caja_id, turno_id, usuario_id, fecha, subtotal, descuento, total, metodo_pago, estado_pago, creado_en)
-             VALUES (?, ?, ?, NOW(), 1000.00, 0, 1000.00, ?, ?, NOW())',
-            [$this->cajaId, $this->mediodia, $this->mariela, 'efectivo', 'pagado'],
-        );
+        $this->ventaDirecta($this->cajaId, $this->mariela, 'efectivo', 'confirmado', 1000.00);
         $this->post('/caja/conteo', ['conteo' => ['200' => '6']]);
         $this->post('/caja/arqueo', ['observacion' => '']);
     }

@@ -42,6 +42,7 @@ return [
         'config.turnos' => ['Horario de turnos', 'configuracion', 'neutra'],
         'config.turnos.agregar' => ['Turno agregado', 'configuracion', 'neutra'],
         'config.turnos.eliminar' => ['Turno eliminado', 'configuracion', 'aviso'],
+        'config.caja_cobro' => ['Parámetros de caja y cobro', 'configuracion', 'aviso'],
         'leyenda.alta' => ['Leyenda agregada', 'configuracion', 'neutra'],
         'leyenda.activar' => ['Leyenda activada', 'configuracion', 'neutra'],
         'leyenda.desactivar' => ['Leyenda desactivada', 'configuracion', 'aviso'],
@@ -55,14 +56,22 @@ return [
         'producto.precio' => ['Cambio de precio', 'catalogo', 'aviso'],
         'producto.favorito' => ['Favorito', 'catalogo', 'neutra'],
         'producto.agotado' => ['Agotado', 'catalogo', 'neutra'],
+        'producto.foto' => ['Foto del producto', 'catalogo', 'neutra'],
 
         'caja.apertura' => ['Apertura de caja', 'caja', 'ok'],
         'caja.cierre' => ['Cierre de caja', 'caja', 'ok'],
         'caja.movimiento' => ['Ingreso o egreso de efectivo', 'caja', 'neutra'],
         'caja.reapertura' => ['Reapertura de caja', 'caja', 'aviso'],
-        'caja.limpiar_historial' => ['Historial de cajas borrado', 'caja', 'peligro'],
+        'caja.limpiar_historial' => ['Historial de cajas archivado', 'caja', 'neutra'],
+        'caja.ingreso' => ['Ingreso de efectivo', 'caja', 'neutra'],
+        'caja.egreso' => ['Egreso de efectivo', 'caja', 'aviso'],
+        'caja.conteo' => ['Conteo de efectivo', 'caja', 'neutra'],
+        'caja.arqueo' => ['Arqueo de caja', 'caja', 'ok'],
+        'caja.reabrir' => ['Caja reabierta', 'caja', 'aviso'],
 
         // Llegan con sus historias (Sprint 3 a 5)
+        'venta.cobro' => ['Venta cobrada', 'ventas', 'ok'],
+        'factura.reimpresion' => ['Reimpresión de tickets', 'ventas', 'aviso'],
         'venta.anulacion' => ['Anulación de venta', 'ventas', 'peligro'],
         'venta.descuento_manual' => ['Descuento manual', 'ventas', 'aviso'],
         'impresion.reimpresion' => ['Reimpresión', 'ventas', 'aviso'],
@@ -76,7 +85,7 @@ return [
     'sensibles' => [
         'venta.anulacion', 'venta.descuento_manual', 'impresion.reimpresion',
         'qr.confirmar', 'qr.rechazar', 'producto.precio',
-        'caja.apertura', 'caja.cierre', 'caja.reapertura',
+        'caja.apertura', 'caja.cierre', 'caja.reapertura', 'caja.reabrir', 'caja.arqueo', 'factura.reimpresion',
     ],
 
     // Nombres legibles de los campos del detalle
@@ -92,6 +101,6 @@ return [
         'precio' => 'Precio', 'turno' => 'Turno', 'cajero' => 'Cajero', 'usuario' => 'Usuario',
         'rol' => 'Rol', 'modo' => 'Con', 'intentos' => 'Intentos', 'hasta' => 'Hasta',
         'ruta' => 'Ruta', 'metodo' => 'Método', 'permiso' => 'Permiso', 'favorito' => 'Favorito',
-        'agotado' => 'Agotado', 'borradas' => 'Cajas borradas', 'texto' => 'Texto', 'activo' => 'Activa', 'mediodia' => 'Medio día', 'noche' => 'Noche',
+        'agotado' => 'Agotado', 'borradas' => 'Cajas borradas', 'archivadas' => 'Cajas archivadas', 'texto' => 'Texto', 'activo' => 'Activa', 'mediodia' => 'Medio día', 'noche' => 'Noche',
     ],
 ];

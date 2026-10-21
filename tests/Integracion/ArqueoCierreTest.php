@@ -31,11 +31,7 @@ final class ArqueoCierreTest extends CasoPrueba
 
     private function venta(string $metodo, string $estado, float $total, float $descuento = 0.0, bool $anulada = false): void
     {
-        DB::consulta(
-            'INSERT INTO ventas (caja_id, turno_id, usuario_id, fecha, subtotal, descuento, total, metodo_pago, estado_pago, anulada, creado_en)
-             VALUES (?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, NOW())',
-            [$this->cajaId, $this->mediodia, $this->mariela, $total, $descuento, $total, $metodo, $estado, $anulada ? 1 : 0],
-        );
+        $this->ventaDirecta($this->cajaId, $this->mariela, $metodo, $estado, $total, $descuento, $anulada);
     }
 
     private function contar(int $billetes200, int $billetes50, int $billetes10): void
@@ -54,7 +50,7 @@ final class ArqueoCierreTest extends CasoPrueba
      */
     public function testElArqueoMuestraElFaltante(): void
     {
-        $this->venta('efectivo', 'pagado', 1350.00);
+        $this->venta('efectivo', 'confirmado', 1350.00);
         $this->post('/caja/movimientos', ['tipo' => 'egreso', 'monto' => '50', 'motivo' => 'compra de hielo']);
         $this->contar(7, 1, 4); // 1400 + 50 + 40 = 1490
 
@@ -74,7 +70,7 @@ final class ArqueoCierreTest extends CasoPrueba
      */
     public function testLaVentaQrPendienteNoSuma(): void
     {
-        $this->venta('efectivo', 'pagado', 1000.00);
+        $this->venta('efectivo', 'confirmado', 1000.00);
         $this->venta('qr', 'pendiente', 500.00);
         $this->contar(6, 0, 0); // 1200
 
@@ -93,11 +89,11 @@ final class ArqueoCierreTest extends CasoPrueba
      */
     public function testElResumenDelTurno(): void
     {
-        $this->venta('efectivo', 'pagado', 1000.00, 20.00);
-        $this->venta('qr', 'pagado', 300.00);
+        $this->venta('efectivo', 'confirmado', 1000.00, 20.00);
+        $this->venta('qr', 'confirmado', 300.00);
         $this->venta('qr', 'pendiente', 150.00);
         $this->venta('qr', 'rechazado', 80.00);
-        $this->venta('efectivo', 'pagado', 500.00, 0.0, true); // anulada
+        $this->venta('efectivo', 'confirmado', 500.00, 0.0, true); // anulada
         $this->contar(6, 0, 0); // 1200
 
         $this->assertRedirige('/caja/arqueo', $this->post('/caja/arqueo', ['observacion' => '']));
@@ -128,7 +124,7 @@ final class ArqueoCierreTest extends CasoPrueba
 
     public function testElEgresoSeRestaDelEsperado(): void
     {
-        $this->venta('efectivo', 'pagado', 1000.00);
+        $this->venta('efectivo', 'confirmado', 1000.00);
         $this->post('/caja/movimientos', ['tipo' => 'egreso', 'monto' => '50', 'motivo' => 'compra de hielo']);
         $this->post('/caja/movimientos', ['tipo' => 'ingreso', 'monto' => '25', 'motivo' => 'cambio de turno']);
         $this->contar(5, 0, 0); // 1000
@@ -157,7 +153,7 @@ final class ArqueoCierreTest extends CasoPrueba
      */
     public function testElAdministradorReabreUnaCajaCerrada(): void
     {
-        $this->venta('efectivo', 'pagado', 100.00);
+        $this->venta('efectivo', 'confirmado', 100.00);
         $this->contar(1, 0, 10); // 300
         $this->assertRedirige('/caja/arqueo', $this->post('/caja/arqueo', ['observacion' => '']));
 
@@ -182,23 +178,29 @@ final class ArqueoCierreTest extends CasoPrueba
      * Escenario: Limpiar historial
      *   Dado una caja cerrada con arqueo y ventas
      *   Cuando el administrador limpia el historial
-     *   Entonces se borran la caja, su arqueo y sus ventas
+     *   Entonces la caja sale del historial y sus arqueos, movimientos y ventas se conservan (RNF-20)
      */
-    public function testLimpiarHistorialBorraLaCajaYSusArqueos(): void
+    public function testLimpiarHistorialArchivaSinBorrar(): void
     {
-        $this->venta('efectivo', 'pagado', 100.00);
-        $this->contar(1, 0, 10); // 200 + 100 = 300
+        $this->venta('efectivo', 'confirmado', 100.00);
+        $this->post('/caja/movimientos', ['tipo' => 'ingreso', 'monto' => '20', 'motivo' => 'cambio']);
+        $this->contar(1, 0, 12); // 200 + 100 + 20 = 320
         $this->assertRedirige('/caja/arqueo', $this->post('/caja/arqueo', ['observacion' => '']));
 
         $this->entrarComo('admin');
+        $this->assertStringContainsString('data-confirmar="¿Ocultar del historial', $this->get('/caja')->cuerpo);
         $r = $this->post('/caja/limpiar-historial');
 
         $this->assertRedirige('/caja', $r);
-        $this->assertNull(Caja::buscar($this->cajaId));
-        $this->assertNull(Arqueo::porCaja($this->cajaId));
-        $this->assertSame(0, (int) DB::valor('SELECT COUNT(*) FROM arqueos WHERE caja_id = ?', [$this->cajaId]));
-        $this->assertSame(0, (int) DB::valor('SELECT COUNT(*) FROM ventas WHERE caja_id = ?', [$this->cajaId]));
-        $this->assertSame(0, (int) DB::valor('SELECT COUNT(*) FROM movimientos_caja WHERE caja_id = ?', [$this->cajaId]));
-        $this->assertCount(1, Bitacora::ultimos('caja.limpiar_historial'));
+        $caja = Caja::buscar($this->cajaId);
+        $this->assertNotNull($caja);
+        $this->assertSame(1, (int) $caja['archivada']);
+        $this->assertNotNull(Arqueo::porCaja($this->cajaId));
+        $this->assertSame(1, (int) DB::valor('SELECT COUNT(*) FROM ventas WHERE caja_id = ?', [$this->cajaId]));
+        $this->assertSame(1, (int) DB::valor('SELECT COUNT(*) FROM movimientos_caja WHERE caja_id = ?', [$this->cajaId]));
+        $this->assertNotContains($this->cajaId, array_map('intval', array_column(Caja::ultimas(), 'id')));
+        $registro = Bitacora::ultimos('caja.limpiar_historial');
+        $this->assertCount(1, $registro);
+        $this->assertStringContainsString('"archivadas":1', (string) $registro[0]['detalle']);
     }
 }

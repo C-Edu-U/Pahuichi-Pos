@@ -125,7 +125,7 @@ $sobrante = $diferencia > 0;
           </div>
           <div class="panel-bloque__pie">
             <button class="boton boton--primario" type="submit"><?= icono('check') ?> Confirmar cierre y arquear</button>
-            <a class="boton boton--fantasma" href="/caja/cierre"><?= icono('borrar') ?> Corregir el conteo</a>
+            <a class="boton boton--fantasma" href="/caja/cierre"><?= icono('editar') ?> Corregir el conteo</a>
           </div>
         </form>
 <?php endif; ?>
