@@ -102,7 +102,7 @@ final class CuadriculaPosTest extends CasoPrueba
 
     public function testEntregaLosDatosQueUsaElCarrito(): void
     {
-        preg_match('/<div class="pos" id="pos" data-productos="([^"]+)">/', $this->pos(), $m);
+        preg_match('/data-productos="([^"]+)"/', $this->pos(), $m);
         $datos = json_decode(html_entity_decode($m[1]), true);
 
         $majadito = array_values(array_filter($datos, fn (array $p): bool => $p['codigo'] === 'PL-01'))[0];
