@@ -40,6 +40,12 @@ final class Usuario
         return DB::filas("SELECT * FROM usuarios WHERE rol = 'cajero' AND activo = 1 AND pin_hash IS NOT NULL");
     }
 
+    /** Administradores que pueden autorizar con su PIN (HU-06). */
+    public static function administradoresConPin(): array
+    {
+        return DB::filas("SELECT * FROM usuarios WHERE rol = 'administrador' AND activo = 1 AND pin_hash IS NOT NULL");
+    }
+
     public static function bloqueadoHasta(array $u): ?DateTimeImmutable
     {
         if ($u['bloqueado_hasta'] === null) {

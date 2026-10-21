@@ -9,6 +9,7 @@ declare(strict_types=1);
  */
 
 use App\Controllers\AuthController;
+use App\Controllers\AutorizacionController;
 use App\Controllers\BitacoraController;
 use App\Controllers\CajaController;
 use App\Controllers\CategoriaController;
@@ -91,6 +92,8 @@ $router->get('/pos', [PosController::class, 'index'], ['auth', 'permiso:modulo.p
 
 // HU-57: cobro mínimo y consulta persistente. CSRF se aplica globalmente.
 $router->post('/pos/cobrar', [PosController::class, 'cobrar'], ['auth', 'permiso:modulo.pos']);
+// HU-06: PIN del administrador para el descuento manual (y la anulación de HU-44)
+$router->post('/autorizaciones', [AutorizacionController::class, 'crear'], ['auth', 'permiso:modulo.pos']);
 $router->get('/ventas', [FacturaController::class, 'index'], ['auth', 'permiso:modulo.ventas']);
 $router->get('/facturas/{id}', [FacturaController::class, 'mostrar'], ['auth', 'permiso:modulo.ventas']);
 

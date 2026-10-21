@@ -14,7 +14,11 @@ use App\Models\Producto;
 use App\Models\Venta;
 use DomainException;
 
-/** Soporte de HU-57: cobro en efectivo, sin promociones ni QR de pago. */
+/**
+ * Soporte de HU-57: cobro en efectivo, sin promociones ni QR de pago.
+ * HU-06: descuento manual con el permiso de un solo uso que entregó el PIN del
+ * administrador (AutorizacionService); el permiso se gasta recién al guardar la venta.
+ */
 final class VentaService
 {
     public static function decimal(int $centavos): string
@@ -59,8 +63,11 @@ final class VentaService
         $esperado = self::centavos($d['total_esperado'] ?? null);
         $cajaId = filter_var($d['caja_id'] ?? null, FILTER_VALIDATE_INT);
         if (!$cajaId || $cajaId < 1) throw new DomainException('Recarga el punto de venta para revisar la caja.');
-        $hash = hash('sha256', json_encode([$cajaId, $tipo, $mesa, $cantidades, $exacto, $recibido, $esperado], JSON_THROW_ON_ERROR));
-        return DB::transaccion(static function () use ($uuid, $hash, $tipo, $mesa, $cantidades, $exacto, $recibido, $esperado, $cajaId): array {
+        $descuento = ($d['descuento'] ?? '') === '' ? 0 : self::centavos($d['descuento']);
+        $token = is_string($d['autorizacion'] ?? null) ? $d['autorizacion'] : '';
+        $hash = hash('sha256', json_encode([$cajaId, $tipo, $mesa, $cantidades, $exacto, $recibido, $esperado, $descuento], JSON_THROW_ON_ERROR));
+        $gastar = false;
+        $factura = DB::transaccion(static function () use ($uuid, $hash, $tipo, $mesa, $cantidades, $exacto, $recibido, $esperado, $cajaId, $descuento, $token, &$gastar): array {
             // Serializa cobros y cierre sobre la misma fila, y evita cambiar de caja silenciosamente.
             $caja = Venta::cajaParaCobrar($cajaId);
             $previa = Venta::porUuid($uuid);
@@ -87,6 +94,14 @@ final class VentaService
             }
             if ($total <= 0 || $total > 9999999999) throw new DomainException('El total está fuera del rango permitido. Revisa el pedido.');
             if ($total !== $esperado) throw new DomainException('Cambió el precio de un producto. Recarga y revisa el total antes de cobrar.');
+            $subtotal = $total;
+            $permiso = null;
+            if ($descuento > 0) {
+                $permiso = AutorizacionService::revisar($token, 'descuento');
+                if (self::centavos($permiso['monto']) !== $descuento) throw new AutorizacionInvalida('El descuento no coincide con el autorizado. Pide el PIN del administrador otra vez.');
+                if ($descuento >= $subtotal) throw new AutorizacionInvalida('El descuento debe ser menor que el subtotal del pedido.');
+                $total = $subtotal - $descuento;
+            }
             $rec = $exacto ? $total : $recibido;
             if ($rec < $total) throw new DomainException('El efectivo recibido no cubre el total.');
             // La configuración queda estable hasta confirmar la emisión.
@@ -98,18 +113,27 @@ final class VentaService
             $ahora = Reloj::ahora();
             $fecha = Reloj::sql($ahora);
             $ventaId = Venta::crear(['uuid' => $uuid, 'solicitud_hash' => $hash, 'caja_id' => $cajaId, 'usuario_id' => Auth::id(), 'tipo_pedido' => $tipo, 'mesa' => $mesa,
-                'subtotal' => self::decimal($total), 'total' => self::decimal($total), 'creado_en' => $fecha]);
+                'subtotal' => self::decimal($subtotal), 'descuento' => self::decimal($descuento), 'descuento_motivo' => $permiso['motivo'] ?? null,
+                'descuento_autorizado_por' => $permiso['admin_id'] ?? null, 'total' => self::decimal($total), 'creado_en' => $fecha]);
             foreach ($lineas as $l) Venta::detalle($ventaId, $l);
             Venta::pago($ventaId, self::decimal($total), self::decimal($rec), self::decimal($rec - $total));
             $s = ['pedido' => str_pad((string) $ventaId, 3, '0', STR_PAD_LEFT), 'factura' => $numero, 'tipo' => $tipo, 'mesa' => $mesa,
                 'cliente' => ['nombre' => 'S/N', 'doc' => '0'], 'cajero' => Auth::usuario()['nombre'], 'negocio' => $negocio, 'fiscal' => $fiscal,
                 'cuf' => Cuf::generar($negocio, $fiscal, $numero, $ahora), 'fecha_emision' => $fecha, 'fecha_larga' => $ahora->format('d/m/Y H:i'),
-                'lineas' => $lineas, 'subtotal' => self::decimal($total), 'descuento' => '0.00', 'total' => self::decimal($total),
+                'lineas' => $lineas, 'subtotal' => self::decimal($subtotal), 'descuento' => self::decimal($descuento), 'total' => self::decimal($total),
                 'literal' => NumeroALetras::convertir($total),
                 'recibido' => self::decimal($rec), 'cambio' => self::decimal($rec - $total), 'leyenda' => $leyenda['texto']];
             $id = Factura::crear($ventaId, $s, (int) $leyenda['id']);
             Bitacora::registrar('venta.cobro', 'ventas', $ventaId, ['factura_id' => $id, 'total' => $s['total'], 'metodo' => 'efectivo', 'leyenda_id' => $leyenda['id']]);
+            if ($permiso !== null) {
+                Bitacora::registrar('venta.descuento_manual', 'ventas', $ventaId, ['factura_id' => $id, 'monto' => $s['descuento'], 'motivo' => $permiso['motivo'],
+                    'subtotal' => $s['subtotal'], 'total' => $s['total'], 'autorizado_por' => $permiso['admin']]);
+                $gastar = true;
+            }
             return Factura::buscar($id);
         });
+        // Venta guardada: el permiso ya no sirve para otra
+        if ($gastar) AutorizacionService::consumir($token);
+        return $factura;
     }
 }

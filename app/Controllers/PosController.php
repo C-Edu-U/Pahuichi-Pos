@@ -9,6 +9,7 @@ use App\Core\Peticion;
 use App\Core\Respuesta;
 use App\Models\Categoria;
 use App\Models\Producto;
+use App\Services\AutorizacionInvalida;
 use App\Services\CajaService;
 use App\Services\VentaService;
 use DomainException;
@@ -55,6 +56,9 @@ final class PosController extends Controller
             $f = VentaService::cobrar($d);
             $s = isset($f['snapshot']) ? $f['snapshot'] : json_decode($f['snapshot_json'], true, 512, JSON_THROW_ON_ERROR);
             return Respuesta::json(['id' => (int) $f['id'], 'numero' => (int) $f['numero'], 'pedido' => $s['pedido'], 'cambio' => $s['cambio'], 'tickets' => '/facturas/' . $f['id']]);
+        } catch (AutorizacionInvalida $e) {
+            // El POS quita el descuento para pedir el PIN otra vez
+            return Respuesta::json(['error' => $e->getMessage(), 'descuento' => 'invalido'], 422);
         } catch (DomainException | JsonException $e) {
             return Respuesta::json(['error' => $e instanceof JsonException ? 'Revisa los productos del pedido.' : $e->getMessage()], 422);
         }

@@ -27,6 +27,8 @@ return [
         'sesion.fallo' => ['Intento de ingreso fallido', 'sesion', 'aviso'],
         'sesion.bloqueo' => ['Acceso bloqueado 15 minutos', 'sesion', 'peligro'],
         'acceso.denegado' => ['Acceso denegado', 'sesion', 'peligro'],
+        'autorizacion.fallo' => ['PIN de autorización errado', 'sesion', 'aviso'],
+        'autorizacion.bloqueo' => ['Autorización con PIN bloqueada 15 minutos', 'sesion', 'peligro'],
 
         'usuario.alta' => ['Alta de usuario', 'usuarios', 'neutra'],
         'usuario.rol' => ['Cambio de rol', 'usuarios', 'aviso'],
@@ -101,6 +103,6 @@ return [
         'precio' => 'Precio', 'turno' => 'Turno', 'cajero' => 'Cajero', 'usuario' => 'Usuario',
         'rol' => 'Rol', 'modo' => 'Con', 'intentos' => 'Intentos', 'hasta' => 'Hasta',
         'ruta' => 'Ruta', 'metodo' => 'Método', 'permiso' => 'Permiso', 'favorito' => 'Favorito',
-        'agotado' => 'Agotado', 'borradas' => 'Cajas borradas', 'archivadas' => 'Cajas archivadas', 'texto' => 'Texto', 'activo' => 'Activa', 'mediodia' => 'Medio día', 'noche' => 'Noche',
+        'agotado' => 'Agotado', 'borradas' => 'Cajas borradas', 'archivadas' => 'Cajas archivadas', 'accion' => 'Acción', 'autorizado_por' => 'Autorizó', 'subtotal' => 'Subtotal', 'texto' => 'Texto', 'activo' => 'Activa', 'mediodia' => 'Medio día', 'noche' => 'Noche',
     ],
 ];

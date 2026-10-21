@@ -128,12 +128,32 @@
     return li;
   }
 
+  /* HU-06: descuento manual autorizado con el PIN del administrador.
+     El servidor entrega un permiso de un solo uso; el cobro lo envía con el monto. */
+  var descuento = null; // {centavos, motivo, token, autorizo}
+  function centavos(bs) { return Math.round(bs * 100); }
+  function aCobrar() { return (centavos(carrito.total()) - (descuento ? descuento.centavos : 0)) / 100; }
+
   function pintar() {
     var ul = $('lineas');
     ul.innerHTML = '';
     carrito.lineas.forEach(function (l) { ul.appendChild(lineaHtml(l)); });
 
-    var total = P.bs(carrito.total());
+    // HU-06: el descuento se cae si el pedido se vacía o deja de ser menor que el subtotal
+    if (descuento && (carrito.vacio() || descuento.centavos >= centavos(carrito.total()))) {
+      if (!carrito.vacio()) P.aviso('Se quitó el descuento: ya no es menor que el subtotal.');
+      descuento = null;
+    }
+    $('desglose').hidden = !descuento;
+    if (descuento) {
+      $('t-subtotal').textContent = P.bs(carrito.total());
+      $('t-descuento').textContent = '−' + P.bs(descuento.centavos / 100);
+      $('t-descuento-motivo').textContent = '· ' + descuento.motivo;
+    }
+    $('descuento').textContent = descuento ? 'Quitar descuento' : 'Descuento';
+    $('descuento').disabled = carrito.vacio();
+
+    var total = P.bs(aCobrar());
     var unidades = carrito.unidades();
     $('lineas-vacio').hidden = !carrito.vacio();
     $('t-total').textContent = total;
@@ -263,6 +283,7 @@
     $('lineas').inert = valor;
     document.querySelector('.tipo-pedido').inert = valor;
     $('vaciar').disabled = valor || carrito.vacio();
+    $('descuento').disabled = valor || carrito.vacio();
     $('cobrar').disabled = enviando || (!pendiente && carrito.vacio());
     $('efectivo-exacto').disabled = valor || carrito.vacio();
     $('confirmar-cobro').disabled = enviando;
@@ -300,20 +321,20 @@
   });
   function cambio() {
     var recibido = Number($('recibido').value.replace(',', '.'));
-    $('cambio').textContent = 'Bs ' + P.bs(Math.max(0, recibido - carrito.total()));
+    $('cambio').textContent = 'Bs ' + P.bs(Math.max(0, recibido - aCobrar()));
   }
   $('recibido').addEventListener('input', cambio);
   document.querySelectorAll('[data-billete]').forEach(function (b) {
     b.addEventListener('click', function () {
-      $('recibido').value = b.dataset.billete === 'exacto' ? carrito.total().toFixed(2) : b.dataset.billete;
+      $('recibido').value = b.dataset.billete === 'exacto' ? aCobrar().toFixed(2) : b.dataset.billete;
       cambio();
     });
   });
   $('cobrar').addEventListener('click', function () {
     if (pendiente) { cobrar(false); return; }
     if (!exigirMesa()) return;
-    $('cobro-total').textContent = P.bs(carrito.total());
-    $('recibido').value = carrito.total().toFixed(2);
+    $('cobro-total').textContent = P.bs(aCobrar());
+    $('recibido').value = aCobrar().toFixed(2);
     errorCobro(''); cambio(); dialogoCobro.showModal(); $('recibido').focus();
   });
   async function cobrar(exacto) {
@@ -324,6 +345,8 @@
       pendiente = {uuid: crypto.randomUUID(), caja_id: $('pos').getAttribute('data-caja'),
         tipo: tipoPedido, mesa: $('mesa').value, exacto: exacto ? '1' : '0',
         recibido: $('recibido').value, total_esperado: carrito.total().toFixed(2),
+        descuento: descuento ? (descuento.centavos / 100).toFixed(2) : '', autorizacion: descuento ? descuento.token : '',
+        a_cobrar: aCobrar().toFixed(2),
         lineas: JSON.stringify(carrito.lineas.map(function (l) { return {id: Number(l.producto.id), cantidad: l.cantidad, nota: l.nota || ''}; }))};
       try { sessionStorage.setItem(claveCobro, JSON.stringify(pendiente)); }
       catch (e) { pendiente = null; errorCobro('Permite el almacenamiento de esta pestaña para proteger el reintento del cobro.'); return; }
@@ -337,12 +360,15 @@
       if (!respuesta.ok) {
         if (respuesta.status === 422) {
           sessionStorage.removeItem(claveCobro); pendiente = null;
+          // Permiso vencido o ya usado: se quita el descuento para pedir el PIN otra vez
+          if (datos.descuento === 'invalido') { descuento = null; pintar(); }
         }
         throw new Error(datos.error || 'No se pudo confirmar la respuesta. Reintenta el mismo cobro.');
       }
       sessionStorage.removeItem(claveCobro);
       pendiente = null;
       enviando = false;
+      descuento = null;
       carrito.vaciar();
       if (dialogoCobro.open) dialogoCobro.close();
       // El siguiente pedido vuelve a elegir su mesa
@@ -366,8 +392,62 @@
   try { pendiente = JSON.parse(sessionStorage.getItem(claveCobro) || 'null'); } catch (e) { pendiente = null; }
   if (pendiente) {
     bloquearPedido(true);
-    errorCobro('Hay un cobro pendiente de comprobar por Bs ' + pendiente.total_esperado + '. Pulsa Reintentar cobro para recuperar su factura.');
+    errorCobro('Hay un cobro pendiente de comprobar por Bs ' + (pendiente.a_cobrar || pendiente.total_esperado) + '. Pulsa Reintentar cobro para recuperar su factura.');
   }
+
+  /* HU-06: pedir el descuento. El administrador escribe su PIN en el mismo equipo;
+     el servidor valida el PIN, el bloqueo por intentos y entrega el permiso. */
+  var dialogoDescuento = $('modal-descuento');
+  function errorDescuento(texto, campo) {
+    $('descuento-error').textContent = texto;
+    $('descuento-error').hidden = !texto;
+    ['descuento-monto', 'descuento-motivo', 'descuento-pin'].forEach(function (id) {
+      if (id === campo) $(id).setAttribute('aria-invalid', 'true'); else $(id).removeAttribute('aria-invalid');
+    });
+    if (campo) $(campo).focus();
+  }
+  $('descuento').addEventListener('click', function () {
+    if (descuento) {
+      descuento = null; pintar();
+      anunciar('Descuento quitado.'); P.aviso('Descuento quitado.');
+      return;
+    }
+    $('descuento-monto').value = ''; $('descuento-motivo').value = ''; $('descuento-pin').value = '';
+    $('descuento-subtotal').textContent = 'Menor que el subtotal de Bs ' + P.bs(carrito.total()) + '.';
+    errorDescuento('');
+    dialogoDescuento.showModal();
+    $('descuento-monto').focus();
+  });
+  $('form-descuento').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var texto = $('descuento-monto').value.trim();
+    var monto = /^\d{1,8}([.,]\d{1,2})?$/.test(texto) ? centavos(Number(texto.replace(',', '.'))) : 0;
+    var motivo = $('descuento-motivo').value.trim();
+    var pin = $('descuento-pin').value;
+    if (monto < 1) return errorDescuento('Escribe el monto del descuento, con hasta dos decimales.', 'descuento-monto');
+    if (monto >= centavos(carrito.total())) return errorDescuento('El descuento debe ser menor que el subtotal de Bs ' + P.bs(carrito.total()) + '.', 'descuento-monto');
+    if (motivo.length < 3) return errorDescuento('Escribe el motivo del descuento.', 'descuento-motivo');
+    if (!/^\d{4,6}$/.test(pin)) return errorDescuento('Escribe el PIN del administrador, de 4 a 6 dígitos.', 'descuento-pin');
+    $('autorizar-descuento').disabled = true;
+    try {
+      var respuesta = await fetch('/autorizaciones', {method: 'POST',
+        headers: {'X-CSRF-Token': document.body.getAttribute('data-csrf') || '', 'Accept': 'application/json'},
+        body: new URLSearchParams({accion: 'descuento', monto: (monto / 100).toFixed(2), motivo: motivo, pin: pin})});
+      var datos = await respuesta.json();
+      $('descuento-pin').value = '';
+      if (!respuesta.ok) return errorDescuento(datos.error || 'No se pudo autorizar. Intenta otra vez.', 'descuento-pin');
+      descuento = {centavos: centavos(Number(datos.monto)), motivo: datos.motivo, token: datos.token, autorizo: datos.autorizado_por};
+      dialogoDescuento.close();
+      pintar();
+      var aviso = 'Descuento de Bs ' + P.bs(descuento.centavos / 100) + ' autorizado por ' + datos.autorizado_por + '.';
+      anunciar(aviso); P.aviso(aviso);
+      $('cobrar').focus();
+    } catch (err) {
+      errorDescuento('No hay conexión con el servidor. Intenta otra vez.', 'descuento-pin');
+    } finally {
+      $('autorizar-descuento').disabled = false;
+    }
+  });
 
   /* HU-33: atajos. F2 busca, F4 cobra, F8 cobra en efectivo exacto y Esc cancela.
      Con un modal abierto no actúan: Esc lo cierra (lo hace el propio dialog).

@@ -30,7 +30,12 @@ final class Venta
 
     public static function crear(array $d): int
     {
-        return DB::insertar('INSERT INTO ventas (uuid, solicitud_hash, caja_id, usuario_id, tipo_pedido, mesa, subtotal, total, creado_en) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', array_values($d));
+        return DB::insertar(
+            'INSERT INTO ventas (uuid, solicitud_hash, caja_id, usuario_id, tipo_pedido, mesa, subtotal, descuento, descuento_motivo, descuento_autorizado_por, total, creado_en)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [$d['uuid'], $d['solicitud_hash'], $d['caja_id'], $d['usuario_id'], $d['tipo_pedido'], $d['mesa'], $d['subtotal'],
+             $d['descuento'] ?? '0.00', $d['descuento_motivo'] ?? null, $d['descuento_autorizado_por'] ?? null, $d['total'], $d['creado_en']],
+        );
     }
 
     public static function detalle(int $id, array $l): void
