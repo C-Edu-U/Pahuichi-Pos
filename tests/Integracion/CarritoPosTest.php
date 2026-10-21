@@ -45,15 +45,15 @@ final class CarritoPosTest extends CasoPrueba
 
     public function testCancelarElPedidoPideConfirmacion(): void
     {
-        $this->assertMatchesRegularExpression('/id="vaciar" data-abrir-modal="modal-vaciar" disabled>/', $this->html);
+        $this->assertMatchesRegularExpression('/id="vaciar" data-abrir-modal="modal-vaciar"[^>]* disabled>/', $this->html);
         $this->assertStringContainsString('<dialog class="modal" id="modal-vaciar"', $this->html);
         $this->assertStringContainsString('<button class="boton boton--peligro" type="submit" value="vaciar">Cancelar pedido</button>', $this->html);
     }
 
     public function testElCobroSeHabilitaAlAgregarProductos(): void
     {
-        $this->assertMatchesRegularExpression('/id="cobrar" disabled/', $this->html);
-        $this->assertStringContainsString('id="efectivo-exacto" disabled', $this->html);
+        $this->assertMatchesRegularExpression('/id="cobrar"[^>]* disabled>/', $this->html);
+        $this->assertMatchesRegularExpression('/id="efectivo-exacto"[^>]* disabled>/', $this->html);
         $this->assertStringContainsString('id="modal-cobro"', $this->html);
         $this->assertStringNotContainsString('El cobro llega en el Sprint 3 (HU-37).', $this->html);
     }

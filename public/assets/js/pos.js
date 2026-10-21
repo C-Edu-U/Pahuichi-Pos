@@ -318,10 +318,36 @@
     errorCobro('Hay un cobro pendiente de comprobar por Bs ' + pendiente.total_esperado + '. Pulsa Reintentar cobro para recuperar su factura.');
   }
 
+  /* HU-33: atajos. F2 busca, F4 cobra, F8 cobra en efectivo exacto y Esc cancela.
+     Con un modal abierto no actúan: Esc lo cierra (lo hace el propio dialog).
+     Esc va por pasos, del más cercano al pedido: cierra la nota que se escribe,
+     luego borra la búsqueda y recién después pide confirmar la cancelación. */
   document.addEventListener('keydown', function (e) {
-    if (e.key !== 'F4' && e.key !== 'F8') return;
-    e.preventDefault();
+    if (['F2', 'F4', 'F8', 'Escape'].indexOf(e.key) === -1) return;
     if (document.querySelector('dialog[open]')) return;
+    if (e.key === 'F2') {
+      e.preventDefault();
+      buscador.focus(); buscador.select();
+      return;
+    }
+    if (e.key === 'Escape') {
+      var nota = e.target.closest && e.target.closest('.linea__nota');
+      if (nota) {
+        e.preventDefault();
+        nota.hidden = true;
+        var abre = nota.closest('.linea').querySelector('[data-nota]');
+        abre.setAttribute('aria-expanded', 'false'); abre.focus();
+        return;
+      }
+      if (e.target === buscador && buscador.value) {
+        e.preventDefault();
+        buscador.value = ''; filtrar(); anunciar('');
+        return;
+      }
+      if (!$('vaciar').disabled) { e.preventDefault(); $('vaciar').click(); }
+      return;
+    }
+    e.preventDefault();
     var b = $(e.key === 'F8' ? 'efectivo-exacto' : 'cobrar');
     if (!b.disabled) b.click();
   });
