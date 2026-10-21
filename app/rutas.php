@@ -16,6 +16,7 @@ use App\Controllers\ConfigController;
 use App\Controllers\InicioController;
 use App\Controllers\ModuloController;
 use App\Controllers\PosController;
+use App\Controllers\FacturaController;
 use App\Controllers\ProductoController;
 use App\Controllers\SaludController;
 use App\Controllers\UsuarioController;
@@ -78,6 +79,11 @@ $router->post('/caja/abrir', [CajaController::class, 'abrir'], ['auth', 'permiso
 // Punto de venta (HU-21): sin caja abierta no se vende
 $router->get('/pos', [PosController::class, 'index'], ['auth', 'permiso:modulo.pos', 'caja']);
 
+// HU-57: cobro mínimo y consulta persistente. CSRF se aplica globalmente.
+$router->post('/pos/cobrar', [PosController::class, 'cobrar'], ['auth', 'permiso:modulo.pos']);
+$router->get('/ventas', [FacturaController::class, 'index'], ['auth', 'permiso:modulo.ventas']);
+$router->get('/facturas/{id}', [FacturaController::class, 'mostrar'], ['auth', 'permiso:modulo.ventas']);
+
 // Bitácora (HU-05): solo lectura, solo el administrador
 $router->get('/bitacora', [BitacoraController::class, 'index'], ['auth', 'permiso:modulo.bitacora']);
 
@@ -87,3 +93,7 @@ foreach (Config::get('modulos') as $clave => $m) {
         $router->get($m['ruta'], [ModuloController::class, 'pendiente'], ['auth', "permiso:modulo.{$clave}"]);
     }
 }
+
+// Flujo recuperado de HU-10: tickets guardados y verificación del QR académico.
+$router->post('/facturas/{id}/reimpresion', [FacturaController::class, 'reimprimir'], ['auth', 'permiso:modulo.ventas']);
+$router->get('/verificar', [FacturaController::class, 'verificar']);

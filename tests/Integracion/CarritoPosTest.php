@@ -50,10 +50,12 @@ final class CarritoPosTest extends CasoPrueba
         $this->assertStringContainsString('<button class="boton boton--peligro" type="submit" value="vaciar">Cancelar pedido</button>', $this->html);
     }
 
-    public function testElCobroTodaviaNoEstaDisponible(): void
+    public function testElCobroSeHabilitaAlAgregarProductos(): void
     {
         $this->assertMatchesRegularExpression('/id="cobrar" disabled/', $this->html);
-        $this->assertStringContainsString('El cobro llega en el Sprint 3 (HU-37).', $this->html);
+        $this->assertStringContainsString('id="efectivo-exacto" disabled', $this->html);
+        $this->assertStringContainsString('id="modal-cobro"', $this->html);
+        $this->assertStringNotContainsString('El cobro llega en el Sprint 3 (HU-37).', $this->html);
     }
 
     public function testCadaProductoTraeSuPrecioYSiEstaAgotado(): void
