@@ -45,7 +45,7 @@ La base también se puede revisar con un cliente SQL en `127.0.0.1:3307` (usuari
 
 Los cajeros también tienen la contraseña `Pahuichi2026`. El PIN de autorización del administrador es `1234` (lo usarán la anulación y el descuento manual).
 
-## Estado: Sprint 1
+## Estado
 
 | Historia | Qué hace | Dónde |
 |---|---|---|
@@ -60,8 +60,12 @@ Los cajeros también tienen la contraseña `Pahuichi2026`. El PIN de autorizaci�
 | HU-14 | Productos; favorito y agotado de un toque | `/catalogo/productos` |
 | HU-20 | Abrir caja con turno, cajero y fondo; una sola caja abierta | `/caja` |
 | HU-21 | Sin caja abierta, el POS muestra «Abrir caja» | `/pos` |
+| HU-05 | Bitácora de solo lectura con filtros por fecha, usuario, acción y acciones sensibles | `/bitacora` |
+| HU-28 | Cuadrícula del POS: favoritos primero, categorías con su color, búsqueda por nombre o código; agotado visible sin poder venderse | `/pos` |
+| HU-29 | Carrito: un toque agrega y otro suma; +, − y quitar por línea; total siempre visible; cancelar pedido con confirmación | `/pos` |
+| HU-10 | Leyendas de la Ley 453: agregar, activar y desactivar con mínimo 8 activas; `Leyenda::alAzar()` elige una para cada factura | `/config#leyendas` |
 
-El resto de los módulos muestra «Próximamente» con sus historias. Toda acción sensible queda en la tabla `bitacora` (su pantalla llega con HU-05).
+El resto de los módulos muestra «Próximamente» con sus historias. Toda acción sensible queda en la bitácora; al registrar una acción nueva, agrégala a `config/bitacora.php` para que se vea con su nombre.
 
 ### Guía para el QA
 
