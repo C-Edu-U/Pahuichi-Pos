@@ -64,6 +64,7 @@ Los cajeros también tienen la contraseña `Pahuichi2026`. El PIN de autorizaci�
 | HU-28 | Cuadrícula del POS: favoritos primero, categorías con su color, búsqueda por nombre o código; agotado visible sin poder venderse | `/pos` |
 | HU-29 | Carrito: un toque agrega y otro suma; +, − y quitar por línea; total siempre visible; cancelar pedido con confirmación | `/pos` |
 | HU-10 | Leyendas de la Ley 453: agregar, activar y desactivar con mínimo 8 activas; `Leyenda::alAzar()` elige una para cada factura | `/config#leyendas` |
+| HU-30 | Tipo de pedido: mesa con su número (1 a 99, sin valor por defecto) o para llevar; la comanda dice «MESA 4» o «PARA LLEVAR» | `/pos` |
 | HU-33 | Atajos del POS: F2 buscar, F4 cobrar, F8 efectivo exacto, Esc cancelar con confirmación; cada tecla se ve en su botón | `/pos` |
 
 El resto de los módulos muestra «Próximamente» con sus historias. Toda acción sensible queda en la bitácora; al registrar una acción nueva, agrégala a `config/bitacora.php` para que se vea con su nombre.
@@ -78,7 +79,8 @@ Los escenarios Gherkin del Sprint 1 tienen prueba automática en `tests/Integrac
 4. **Permiso validado en el servidor:** como cajero, escribe a mano https://localhost:8443/usuarios → «acceso denegado» sin datos.
 5. **Sin caja no se vende:** como cajero, el punto de venta muestra «Abrir caja».
 6. **Una sola caja:** con dos navegadores (o una ventana de incógnito), deja a Jorge (PIN 7350) en «Abrir caja» con el turno de noche. En el otro, abre la caja de medio día con Mariela. Luego envía el formulario de Jorge → el sistema lo impide y explica que primero se debe cerrar y arquear la caja de medio día.
-7. **Atajos del POS:** con la caja abierta, F2 lleva el foco a la búsqueda. Agrega dos productos: F4 abre el cobro y Esc lo cierra sin perder el pedido. Esc dentro de una nota la cierra, Esc en una búsqueda con texto la borra y, después, Esc pide confirmar la cancelación con «Seguir vendiendo» enfocado (Enter no borra el pedido). F8 cobra en efectivo exacto.
+7. **Mesa o para llevar:** agrega un plato y pulsa F8 sin escribir la mesa → no cobra, marca el campo y pide el número. Escribe 4 y cobra: en «Ver tickets» la comanda dice «MESA 4». El pedido siguiente vuelve a pedir la mesa; con «Llevar» la comanda dice «PARA LLEVAR».
+8. **Atajos del POS:** con la caja abierta, F2 lleva el foco a la búsqueda. Agrega dos productos: F4 abre el cobro y Esc lo cierra sin perder el pedido. Esc dentro de una nota la cierra, Esc en una búsqueda con texto la borra y, después, Esc pide confirmar la cancelación con «Seguir vendiendo» enfocado (Enter no borra el pedido). F8 cobra en efectivo exacto.
 
 Para repetir las pruebas desde cero: `docker compose exec app php bin/consola.php reiniciar`. El CUFD de los datos de prueba vence a las 23:59 del día en que se cargaron; al día siguiente la configuración lo muestra como vencido, que es lo esperado.
 

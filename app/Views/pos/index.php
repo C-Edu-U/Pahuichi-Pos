@@ -93,8 +93,8 @@ $datos = array_map(static fn (array $p): array => [
                 <button class="tipo-pedido__opcion" type="button" data-tipo="llevar" aria-pressed="false">
                   <svg class="icono icono--sm" aria-hidden="true"><use href="#i-llevar"></use></svg>Llevar
                 </button>
-                <label class="visualmente-oculto" for="mesa">Número de mesa</label>
-                <input class="control control--numero tipo-pedido__mesa" id="mesa" type="text" inputmode="numeric" maxlength="2" value="1">
+                <label class="visualmente-oculto" for="mesa">Número de mesa, de 1 a 99</label>
+                <input class="control control--numero tipo-pedido__mesa" id="mesa" type="text" inputmode="numeric" maxlength="2" value="" placeholder="N°" autocomplete="off" aria-describedby="cobro-error">
               </div>
             </div>
 
