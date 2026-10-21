@@ -48,6 +48,7 @@ $config = ['auth', 'permiso:modulo.config'];
 $router->get('/config', [ConfigController::class, 'index'], $config);
 $router->post('/config/negocio', [ConfigController::class, 'negocio'], $config);
 $router->post('/config/fiscal', [ConfigController::class, 'fiscal'], $config);
+$router->post('/config/caja-cobro', [ConfigController::class, 'cajaCobro'], $config);
 $router->post('/config/turnos', [ConfigController::class, 'turnos'], $config);
 // Leyendas de la Ley 453 (HU-10)
 $router->post('/config/leyendas', [ConfigController::class, 'agregarLeyenda'], $config);
@@ -75,6 +76,15 @@ $router->post('/catalogo/categorias/{id}/estado', [CategoriaController::class, '
 // Caja (HU-20)
 $router->get('/caja', [CajaController::class, 'index'], ['auth', 'permiso:modulo.caja']);
 $router->post('/caja/abrir', [CajaController::class, 'abrir'], ['auth', 'permiso:modulo.caja']);
+$router->post('/caja/cerrar', [CajaController::class, 'cerrar'], ['auth', 'permiso:modulo.caja']);
+$router->post('/caja/movimientos', [CajaController::class, 'movimiento'], ['auth', 'permiso:caja.movimiento']);
+$router->get('/caja/cierre', [CajaController::class, 'cierre'], ['auth', 'permiso:modulo.caja']);
+$router->post('/caja/conteo', [CajaController::class, 'conteo'], ['auth', 'permiso:modulo.caja']);
+$router->get('/caja/arqueo', [CajaController::class, 'arqueo'], ['auth', 'permiso:modulo.caja']);
+$router->post('/caja/arqueo', [CajaController::class, 'confirmarArqueo'], ['auth', 'permiso:modulo.caja']);
+$router->get('/caja/reporte/{id}', [CajaController::class, 'reporte'], ['auth', 'permiso:modulo.caja']);
+$router->post('/caja/reabrir/{id}', [CajaController::class, 'reabrir'], ['auth', 'permiso:caja.reabrir']);
+$router->post('/caja/limpiar-historial', [CajaController::class, 'limpiarHistorial'], ['auth', 'permiso:caja.limpiar_historial']);
 
 // Punto de venta (HU-21): sin caja abierta no se vende
 $router->get('/pos', [PosController::class, 'index'], ['auth', 'permiso:modulo.pos', 'caja']);

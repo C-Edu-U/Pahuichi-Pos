@@ -89,6 +89,66 @@ final class CajaService
         return $id;
     }
 
+    /** Cierra la caja abierta. Solo el cajero que la abrió o un administrador. */
+    public function cerrar(int $quienCierraId, string $quienCierraRol): void
+    {
+        $abierta = Caja::abierta();
+        if ($abierta === null) {
+            throw new DomainException('No hay una caja abierta para cerrar.');
+        }
+        if ($quienCierraRol !== 'administrador' && (int) $abierta['cajero_id'] !== $quienCierraId) {
+            throw new DomainException('Solo puedes cerrar tu propia caja.');
+        }
+
+        Caja::cerrar((int) $abierta['id'], Reloj::sql());
+
+        Bitacora::registrar('caja.cierre', 'cajas', (int) $abierta['id'], [
+            'turno' => $abierta['turno'],
+            'cajero' => $abierta['cajero'],
+            'fondo_inicial' => number_format((float) $abierta['fondo_inicial'], 2, '.', ''),
+        ]);
+    }
+
+    /**
+     * Reabre una caja cerrada para que su turno se pueda volver a usar (solo administrador).
+     *
+     * Borra el conteo y el arqueo del intento anterior. Las ventas y los movimientos
+     * del turno se conservan: siguen siendo de ese turno.
+     */
+    public function reabrir(int $id): void
+    {
+        $caja = Caja::buscar($id);
+        if ($caja === null) {
+            throw new DomainException('Esa caja no existe.');
+        }
+        if ($caja['estado'] !== 'cerrada') {
+            throw new DomainException('Solo se puede reabrir una caja cerrada.');
+        }
+        if (Caja::abierta() !== null) {
+            throw new DomainException('Ya hay una caja abierta: ciérrala antes de reabrir otra.');
+        }
+
+        DB::transaccion(static function () use ($id): void {
+            DB::consulta('DELETE FROM arqueos WHERE caja_id = ?', [$id]);
+            DB::consulta("UPDATE cajas SET estado = 'abierta', cerrada_en = NULL WHERE id = ?", [$id]);
+        });
+
+        Bitacora::registrar('caja.reabrir', 'cajas', $id, [
+            'turno' => $caja['turno'],
+            'cajero' => $caja['cajero'],
+            'fondo_inicial' => number_format((float) $caja['fondo_inicial'], 2, '.', ''),
+        ]);
+    }
+
+    /**
+     * Oculta del historial todas las cajas cerradas. Solo el administrador.
+     * No borra nada: arqueos, movimientos, ventas y facturas se conservan (RNF-20).
+     */
+    public function limpiarHistorial(): int
+    {
+        return Caja::archivarCerradas();
+    }
+
     private function sinCajaAbierta(): void
     {
         $abierta = Caja::abierta();

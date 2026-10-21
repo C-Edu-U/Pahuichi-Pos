@@ -30,6 +30,9 @@ return [
 
     // Acciones dentro de los módulos
     'caja.abrir_para_otro' => $admin,
+    'caja.cerrar' => $caja,
+    'caja.movimiento' => $caja,
+    'caja.limpiar_historial' => $admin,
     'caja.reabrir' => $admin,
     'ventas.todas' => $admin,
     'conciliacion.resolver' => $admin,

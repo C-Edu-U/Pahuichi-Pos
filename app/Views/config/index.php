@@ -163,6 +163,14 @@ $cufdVigente = !isset($errores['f-vigencia']) && ParametrosFiscales::cufdVigente
 <?php foreach ($turnos as $t): $id = (int) $t['id']; ?>
               <fieldset class="turno">
                 <legend><?= e($t['nombre']) ?></legend>
+                <div class="campo campo--ancho">
+                  <label class="campo__etiqueta" for="eliminar-turno-<?= $id ?>">
+                    <input class="casilla__input" id="eliminar-turno-<?= $id ?>" name="turnos_eliminar[]" type="checkbox" value="<?= $id ?>">
+                    Eliminar este turno
+                  </label>
+                  <p class="campo__ayuda">Solo se puede eliminar si no tiene cajas hoy y no está en curso.</p>
+                  <?= mensaje_error($errores, "e{$id}") ?>
+                </div>
                 <div class="campo">
                   <label class="campo__etiqueta" for="t<?= $id ?>-ini">Desde</label>
                   <input class="control" id="t<?= $id ?>-ini" name="turnos[<?= $id ?>][inicio]" type="time" value="<?= e(Turno::horaControl($t['hora_inicio'])) ?>"<?= campo_error($errores, "t{$id}-ini") ?>>
@@ -174,18 +182,80 @@ $cufdVigente = !isset($errores['f-vigencia']) && ParametrosFiscales::cufdVigente
                   <p class="campo__ayuda" id="t<?= $id ?>-fin-ayuda">23:59 es hasta medianoche.</p>
                   <?= mensaje_error($errores, "t{$id}-fin") ?>
                 </div>
+<?php if (Turno::estaEnCurso($id)): ?>
+                <p class="campo__ayuda campo__ayuda--aviso">Este turno está en curso ahora: su horario no se puede editar hasta que termine.</p>
+<?php endif; ?>
               </fieldset>
 <?php endforeach; ?>
-              <p class="config__nota">Un turno no abre si la caja del anterior no está cerrada y arqueada.</p>
+
+              <?= isset($errores['eliminar_general']) ? '<p class="alerta alerta--peligro campo--ancho" role="alert">' . e($errores['eliminar_general']) . '</p>' : '' ?>
+
+              <fieldset class="turno turno--nuevo">
+                <legend>Agregar turno</legend>
+                <div class="campo">
+                  <label class="campo__etiqueta" for="nueva_clave">Clave (p. ej. "madrugada")</label>
+                  <input class="control" id="nueva_clave" name="nueva_clave" type="text" maxlength="20" value="<?= e($viejo['nueva_clave'] ?? '') ?>"<?= campo_error($errores, 'nueva_clave') ?>>
+                  <?= mensaje_error($errores, 'nueva_clave') ?>
+                </div>
+                <div class="campo">
+                  <label class="campo__etiqueta" for="nuevo_nombre">Nombre</label>
+                  <input class="control" id="nuevo_nombre" name="nuevo_nombre" type="text" maxlength="30" value="<?= e($viejo['nuevo_nombre'] ?? '') ?>"<?= campo_error($errores, 'nuevo_nombre') ?>>
+                  <?= mensaje_error($errores, 'nuevo_nombre') ?>
+                </div>
+                <div class="campo">
+                  <label class="campo__etiqueta" for="nuevo_inicio">Desde</label>
+                  <input class="control" id="nuevo_inicio" name="nuevo_inicio" type="time" value="<?= e($viejo['nuevo_inicio'] ?? '') ?>"<?= campo_error($errores, 'nuevo_inicio') ?>>
+                  <?= mensaje_error($errores, 'nuevo_inicio') ?>
+                </div>
+                <div class="campo">
+                  <label class="campo__etiqueta" for="nuevo_fin">Hasta</label>
+                  <input class="control" id="nuevo_fin" name="nuevo_fin" type="time" value="<?= e($viejo['nuevo_fin'] ?? '') ?>"<?= campo_error($errores, 'nuevo_fin') ?>>
+                  <p class="campo__ayuda" id="nuevo_fin-ayuda">23:59 es hasta medianoche.</p>
+                  <?= mensaje_error($errores, 'nuevo_fin') ?>
+                </div>
+                <div class="campo">
+                  <label class="campo__etiqueta" for="nuevo_orden">Orden</label>
+                  <input class="control control--numero" id="nuevo_orden" name="nuevo_orden" type="text" inputmode="numeric" value="<?= e($viejo['nuevo_orden'] ?? '') ?>"<?= campo_error($errores, 'nuevo_orden') ?>>
+                  <?= mensaje_error($errores, 'nuevo_orden') ?>
+                </div>
+                <?= isset($errores['nuevo_general']) ? '<p class="alerta alerta--peligro campo--ancho" role="alert">' . e($errores['nuevo_general']) . '</p>' : '' ?>
+              </fieldset>
+              <p class="config__nota">Un turno no abre si la caja del anterior no está cerrada y arqueada. Un turno en curso no se puede editar ni eliminar. El turno siempre termina después de empezar: 23:59 es hasta medianoche.</p>
+            </div>
+            <div class="panel-bloque__pie">
+              <button class="boton boton--primario" type="submit">Guardar cambios</button>
+              <button class="boton boton--fantasma" type="submit" name="agregar" value="1">Agregar turno</button>
+              <button class="boton boton--peligro" type="submit" name="eliminar" value="1" data-confirmar="¿Eliminar los turnos marcados?">Eliminar marcados</button>
+            </div>
+          </form>
+
+<?php
+$pendiente('impresoras', 'Impresoras', 'HU-12', 'Ancho de 76 o 58 mm, columnas y qué ticket imprime cada una.');
+?>
+
+          <form class="panel-bloque config__seccion" id="caja-cobro" method="post" action="/config/caja-cobro" novalidate aria-labelledby="t-caja-cobro">
+            <?= csrf_campo() ?>
+            <div class="panel-bloque__cabecera">
+              <h2 class="panel-bloque__titulo" id="t-caja-cobro">Caja y cobro</h2>
+            </div>
+            <div class="panel-bloque__cuerpo formulario-rapido__campos">
+              <div class="campo">
+                <label class="campo__etiqueta" for="f-umbral">Umbral de la observación obligatoria</label>
+                <div class="control-grupo">
+                  <span class="control-grupo__prefijo" aria-hidden="true">Bs</span>
+                  <input class="control control--numero" id="f-umbral" name="umbral_observacion" type="text" inputmode="decimal" value="<?= e(bs($umbralObservacion)) ?>"<?= campo_error($errores, 'f-umbral', 'f-umbral-ayuda') ?>>
+                </div>
+                <p class="campo__ayuda" id="f-umbral-ayuda">Si la diferencia del arqueo llega a este monto, el cajero tiene que escribir una observación antes de cerrar.</p>
+                <?= mensaje_error($errores, 'f-umbral') ?>
+              </div>
             </div>
             <div class="panel-bloque__pie">
               <button class="boton boton--primario" type="submit">Guardar</button>
             </div>
+            <div class="panel-bloque__cuerpo">
+              <p class="config__nota">El monto fijo del QR del día llega con HU-38.</p>
+            </div>
           </form>
-
-<?php $pendiente('impresoras', 'Impresoras', 'HU-12', 'Ancho de 76 o 58 mm, columnas y qué ticket imprime cada una.'); ?>
-
-<?php $pendiente('caja-cobro', 'Caja y cobro', 'HU-26, HU-38', 'Umbral de la observación obligatoria en el cierre (Bs 10) y monto fijo del QR del día (Bs 0,50).'); ?>
 
           <section class="panel-bloque config__seccion" id="seguridad" aria-labelledby="t-seguridad">
             <div class="panel-bloque__cabecera">

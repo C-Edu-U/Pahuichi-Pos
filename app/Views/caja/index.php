@@ -1,7 +1,8 @@
 <?php
 /**
  * Caja. Variables: $abierta (caja abierta o null), $turnos, $cajeros, $usuario, $historial,
- * $errores, $bloqueo (motivo por el que no se pudo abrir), $viejo (turno_id, cajero_id, fondo).
+ * $errores, $bloqueo (motivo por el que no se pudo abrir), $viejo (turno_id, cajero_id, fondo,
+ * tipo, monto, motivo), $movimientos, $totales.
  */
 use App\Models\Turno;
 
@@ -94,7 +95,8 @@ $fecha = static fn (string $momento): string => (new DateTimeImmutable($momento)
               Cierre ciego: el efectivo esperado se muestra recién en el resumen, después de contar. Llega con HU-23 a HU-26.
             </p>
             <div class="panel-bloque__pie">
-              <a class="boton boton--primario" href="/pos"><?= icono('pos') ?> Ir al punto de venta</a>
+              <a class="boton boton--primario" href="/caja/cierre"><?= icono('billete') ?> Contar y cerrar caja</a>
+              <a class="boton boton--fantasma" href="/pos"><?= icono('pos') ?> Ir al punto de venta</a>
             </div>
           </div>
         </section>
@@ -102,9 +104,79 @@ $fecha = static fn (string $momento): string => (new DateTimeImmutable($momento)
         <section class="caja__movimientos" aria-labelledby="t-movimientos">
           <div class="seccion__cabeza">
             <h2 id="t-movimientos">Ingresos y egresos</h2>
-            <span class="insignia insignia--aviso">Próximamente · HU-22</span>
+            <span class="insignia insignia--neutra">HU-22</span>
           </div>
-          <p class="cabeza-pagina__texto">Movimientos de efectivo durante el turno, con monto, motivo y responsable.</p>
+
+          <form class="panel-bloque" id="form-movimiento" method="post" action="/caja/movimientos" novalidate>
+            <?= csrf_campo() ?>
+            <div class="panel-bloque__cabecera">
+              <h3 class="panel-bloque__titulo">Registrar movimiento</h3>
+            </div>
+            <div class="panel-bloque__cuerpo formulario-rapido__campos">
+              <div class="campo">
+                <label class="campo__etiqueta" for="mov-tipo">Tipo</label>
+                <select class="control" id="mov-tipo" name="tipo"<?= campo_error($errores, 'tipo') ?>>
+                  <option value="egreso"<?= $viejo['tipo'] === 'egreso' ? ' selected' : '' ?>>Egreso (sale dinero)</option>
+                  <option value="ingreso"<?= $viejo['tipo'] === 'ingreso' ? ' selected' : '' ?>>Ingreso (entra dinero)</option>
+                </select>
+                <?= mensaje_error($errores, 'tipo') ?>
+              </div>
+              <div class="campo">
+                <label class="campo__etiqueta" for="mov-monto">Monto</label>
+                <div class="control-grupo">
+                  <span class="control-grupo__prefijo" aria-hidden="true">Bs</span>
+                  <input class="control control--numero" id="mov-monto" name="monto" type="text" inputmode="decimal" value="<?= e($viejo['monto']) ?>" autocomplete="off"<?= campo_error($errores, 'monto') ?>>
+                </div>
+                <?= mensaje_error($errores, 'monto') ?>
+              </div>
+              <div class="campo campo--ancho">
+                <label class="campo__etiqueta" for="mov-motivo">Motivo</label>
+                <input class="control" id="mov-motivo" name="motivo" type="text" maxlength="200" value="<?= e($viejo['motivo']) ?>" placeholder="Compra de hielo"<?= campo_error($errores, 'motivo') ?>>
+                <?= mensaje_error($errores, 'motivo') ?>
+              </div>
+            </div>
+            <div class="panel-bloque__pie">
+              <button class="boton boton--primario" type="submit">Registrar</button>
+            </div>
+          </form>
+
+<?php if ($movimientos !== []): ?>
+          <dl class="resumen resumen--sin-borde">
+            <div class="resumen__fila"><dt>Ingresos del turno</dt><dd class="num"><?= bs($totales['ingresos']) ?></dd></div>
+            <div class="resumen__fila"><dt>Egresos del turno</dt><dd class="num"><?= bs($totales['egresos']) ?></dd></div>
+            <div class="resumen__fila"><dt>Efectivo en caja por movimientos</dt><dd class="num"><?= bs($totales['neto']) ?></dd></div>
+          </dl>
+
+          <div class="tabla-contenedor">
+            <table class="tabla tabla--fichas">
+              <caption class="visualmente-oculto">Movimientos de efectivo del turno</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Hora</th>
+                  <th scope="col">Tipo</th>
+                  <th scope="col" class="col-num">Monto</th>
+                  <th scope="col">Motivo</th>
+                  <th scope="col">Responsable</th>
+                </tr>
+              </thead>
+              <tbody>
+<?php foreach ($movimientos as $m): ?>
+                <tr>
+                  <td class="num"><?= e(substr($m['creado_en'], 11, 5)) ?></td>
+                  <td><?= $m['tipo'] === 'ingreso'
+                      ? '<span class="insignia insignia--ok">Ingreso</span>'
+                      : '<span class="insignia insignia--aviso">Egreso</span>' ?></td>
+                  <td class="col-num num"><?= bs($m['monto']) ?></td>
+                  <td><?= e($m['motivo']) ?></td>
+                  <td><?= e($m['usuario']) ?></td>
+                </tr>
+<?php endforeach; ?>
+              </tbody>
+            </table>
+          </div>
+<?php else: ?>
+          <p class="cabeza-pagina__texto">Todavía no hay ingresos ni egresos en este turno.</p>
+<?php endif; ?>
         </section>
       </div>
 <?php endif; ?>
@@ -120,23 +192,41 @@ $fecha = static fn (string $momento): string => (new DateTimeImmutable($momento)
                 <th scope="col">Fecha y turno</th>
                 <th scope="col">Cajero</th>
                 <th scope="col">Abierta</th>
-                <th scope="col" class="col-num">Fondo</th>
-                <th scope="col">Estado</th>
-              </tr>
-            </thead>
-            <tbody>
+                  <th scope="col" class="col-num">Fondo</th>
+                  <th scope="col">Estado</th>
+                  <th scope="col"><span class="visualmente-oculto">Reporte</span></th>
+                </tr>
+              </thead>
+              <tbody>
 <?php foreach ($historial as $c): ?>
-              <tr>
-                <td><span class="tabla__principal"><?= e((new DateTimeImmutable($c['fecha']))->format('d/m')) ?> · <?= e($c['turno']) ?></span><span class="tabla__secundario num"><?= e(Turno::horario($c)) ?></span></td>
-                <td><?= e($c['cajero']) ?></td>
-                <td class="num"><?= e($fecha($c['abierta_en'])) ?></td>
-                <td class="col-num num"><?= bs($c['fondo_inicial']) ?></td>
-                <td><?= $c['estado'] === 'abierta' ? '<span class="insignia insignia--ok">Abierta</span>' : '<span class="insignia insignia--neutra">Cerrada</span>' ?></td>
-              </tr>
+                <tr>
+                  <td><span class="tabla__principal"><?= e((new DateTimeImmutable($c['fecha']))->format('d/m')) ?> · <?= e($c['turno']) ?></span><span class="tabla__secundario num"><?= e(Turno::horario($c)) ?></span></td>
+                  <td><?= e($c['cajero']) ?></td>
+                  <td class="num"><?= e($fecha($c['abierta_en'])) ?></td>
+                  <td class="col-num num"><?= bs($c['fondo_inicial']) ?></td>
+                  <td><?= $c['estado'] === 'abierta' ? '<span class="insignia insignia--ok">Abierta</span>' : '<span class="insignia insignia--neutra">Cerrada</span>' ?></td>
+                  <td>
+<?php if ($c['estado'] === 'cerrada'): ?>
+                    <a class="boton boton--fantasma" href="/caja/reporte/<?= (int) $c['id'] ?>"><?= icono('imprimir') ?> Reporte</a>
+<?php endif; ?>
+<?php if ($c['estado'] === 'cerrada' && puede('caja.reabrir')): ?>
+                    <form class="form-inline" method="post" action="/caja/reabrir/<?= (int) $c['id'] ?>" data-confirmar="¿Reabrir esta caja? Se borra su conteo y su arqueo para poder cerrar el turno otra vez.">
+                      <?= csrf_campo() ?>
+                      <button class="boton boton--fantasma" type="submit"><?= icono('reintentar') ?> Reabrir</button>
+                    </form>
+<?php endif; ?>
+                  </td>
+                </tr>
 <?php endforeach; ?>
             </tbody>
           </table>
         </div>
       </section>
 <?php endif; ?>
+      <?php if ($historial !== [] && puede('caja.limpiar_historial')): ?>
+        <form class="form-inline" method="post" action="/caja/limpiar-historial" data-confirmar="¿Ocultar del historial todas las cajas cerradas? Sus arqueos, movimientos y ventas se conservan.">
+          <?= csrf_campo() ?>
+          <button class="boton boton--peligro" type="submit"><?= icono('ocultar') ?> Limpiar historial de cajas cerradas</button>
+        </form>
+      <?php endif; ?>
     </main>
