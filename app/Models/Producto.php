@@ -38,7 +38,7 @@ final class Producto
     public static function paraPos(): array
     {
         return DB::filas(
-            'SELECT p.id, p.codigo, p.nombre, p.nombre_corto, p.precio, p.foto, p.favorito, p.agotado,
+            'SELECT p.id, p.codigo, p.nombre, p.nombre_corto, p.precio, p.foto, p.favorito, p.agotado, p.va_a_cocina,
                     p.categoria_id, c.nombre AS categoria, c.color AS categoria_color
              FROM productos p JOIN categorias c ON c.id = p.categoria_id
              WHERE p.activo = 1 AND c.activo = 1

@@ -15,6 +15,8 @@ $datos = array_map(static fn (array $p): array => [
     'precio' => (float) $p['precio'],
     'foto' => $p['foto'],
     'agotado' => (bool) (int) $p['agotado'],
+    // HU-31: la nota para cocina solo se ofrece en lo que sale en la comanda
+    'cocina' => (bool) (int) $p['va_a_cocina'],
 ], $productos);
 ?>
     <main class="contenido contenido--pos" id="contenido">

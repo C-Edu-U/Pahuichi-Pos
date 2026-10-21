@@ -110,16 +110,20 @@
     paso.querySelector('.paso__valor').textContent = l.cantidad;
     paso.insertBefore(boton('paso__boton', 'menos', ['data-paso', '-1'], l.cantidad === 1 ? 'Quitar ' + p.nombre : 'Una menos de ' + p.nombre), paso.firstChild);
     paso.appendChild(boton('paso__boton', 'mas', ['data-paso', '1'], 'Una más de ' + p.nombre));
-    var notaBoton = boton('boton--fantasma', 'nota', ['data-nota', ''], 'Nota para cocina de ' + p.nombre);
-    notaBoton.setAttribute('aria-expanded', 'false');
-    li.querySelector('.linea__controles').appendChild(notaBoton);
-    var notaCampo = document.createElement('label');
-    notaCampo.className = 'linea__nota'; notaCampo.hidden = true;
-    notaCampo.innerHTML = '<span class="visualmente-oculto">Nota para cocina</span><input class="control" type="text" maxlength="60" placeholder="Nota para cocina, p. ej. sin cebolla">';
-    notaCampo.querySelector('input').value = l.nota || '';
-    li.appendChild(notaCampo);
-    var notaTexto = document.createElement('p'); notaTexto.className = 'linea__nota-texto';
-    notaTexto.textContent = l.nota || ''; notaTexto.hidden = !l.nota; li.appendChild(notaTexto);
+    // HU-31: nota libre para cocina, solo en lo que sale en la comanda. Se guarda al escribir.
+    if (p.cocina) {
+      var notaBoton = boton('boton--fantasma', 'nota', ['data-nota', ''], 'Nota para cocina de ' + p.nombre);
+      notaBoton.setAttribute('aria-expanded', 'false');
+      li.querySelector('.linea__controles').appendChild(notaBoton);
+      var notaCampo = document.createElement('label');
+      notaCampo.className = 'linea__nota'; notaCampo.hidden = true;
+      notaCampo.innerHTML = '<span class="visualmente-oculto">Nota para cocina de </span><input class="control" type="text" maxlength="60" enterkeyhint="done" placeholder="Nota para cocina, p. ej. sin cebolla">';
+      notaCampo.querySelector('.visualmente-oculto').textContent += p.nombre;
+      notaCampo.querySelector('input').value = l.nota || '';
+      li.appendChild(notaCampo);
+      var notaTexto = document.createElement('p'); notaTexto.className = 'linea__nota-texto';
+      notaTexto.textContent = l.nota || ''; notaTexto.hidden = !l.nota; li.appendChild(notaTexto);
+    }
     li.querySelector('.linea__controles').appendChild(boton('boton--fantasma', 'basura', ['data-quitar', ''], 'Quitar ' + p.nombre + ' del pedido'));
     return li;
   }
@@ -163,11 +167,8 @@
     if (!li) return;
     var id = li.getAttribute('data-id');
     var nombre = li.querySelector('.linea__nombre').textContent;
-    var nota = e.target.closest('[data-nota]');
-    if (nota) {
-      var campo = li.querySelector('.linea__nota'); campo.hidden = !campo.hidden;
-      nota.setAttribute('aria-expanded', String(!campo.hidden));
-      if (!campo.hidden) campo.querySelector('input').focus();
+    if (e.target.closest('[data-nota]')) {
+      if (li.querySelector('.linea__nota').hidden) abrirNota(li); else cerrarNota(li);
       return;
     }
     var paso = e.target.closest('[data-paso]');
@@ -189,13 +190,38 @@
     }
   });
 
+  // Mientras se escribe, la nota se ve solo en el campo; al cerrarlo queda debajo del plato
+  function abrirNota(li) {
+    li.querySelector('.linea__nota').hidden = false;
+    li.querySelector('.linea__nota-texto').hidden = true;
+    li.querySelector('[data-nota]').setAttribute('aria-expanded', 'true');
+    li.querySelector('.linea__nota input').focus();
+  }
+  function cerrarNota(li) {
+    var l = carrito.linea(li.dataset.id);
+    li.querySelector('.linea__nota').hidden = true;
+    li.querySelector('.linea__nota-texto').hidden = !(l && l.nota);
+    var abre = li.querySelector('[data-nota]');
+    abre.setAttribute('aria-expanded', 'false');
+    abre.focus();
+  }
+
   $('lineas').addEventListener('input', function (e) {
     if (!e.target.matches('.linea__nota input') || pendiente) return;
     var li = e.target.closest('.linea');
     var l = carrito.linea(li.dataset.id);
     l.nota = e.target.value.trim();
     li.querySelector('.linea__nota-texto').textContent = l.nota;
-    li.querySelector('.linea__nota-texto').hidden = !l.nota;
+  });
+
+  // Enter guarda la nota y la cierra (ya quedó guardada al escribir)
+  $('lineas').addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' || !e.target.matches('.linea__nota input')) return;
+    e.preventDefault();
+    var li = e.target.closest('.linea');
+    var l = carrito.linea(li.dataset.id);
+    cerrarNota(li);
+    anunciar(l.nota ? 'Nota guardada: ' + l.nota + '.' : 'Sin nota.');
   });
 
   // Cancelar el pedido: pide confirmación porque se pierde lo cargado
@@ -359,9 +385,7 @@
       var nota = e.target.closest && e.target.closest('.linea__nota');
       if (nota) {
         e.preventDefault();
-        nota.hidden = true;
-        var abre = nota.closest('.linea').querySelector('[data-nota]');
-        abre.setAttribute('aria-expanded', 'false'); abre.focus();
+        cerrarNota(nota.closest('.linea'));
         return;
       }
       if (e.target === buscador && buscador.value) {
