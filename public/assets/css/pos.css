@@ -595,6 +595,11 @@
   font-size: var(--texto-sm);
 }
 
+/* Una sola fila: ícono, nombre y monto (las áreas de la línea normal no aplican) */
+.linea--promo > * {
+  grid-area: auto;
+}
+
 .linea--promo .icono {
   color: var(--verde-700);
 }

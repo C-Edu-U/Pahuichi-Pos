@@ -61,7 +61,7 @@
             </dl>
             <div class="ticket__separador"></div>
             <ul class="ticket__lineas">
-<?php foreach ($s['lineas'] as $l): ?><li><span><?= (int) $l['cantidad'] ?> × <?= e($l['nombre']) ?></span><span class="num"><?= bs($l['subtotal']) ?></span></li><?php endforeach; ?>
+<?php foreach ($s['lineas'] as $l): ?><li><span><?= (int) $l['cantidad'] ?> × <?= e($l['nombre']) ?></span><span class="num"><?= bs($l['bruto'] ?? $l['subtotal']) ?></span></li><?php if (!empty($l['promocion'])): ?><li class="ticket__promo"><span><?= e($l['promocion']['etiqueta']) ?></span><span class="num">−<?= bs($l['descuento']) ?></span></li><?php endif; endforeach; ?>
             </ul>
             <div class="ticket__separador"></div>
             <dl class="ticket__totales"><div><dt>Subtotal</dt><dd><?= bs($s['subtotal']) ?></dd></div><?php if ((float) $s['descuento'] > 0): ?><div><dt>Descuento</dt><dd><?= bs($s['descuento']) ?></dd></div><?php endif; ?><div class="ticket__fuerte"><dt>TOTAL Bs</dt><dd><?= bs($s['total']) ?></dd></div></dl>
@@ -98,7 +98,7 @@
             <p class="ticket__fuerte">DETALLE</p>
             <ul class="ticket__lineas ticket__lineas--factura">
 <?php foreach ($s['lineas'] as $l): ?>
-              <li><span class="ticket__codigo"><?= e($l['id']) ?></span><span class="ticket__desc"><?= e($l['nombre']) ?></span><span class="ticket__unidad">Unidad: <?= e($l['unidad']) ?></span><span class="ticket__calculo num"><?= bs($l['cantidad']) ?> × <?= bs($l['precio']) ?> − 0,00</span><span class="ticket__sub num"><?= bs($l['subtotal']) ?></span></li>
+              <li><span class="ticket__codigo"><?= e($l['id']) ?></span><span class="ticket__desc"><?= e($l['nombre']) ?></span><span class="ticket__unidad">Unidad: <?= e($l['unidad']) ?></span><span class="ticket__calculo num"><?= bs($l['cantidad']) ?> × <?= bs($l['precio']) ?> − <?= bs($l['descuento'] ?? 0) ?></span><span class="ticket__sub num"><?= bs($l['subtotal']) ?></span></li>
 <?php endforeach; ?>
             </ul>
             <div class="ticket__separador"></div>

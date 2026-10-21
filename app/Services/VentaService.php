@@ -11,6 +11,7 @@ use App\Models\Factura;
 use App\Models\Leyenda;
 use App\Models\Negocio;
 use App\Models\Producto;
+use App\Models\Promocion;
 use App\Models\Venta;
 use DomainException;
 
@@ -18,6 +19,8 @@ use DomainException;
  * Soporte de HU-57: cobro en efectivo, sin promociones ni QR de pago.
  * HU-06: descuento manual con el permiso de un solo uso que entregó el PIN del
  * administrador (AutorizacionService); el permiso se gasta recién al guardar la venta.
+ * HU-46: las promociones activas descuentan por línea (PromocionService). El navegador
+ * envía cuánto descontaron en pantalla; si no coincide, una promoción cambió y no se cobra.
  */
 final class VentaService
 {
@@ -65,9 +68,10 @@ final class VentaService
         if (!$cajaId || $cajaId < 1) throw new DomainException('Recarga el punto de venta para revisar la caja.');
         $descuento = ($d['descuento'] ?? '') === '' ? 0 : self::centavos($d['descuento']);
         $token = is_string($d['autorizacion'] ?? null) ? $d['autorizacion'] : '';
-        $hash = hash('sha256', json_encode([$cajaId, $tipo, $mesa, $cantidades, $exacto, $recibido, $esperado, $descuento], JSON_THROW_ON_ERROR));
+        $promoEsperada = ($d['promociones'] ?? '') === '' ? 0 : self::centavos($d['promociones']);
+        $hash = hash('sha256', json_encode([$cajaId, $tipo, $mesa, $cantidades, $exacto, $recibido, $esperado, $descuento, $promoEsperada], JSON_THROW_ON_ERROR));
         $gastar = false;
-        $factura = DB::transaccion(static function () use ($uuid, $hash, $tipo, $mesa, $cantidades, $exacto, $recibido, $esperado, $cajaId, $descuento, $token, &$gastar): array {
+        $factura = DB::transaccion(static function () use ($uuid, $hash, $tipo, $mesa, $cantidades, $exacto, $recibido, $esperado, $cajaId, $descuento, $token, $promoEsperada, &$gastar): array {
             // Serializa cobros y cierre sobre la misma fila, y evita cambiar de caja silenciosamente.
             $caja = Venta::cajaParaCobrar($cajaId);
             $previa = Venta::porUuid($uuid);
@@ -82,6 +86,7 @@ final class VentaService
             $productos = Venta::productosParaCobrar(array_keys($cantidades));
             if (count($productos) !== count($cantidades)) throw new DomainException('Un producto ya no está disponible. Revisa el pedido.');
             $lineas = [];
+            $base = [];
             $total = 0;
             foreach ($productos as $p) {
                 if (!$p['activo'] || !$p['categoria_activa'] || $p['agotado']) throw new DomainException($p['nombre'] . ' no está disponible. Retíralo del pedido.');
@@ -89,12 +94,26 @@ final class VentaService
                 $precio = self::centavos((string) $p['precio']);
                 $sub = $precio * $l['cantidad'];
                 $total += $sub;
+                $base[] = ['producto_id' => (int) $p['id'], 'categoria_id' => (int) $p['categoria_id'], 'cantidad' => $l['cantidad'], 'bruto' => $sub];
                 $lineas[] = ['producto_id' => (int) $p['id'], 'id' => $p['codigo'], 'nombre' => $p['nombre'], 'unidad' => Producto::UNIDADES[$p['unidad']],
-                    'cantidad' => $l['cantidad'], 'precio' => self::decimal($precio), 'subtotal' => self::decimal($sub), 'nota' => $l['nota'], 'cocina' => (bool) $p['va_a_cocina']];
+                    'cantidad' => $l['cantidad'], 'precio' => self::decimal($precio), 'bruto' => self::decimal($sub), 'descuento' => '0.00', 'promocion' => null,
+                    'subtotal' => self::decimal($sub), 'nota' => $l['nota'], 'cocina' => (bool) $p['va_a_cocina']];
             }
             if ($total <= 0 || $total > 9999999999) throw new DomainException('El total está fuera del rango permitido. Revisa el pedido.');
             if ($total !== $esperado) throw new DomainException('Cambió el precio de un producto. Recarga y revisa el total antes de cobrar.');
-            $subtotal = $total;
+            // HU-46: descuento de promoción por línea; la línea guarda su subtotal ya descontado
+            $promo = 0;
+            foreach (PromocionService::aplicar($base, Promocion::activas()) as $i => $a) {
+                if ($a['descuento'] === 0) continue;
+                $promo += $a['descuento'];
+                $lineas[$i]['descuento'] = self::decimal($a['descuento']);
+                $lineas[$i]['subtotal'] = self::decimal($base[$i]['bruto'] - $a['descuento']);
+                $lineas[$i]['promocion'] = ['id' => (int) $a['promocion']['id'], 'etiqueta' => $a['promocion']['nombre']];
+            }
+            if ($promo !== $promoEsperada) throw new DomainException('Cambió una promoción. Recarga el punto de venta y revisa el total antes de cobrar.');
+            $subtotal = $total - $promo;
+            if ($subtotal < 1) throw new DomainException('Con las promociones el pedido queda en Bs 0. Revisa las promociones antes de cobrar.');
+            $total = $subtotal;
             $permiso = null;
             if ($descuento > 0) {
                 $permiso = AutorizacionService::revisar($token, 'descuento');
@@ -115,16 +134,20 @@ final class VentaService
             $ventaId = Venta::crear(['uuid' => $uuid, 'solicitud_hash' => $hash, 'caja_id' => $cajaId, 'usuario_id' => Auth::id(), 'tipo_pedido' => $tipo, 'mesa' => $mesa,
                 'subtotal' => self::decimal($subtotal), 'descuento' => self::decimal($descuento), 'descuento_motivo' => $permiso['motivo'] ?? null,
                 'descuento_autorizado_por' => $permiso['admin_id'] ?? null, 'total' => self::decimal($total), 'creado_en' => $fecha]);
-            foreach ($lineas as $l) Venta::detalle($ventaId, $l);
+            foreach ($lineas as $l) {
+                $detalleId = Venta::detalle($ventaId, $l);
+                if ($l['promocion'] !== null) Venta::promocion($ventaId, $detalleId, $l['promocion'], $l['descuento']);
+            }
             Venta::pago($ventaId, self::decimal($total), self::decimal($rec), self::decimal($rec - $total));
             $s = ['pedido' => str_pad((string) $ventaId, 3, '0', STR_PAD_LEFT), 'factura' => $numero, 'tipo' => $tipo, 'mesa' => $mesa,
                 'cliente' => ['nombre' => 'S/N', 'doc' => '0'], 'cajero' => Auth::usuario()['nombre'], 'negocio' => $negocio, 'fiscal' => $fiscal,
                 'cuf' => Cuf::generar($negocio, $fiscal, $numero, $ahora), 'fecha_emision' => $fecha, 'fecha_larga' => $ahora->format('d/m/Y H:i'),
-                'lineas' => $lineas, 'subtotal' => self::decimal($subtotal), 'descuento' => self::decimal($descuento), 'total' => self::decimal($total),
+                'lineas' => $lineas, 'promociones' => self::decimal($promo), 'subtotal' => self::decimal($subtotal), 'descuento' => self::decimal($descuento), 'total' => self::decimal($total),
                 'literal' => NumeroALetras::convertir($total),
                 'recibido' => self::decimal($rec), 'cambio' => self::decimal($rec - $total), 'leyenda' => $leyenda['texto']];
             $id = Factura::crear($ventaId, $s, (int) $leyenda['id']);
-            Bitacora::registrar('venta.cobro', 'ventas', $ventaId, ['factura_id' => $id, 'total' => $s['total'], 'metodo' => 'efectivo', 'leyenda_id' => $leyenda['id']]);
+            Bitacora::registrar('venta.cobro', 'ventas', $ventaId, ['factura_id' => $id, 'total' => $s['total'], 'metodo' => 'efectivo', 'leyenda_id' => $leyenda['id']]
+                + ($promo > 0 ? ['promociones' => $s['promociones']] : []));
             if ($permiso !== null) {
                 Bitacora::registrar('venta.descuento_manual', 'ventas', $ventaId, ['factura_id' => $id, 'monto' => $s['descuento'], 'motivo' => $permiso['motivo'],
                     'subtotal' => $s['subtotal'], 'total' => $s['total'], 'autorizado_por' => $permiso['admin']]);
