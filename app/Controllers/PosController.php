@@ -37,7 +37,7 @@ final class PosController extends Controller
             'modulo' => 'pos',
             'h1' => 'Punto de venta',
             'css' => ['pos.css'],
-            'js' => ['carrito.js', 'pos.js'],
+            'js' => ['carrito.js', 'cliente-pos.js', 'pos.js'],
             'claseBody' => 'panel--pos',
             'rielPlegado' => true,
             'caja' => CajaService::abierta(),

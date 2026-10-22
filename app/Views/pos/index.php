@@ -98,11 +98,22 @@ $datos = array_map(static fn (array $p): array => [
             </div>
 
             <div class="cliente-pos">
-              <button class="cliente-pos__resumen" type="button" id="cliente-cambiar" disabled title="Registro de clientes pendiente" aria-expanded="false" aria-controls="cliente-buscador">
+              <button class="cliente-pos__resumen" type="button" id="cliente-cambiar" aria-expanded="false" aria-controls="cliente-buscador">
                 <svg class="icono icono--sm" aria-hidden="true"><use href="#i-persona"></use></svg>
                 <span id="cliente-dato">S/N · NIT 0</span>
                 <span class="cliente-pos__accion">Cambiar</span>
               </button>
+              <div class="cliente-pos__buscador cliente-pos__buscador--hu32" id="cliente-buscador" hidden>
+                <label class="visualmente-oculto" for="doc-cliente">NIT o CI del cliente</label>
+                <input class="control" id="doc-cliente" type="text" inputmode="text" maxlength="26" placeholder="NIT o CI" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="cliente-sugerencias" aria-autocomplete="list">
+                <button class="boton boton--fantasma" type="button" id="sin-datos">S/N</button>
+                <ul class="cliente-pos__sugerencias" id="cliente-sugerencias" role="listbox" aria-label="Clientes encontrados" hidden></ul>
+                <div class="campo campo--ancho"><label class="campo__etiqueta" for="tipo-cliente">Tipo de documento</label><select class="control" id="tipo-cliente"><option value="NIT">NIT</option><option value="CI">CI</option></select></div>
+                <div class="campo campo--ancho"><label class="campo__etiqueta" for="nombre-cliente">Nombre o razón social</label><input class="control" id="nombre-cliente" type="text" minlength="2" maxlength="120" autocomplete="off"></div>
+                <p class="campo__ayuda campo--ancho" id="cliente-estado" role="status" aria-live="polite">Escribe el NIT o CI. Los clientes nuevos también se guardan al confirmar el cobro.</p>
+                <p class="campo__error campo--ancho" id="cliente-error" role="alert" hidden></p>
+                <button class="boton boton--primario campo--ancho" type="button" id="cliente-usar">Guardar y usar cliente</button>
+              </div>
             </div>
 
             <ul class="lineas" id="lineas" role="list" aria-label="Ítems del pedido"></ul>

@@ -207,6 +207,7 @@
   modal.addEventListener('close', function () {
     if (modal.returnValue !== 'vaciar') return;
     carrito.vaciar();
+    window.PahuichiCliente.reset();
     pintar();
     anunciar('Pedido cancelado.');
     P.aviso('Pedido cancelado.');
@@ -235,6 +236,7 @@
   function bloquearPedido(valor) {
     document.querySelector('.pos__catalogo').inert = valor;
     $('lineas').inert = valor;
+    document.querySelector('.cliente-pos').inert = valor;
     document.querySelector('.tipo-pedido').inert = valor;
     $('vaciar').disabled = valor || carrito.vacio();
     $('cobrar').disabled = enviando || (!pendiente && carrito.vacio());
@@ -272,10 +274,14 @@
     if (enviando || (!pendiente && carrito.vacio())) return;
     errorCobro('');
     if (!pendiente) {
+      var cliente;
+      try { cliente = window.PahuichiCliente.datos(); }
+      catch (e) { errorCobro(e.message); return; }
       pendiente = {uuid: crypto.randomUUID(), caja_id: $('pos').getAttribute('data-caja'),
         tipo: tipoPedido, mesa: $('mesa').value, exacto: exacto ? '1' : '0',
         recibido: $('recibido').value, total_esperado: carrito.total().toFixed(2),
         lineas: JSON.stringify(carrito.lineas.map(function (l) { return {id: Number(l.producto.id), cantidad: l.cantidad, nota: l.nota || ''}; }))};
+      Object.assign(pendiente, cliente);
       try { sessionStorage.setItem(claveCobro, JSON.stringify(pendiente)); }
       catch (e) { pendiente = null; errorCobro('Permite el almacenamiento de esta pestaña para proteger el reintento del cobro.'); return; }
     }
@@ -295,6 +301,7 @@
       pendiente = null;
       enviando = false;
       carrito.vaciar();
+      window.PahuichiCliente.reset();
       if (dialogoCobro.open) dialogoCobro.close();
       pintar(); bloquearPedido(false);
       $('venta-lista-titulo').textContent = 'Pedido ' + datos.pedido + ' cobrado';
@@ -314,6 +321,7 @@
   $('confirmar-cobro').addEventListener('click', function () { cobrar(false); });
   try { pendiente = JSON.parse(sessionStorage.getItem(claveCobro) || 'null'); } catch (e) { pendiente = null; }
   if (pendiente) {
+    window.PahuichiCliente.restaurar(pendiente);
     bloquearPedido(true);
     errorCobro('Hay un cobro pendiente de comprobar por Bs ' + pendiente.total_esperado + '. Pulsa Reintentar cobro para recuperar su factura.');
   }

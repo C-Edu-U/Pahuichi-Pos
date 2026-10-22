@@ -34,7 +34,6 @@ return [
     ],
     'clientes' => [
         'grupo' => 3, 'ruta' => '/clientes', 'icono' => 'clientes', 'texto' => 'Clientes',
-        'pendiente' => ['historias' => 'HU-32', 'texto' => 'Clientes con NIT o CI para la factura.'],
     ],
     'catalogo' => [
         'grupo' => 3, 'ruta' => '/catalogo/productos', 'icono' => 'productos', 'texto' => 'Catálogo',

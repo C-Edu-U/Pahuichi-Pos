@@ -59,8 +59,12 @@ final class VentaService
         $esperado = self::centavos($d['total_esperado'] ?? null);
         $cajaId = filter_var($d['caja_id'] ?? null, FILTER_VALIDATE_INT);
         if (!$cajaId || $cajaId < 1) throw new DomainException('Recarga el punto de venta para revisar la caja.');
-        $hash = hash('sha256', json_encode([$cajaId, $tipo, $mesa, $cantidades, $exacto, $recibido, $esperado], JSON_THROW_ON_ERROR));
-        return DB::transaccion(static function () use ($uuid, $hash, $tipo, $mesa, $cantidades, $exacto, $recibido, $esperado, $cajaId): array {
+        $clientePedido = ClienteService::normalizar($d['cliente_doc'] ?? '0', $d['cliente_nombre'] ?? '', $d['cliente_tipo'] ?? 'NIT');
+        $datosHash = [$cajaId, $tipo, $mesa, $cantidades, $exacto, $recibido, $esperado];
+        // S/N mantiene el hash anterior para recuperar cobros pendientes de la versión previa.
+        if ($clientePedido['doc'] !== '0') $datosHash[] = $clientePedido;
+        $hash = hash('sha256', json_encode($datosHash, JSON_THROW_ON_ERROR));
+        return DB::transaccion(static function () use ($uuid, $hash, $tipo, $mesa, $cantidades, $exacto, $recibido, $esperado, $cajaId, $clientePedido): array {
             // Serializa cobros y cierre sobre la misma fila, y evita cambiar de caja silenciosamente.
             $caja = Venta::cajaParaCobrar($cajaId);
             $previa = Venta::porUuid($uuid);
@@ -94,6 +98,7 @@ final class VentaService
             if (!$fiscal || (int) $fiscal['numero_inicial'] < 1) throw new DomainException('Configura los parámetros fiscales antes de cobrar.');
             $negocio = Negocio::obtener();
             $leyenda = Leyenda::alAzar();
+            $cliente = ClienteService::resolver($clientePedido);
             $numero = Factura::siguientes((int) $fiscal['codigo_sucursal'], (int) $fiscal['codigo_punto_venta'], (int) $fiscal['numero_inicial']);
             $ahora = Reloj::ahora();
             $fecha = Reloj::sql($ahora);
@@ -102,7 +107,7 @@ final class VentaService
             foreach ($lineas as $l) Venta::detalle($ventaId, $l);
             Venta::pago($ventaId, self::decimal($total), self::decimal($rec), self::decimal($rec - $total));
             $s = ['pedido' => str_pad((string) $ventaId, 3, '0', STR_PAD_LEFT), 'factura' => $numero, 'tipo' => $tipo, 'mesa' => $mesa,
-                'cliente' => ['nombre' => 'S/N', 'doc' => '0'], 'cajero' => Auth::usuario()['nombre'], 'negocio' => $negocio, 'fiscal' => $fiscal,
+                'cliente' => $cliente, 'cajero' => Auth::usuario()['nombre'], 'negocio' => $negocio, 'fiscal' => $fiscal,
                 'cuf' => Cuf::generar($negocio, $fiscal, $numero, $ahora), 'fecha_emision' => $fecha, 'fecha_larga' => $ahora->format('d/m/Y H:i'),
                 'lineas' => $lineas, 'subtotal' => self::decimal($total), 'descuento' => '0.00', 'total' => self::decimal($total),
                 'literal' => NumeroALetras::convertir($total),
