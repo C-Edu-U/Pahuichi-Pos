@@ -2194,3 +2194,16 @@
   align-items: center;
   min-height: 2.75rem;
 }
+
+/* ==========================================================================
+   Promociones (HU-46)
+   ========================================================================== */
+.promociones__pendiente {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--esp-1);
+  margin-top: var(--esp-3);
+  font-size: var(--texto-sm);
+  color: var(--color-texto-2);
+}

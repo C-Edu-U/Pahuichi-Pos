@@ -16,6 +16,7 @@ return [
         'catalogo' => 'Catálogo',
         'caja' => 'Caja',
         'ventas' => 'Ventas y tickets',
+        'promociones' => 'Promociones',
         'qr' => 'Pagos QR',
     ],
 
@@ -61,6 +62,11 @@ return [
         'producto.agotado' => ['Agotado', 'catalogo', 'neutra'],
         'producto.foto' => ['Foto del producto', 'catalogo', 'neutra'],
 
+        'promocion.alta' => ['Promoción creada', 'promociones', 'neutra'],
+        'promocion.edicion' => ['Promoción editada', 'promociones', 'aviso'],
+        'promocion.activar' => ['Promoción activada', 'promociones', 'neutra'],
+        'promocion.desactivar' => ['Promoción pausada', 'promociones', 'neutra'],
+
         'caja.apertura' => ['Apertura de caja', 'caja', 'ok'],
         'caja.cierre' => ['Cierre de caja', 'caja', 'ok'],
         'caja.movimiento' => ['Ingreso o egreso de efectivo', 'caja', 'neutra'],
@@ -104,6 +110,6 @@ return [
         'precio' => 'Precio', 'turno' => 'Turno', 'cajero' => 'Cajero', 'usuario' => 'Usuario',
         'rol' => 'Rol', 'modo' => 'Con', 'intentos' => 'Intentos', 'hasta' => 'Hasta',
         'ruta' => 'Ruta', 'metodo' => 'Método', 'permiso' => 'Permiso', 'favorito' => 'Favorito',
-        'agotado' => 'Agotado', 'borradas' => 'Cajas borradas', 'archivadas' => 'Cajas archivadas', 'accion' => 'Acción', 'autorizado_por' => 'Autorizó', 'subtotal' => 'Subtotal', 'texto' => 'Texto', 'activo' => 'Activa', 'mediodia' => 'Medio día', 'noche' => 'Noche',
+        'agotado' => 'Agotado', 'borradas' => 'Cajas borradas', 'archivadas' => 'Cajas archivadas', 'accion' => 'Acción', 'autorizado_por' => 'Autorizó', 'subtotal' => 'Subtotal', 'aplica' => 'Se aplica a', 'descuento' => 'Descuento', 'promociones' => 'Promociones', 'texto' => 'Texto', 'activo' => 'Activa', 'mediodia' => 'Medio día', 'noche' => 'Noche',
     ],
 ];

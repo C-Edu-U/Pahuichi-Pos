@@ -17,6 +17,7 @@ use App\Controllers\ConfigController;
 use App\Controllers\InicioController;
 use App\Controllers\ModuloController;
 use App\Controllers\PosController;
+use App\Controllers\PromocionController;
 use App\Controllers\FacturaController;
 use App\Controllers\ProductoController;
 use App\Controllers\SaludController;
@@ -98,6 +99,15 @@ $router->post('/pos/cobrar', [PosController::class, 'cobrar'], ['auth', 'permiso
 $router->post('/autorizaciones', [AutorizacionController::class, 'crear'], ['auth', 'permiso:modulo.pos']);
 $router->get('/ventas', [FacturaController::class, 'index'], ['auth', 'permiso:modulo.ventas']);
 $router->get('/facturas/{id}', [FacturaController::class, 'mostrar'], ['auth', 'permiso:modulo.ventas']);
+
+// Promociones (HU-46): solo el administrador; se pausan, no se borran
+$promociones = ['auth', 'permiso:modulo.promociones'];
+$router->get('/promociones', [PromocionController::class, 'index'], $promociones);
+$router->get('/promociones/nueva', [PromocionController::class, 'nueva'], $promociones);
+$router->post('/promociones/nueva', [PromocionController::class, 'crear'], $promociones);
+$router->get('/promociones/{id}/editar', [PromocionController::class, 'editar'], $promociones);
+$router->post('/promociones/{id}', [PromocionController::class, 'actualizar'], $promociones);
+$router->post('/promociones/{id}/estado', [PromocionController::class, 'estado'], $promociones);
 
 // Bitácora (HU-05): solo lectura, solo el administrador
 $router->get('/bitacora', [BitacoraController::class, 'index'], ['auth', 'permiso:modulo.bitacora']);

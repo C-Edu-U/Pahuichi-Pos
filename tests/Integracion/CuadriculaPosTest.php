@@ -107,7 +107,7 @@ final class CuadriculaPosTest extends CasoPrueba
 
         $majadito = array_values(array_filter($datos, fn (array $p): bool => $p['codigo'] === 'PL-01'))[0];
         // JSON escribe 40.0 como 40: se compara el valor, no el tipo
-        $this->assertEquals(['id' => $this->id('PL-01'), 'codigo' => 'PL-01', 'nombre' => 'Majadito de charque', 'corto' => 'Majadito', 'precio' => 40, 'foto' => null, 'agotado' => false, 'cocina' => true], $majadito);
+        $this->assertEquals(['id' => $this->id('PL-01'), 'codigo' => 'PL-01', 'nombre' => 'Majadito de charque', 'corto' => 'Majadito', 'precio' => 40, 'foto' => null, 'agotado' => false, 'cocina' => true, 'categoria' => (int) DB::valor("SELECT id FROM categorias WHERE nombre = 'Platos'")], $majadito);
     }
 
     public function testSinFavoritosAbreEnTodo(): void

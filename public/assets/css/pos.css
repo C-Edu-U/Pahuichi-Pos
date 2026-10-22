@@ -595,6 +595,30 @@
   font-size: var(--texto-sm);
 }
 
+/* Una sola fila: ícono, nombre y monto (las áreas de la línea normal no aplican) */
+.linea--promo > *,
+.linea--regalo > * {
+  grid-area: auto;
+}
+
+/* Regalo por compra: un producto más, a Bs 0 */
+.linea--regalo {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: none;
+  align-items: center;
+  gap: var(--esp-1);
+  padding-block: var(--esp-1);
+  background: var(--verde-50);
+}
+
+.linea--regalo .icono {
+  color: var(--verde-700);
+}
+
+.linea--regalo .linea__unitario {
+  color: var(--verde-800);
+}
+
 .linea--promo .icono {
   color: var(--verde-700);
 }

@@ -41,7 +41,6 @@ return [
     ],
     'promociones' => [
         'grupo' => 3, 'ruta' => '/promociones', 'icono' => 'promocion', 'texto' => 'Promociones',
-        'pendiente' => ['historias' => 'HU-46 a HU-52', 'texto' => 'Descuentos, combos, regalos y simulador.'],
     ],
     'reportes' => [
         'grupo' => 4, 'ruta' => '/reportes', 'icono' => 'reportes', 'texto' => 'Reportes',

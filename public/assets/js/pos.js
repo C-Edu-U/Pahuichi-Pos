@@ -132,21 +132,61 @@
      El servidor entrega un permiso de un solo uso; el cobro lo envía con el monto. */
   var descuento = null; // {centavos, motivo, token, autorizo}
   function centavos(bs) { return Math.round(bs * 100); }
-  function aCobrar() { return (centavos(carrito.total()) - (descuento ? descuento.centavos : 0)) / 100; }
+
+  /* HU-46: promociones activas. Se aplican solas al agregar y se ven como línea de
+     descuento; el servidor recalcula al cobrar con el mismo motor. */
+  var promociones = JSON.parse($('pos').getAttribute('data-promociones') || '[]');
+  var Promos = window.PahuichiPromociones;
+  function promoCentavos() {
+    return Promos.aplicar(carrito.lineas, promociones).reduce(function (s, a) { return s + a.centavos; }, 0);
+  }
+  // Subtotal con las promociones ya descontadas: el descuento manual debe ser menor
+  function neto() { return (centavos(carrito.total()) - promoCentavos()) / 100; }
+  function aCobrar() { return (centavos(neto()) - (descuento ? descuento.centavos : 0)) / 100; }
+  // Regalo por compra: se agrega solo a Bs 0 mientras el pedido tenga lo que lo activa
+  function regalos() { return Promos.regalos(carrito.lineas, promociones, carrito.catalogo); }
+  function regalosCentavos() { return regalos().reduce(function (s, r) { return s + r.centavos; }, 0); }
+
+  function lineaRegalo(r) {
+    var li = document.createElement('li');
+    li.className = 'linea linea--regalo';
+    li.innerHTML = '<svg class="icono icono--sm" aria-hidden="true"><use href="#i-regalo"></use></svg>' +
+      '<div class="linea__texto"><span class="linea__nombre"></span><span class="linea__unitario"></span></div>' +
+      '<span class="linea__subtotal num">0,00</span>';
+    li.querySelector('.linea__nombre').textContent = r.cantidad + ' × ' + r.producto.nombre;
+    li.querySelector('.linea__unitario').textContent = 'Regalo · ' + r.promocion.nombre;
+    return li;
+  }
+
+  function lineaPromo(g) {
+    var li = document.createElement('li');
+    li.className = 'linea linea--promo';
+    li.innerHTML = '<svg class="icono icono--sm" aria-hidden="true"><use href="#i-promocion"></use></svg><span class="linea__nombre"></span><span class="linea__subtotal num"></span>';
+    li.querySelector('.linea__nombre').textContent = g.promocion.nombre;
+    li.querySelector('.linea__subtotal').textContent = '−' + P.bs(g.centavos / 100);
+    return li;
+  }
 
   function pintar() {
     var ul = $('lineas');
     ul.innerHTML = '';
     carrito.lineas.forEach(function (l) { ul.appendChild(lineaHtml(l)); });
+    regalos().forEach(function (r) { ul.appendChild(lineaRegalo(r)); });
+    var grupos = Promos.agrupar(Promos.aplicar(carrito.lineas, promociones));
+    grupos.forEach(function (g) { ul.appendChild(lineaPromo(g)); });
+    var promo = grupos.reduce(function (s, g) { return s + g.centavos; }, 0);
 
     // HU-06: el descuento se cae si el pedido se vacía o deja de ser menor que el subtotal
-    if (descuento && (carrito.vacio() || descuento.centavos >= centavos(carrito.total()))) {
+    if (descuento && (carrito.vacio() || descuento.centavos >= centavos(neto()))) {
       if (!carrito.vacio()) P.aviso('Se quitó el descuento: ya no es menor que el subtotal.');
       descuento = null;
     }
-    $('desglose').hidden = !descuento;
+    $('desglose').hidden = !descuento && !promo;
+    $('t-subtotal').textContent = P.bs(carrito.total());
+    $('fila-promociones').hidden = !promo;
+    $('t-promociones').textContent = '−' + P.bs(promo / 100);
+    $('fila-descuento').hidden = !descuento;
     if (descuento) {
-      $('t-subtotal').textContent = P.bs(carrito.total());
       $('t-descuento').textContent = '−' + P.bs(descuento.centavos / 100);
       $('t-descuento-motivo').textContent = '· ' + descuento.motivo;
     }
@@ -345,6 +385,7 @@
       pendiente = {uuid: crypto.randomUUID(), caja_id: $('pos').getAttribute('data-caja'),
         tipo: tipoPedido, mesa: $('mesa').value, exacto: exacto ? '1' : '0',
         recibido: $('recibido').value, total_esperado: carrito.total().toFixed(2),
+        promociones: (promoCentavos() / 100).toFixed(2), regalos: (regalosCentavos() / 100).toFixed(2),
         descuento: descuento ? (descuento.centavos / 100).toFixed(2) : '', autorizacion: descuento ? descuento.token : '',
         a_cobrar: aCobrar().toFixed(2),
         lineas: JSON.stringify(carrito.lineas.map(function (l) { return {id: Number(l.producto.id), cantidad: l.cantidad, nota: l.nota || ''}; }))};
@@ -413,7 +454,7 @@
       return;
     }
     $('descuento-monto').value = ''; $('descuento-motivo').value = ''; $('descuento-pin').value = '';
-    $('descuento-subtotal').textContent = 'Menor que el subtotal de Bs ' + P.bs(carrito.total()) + '.';
+    $('descuento-subtotal').textContent = 'Menor que el subtotal de Bs ' + P.bs(neto()) + '.';
     errorDescuento('');
     dialogoDescuento.showModal();
     $('descuento-monto').focus();
@@ -425,7 +466,7 @@
     var motivo = $('descuento-motivo').value.trim();
     var pin = $('descuento-pin').value;
     if (monto < 1) return errorDescuento('Escribe el monto del descuento, con hasta dos decimales.', 'descuento-monto');
-    if (monto >= centavos(carrito.total())) return errorDescuento('El descuento debe ser menor que el subtotal de Bs ' + P.bs(carrito.total()) + '.', 'descuento-monto');
+    if (monto >= centavos(neto())) return errorDescuento('El descuento debe ser menor que el subtotal de Bs ' + P.bs(neto()) + '.', 'descuento-monto');
     if (motivo.length < 3) return errorDescuento('Escribe el motivo del descuento.', 'descuento-motivo');
     if (!/^\d{4,6}$/.test(pin)) return errorDescuento('Escribe el PIN del administrador, de 4 a 6 dígitos.', 'descuento-pin');
     $('autorizar-descuento').disabled = true;

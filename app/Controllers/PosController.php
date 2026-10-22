@@ -9,6 +9,7 @@ use App\Core\Peticion;
 use App\Core\Respuesta;
 use App\Models\Categoria;
 use App\Models\Producto;
+use App\Models\Promocion;
 use App\Services\AutorizacionInvalida;
 use App\Services\CajaService;
 use App\Services\VentaService;
@@ -19,6 +20,7 @@ use JsonException;
  * Punto de venta. El middleware «caja» ya garantizó que hay una caja abierta (HU-21).
  * HU-28: cuadrícula de productos con favoritos primero, categorías y búsqueda.
  * HU-29: carrito en el navegador (carrito.js); el precio al cobrar lo valida VentaService (soporte de HU-57).
+ * HU-46: las promociones activas viajan a la pantalla para que motor-promociones.js las aplique al agregar.
  */
 final class PosController extends Controller
 {
@@ -38,12 +40,13 @@ final class PosController extends Controller
             'modulo' => 'pos',
             'h1' => 'Punto de venta',
             'css' => ['pos.css'],
-            'js' => ['carrito.js', 'pos.js'],
+            'js' => ['carrito.js', 'motor-promociones.js', 'pos.js'],
             'claseBody' => 'panel--pos',
             'rielPlegado' => true,
             'caja' => CajaService::abierta(),
             'productos' => $productos,
             'categorias' => $categorias,
+            'promociones' => Promocion::activas(),
             'hayFavoritos' => in_array(1, array_map('intval', array_column($productos, 'favorito')), true),
         ]);
     }

@@ -147,6 +147,12 @@
   gap: 2mm;
 }
 
+/* HU-46: promoción bajo el plato que descontó */
+.ticket__lineas .ticket__promo {
+  padding-left: 3mm;
+  font-style: italic;
+}
+
 .ticket__lineas--factura li {
   display: grid;
   grid-template-columns: auto 1fr auto;

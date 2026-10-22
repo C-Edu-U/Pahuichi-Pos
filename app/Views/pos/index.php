@@ -1,7 +1,7 @@
 <?php
 /**
  * Punto de venta con caja abierta: cuadrícula (HU-28) y carrito (HU-29). Variables: $caja, $productos (activos, favoritos
- * primero), $categorias (activas con productos), $hayFavoritos.
+ * primero), $categorias (activas con productos), $hayFavoritos, $promociones (activas, HU-46).
  * Los datos de cada producto van en data-* para el JS (la CSP no permite scripts en línea).
  */
 use App\Models\Categoria;
@@ -17,10 +17,31 @@ $datos = array_map(static fn (array $p): array => [
     'agotado' => (bool) (int) $p['agotado'],
     // HU-31: la nota para cocina solo se ofrece en lo que sale en la comanda
     'cocina' => (bool) (int) $p['va_a_cocina'],
+    'categoria' => (int) $p['categoria_id'],
 ], $productos);
+// HU-46: valor en centésimos (12,50 → 1250), igual que lo calcula PromocionService
+$promos = array_map(static fn (array $pr): array => [
+    'id' => (int) $pr['id'],
+    'nombre' => $pr['nombre'],
+    'tipo' => $pr['tipo'],
+    'valor_tipo' => $pr['valor_tipo'],
+    'valor' => $pr['valor'] === null ? null : (int) round((float) $pr['valor'] * 100),
+    'producto_id' => $pr['producto_id'] !== null ? (int) $pr['producto_id'] : null,
+    'categoria_id' => $pr['categoria_id'] !== null ? (int) $pr['categoria_id'] : null,
+    'cantidad_compra' => $pr['cantidad_compra'] !== null ? (int) $pr['cantidad_compra'] : null,
+    'regalo_producto_id' => $pr['regalo_producto_id'] !== null ? (int) $pr['regalo_producto_id'] : null,
+], $promociones);
+$conPromo = [];
+foreach ($productos as $p) {
+    foreach ($promos as $pr) {
+        if ($pr['producto_id'] === (int) $p['id'] || $pr['categoria_id'] === (int) $p['categoria_id']) {
+            $conPromo[(int) $p['id']] = true;
+        }
+    }
+}
 ?>
     <main class="contenido contenido--pos" id="contenido">
-      <div class="pos" data-caja="<?= (int) $caja['id'] ?>" id="pos" data-productos="<?= e(json_encode($datos, JSON_UNESCAPED_UNICODE)) ?>">
+      <div class="pos" data-caja="<?= (int) $caja['id'] ?>" id="pos" data-productos="<?= e(json_encode($datos, JSON_UNESCAPED_UNICODE)) ?>" data-promociones="<?= e(json_encode($promos, JSON_UNESCAPED_UNICODE)) ?>">
         <section class="pos__catalogo" aria-labelledby="t-catalogo">
           <h2 class="visualmente-oculto" id="t-catalogo">Productos</h2>
           <div class="pos__busqueda">
@@ -48,12 +69,13 @@ $datos = array_map(static fn (array $p): array => [
     $agotado = (bool) (int) $p['agotado'];
     $favorito = (bool) (int) $p['favorito'];
     $visible = $inicial === 'todo' || $favorito;
+    $promo = isset($conPromo[(int) $p['id']]);
 ?>
             <li data-categoria="<?= (int) $p['categoria_id'] ?>" data-favorito="<?= (int) $favorito ?>" data-busqueda="<?= e($p['nombre'] . ' ' . $p['nombre_corto'] . ' ' . $p['codigo']) ?>"<?= $visible ? '' : ' hidden' ?>>
-              <button class="producto-pos <?= e(Categoria::clase($p['categoria_color'])) ?>" type="button" data-id="<?= (int) $p['id'] ?>"<?= $agotado ? ' disabled' : '' ?> aria-label="<?= e($p['nombre'] . ', ' . bs($p['precio']) . ' bolivianos' . ($agotado ? ', agotado' : '')) ?>">
+              <button class="producto-pos <?= e(Categoria::clase($p['categoria_color'])) ?>" type="button" data-id="<?= (int) $p['id'] ?>"<?= $agotado ? ' disabled' : '' ?> aria-label="<?= e($p['nombre'] . ', ' . bs($p['precio']) . ' bolivianos' . ($agotado ? ', agotado' : ($promo ? ', con promoción' : ''))) ?>">
                 <span class="producto-pos__foto" aria-hidden="true"><?php if ($p['foto'] !== null): ?><img src="/catalogo/productos/<?= (int) $p['id'] ?>/foto?v=<?= e(rawurlencode($p['foto'])) ?>" alt="" loading="lazy"><?php else: ?><?= icono(Categoria::icono($p['categoria']), 'producto-pos__icono') ?><?php endif; ?></span>
                 <span class="producto-pos__nombre"><?= e($p['nombre_corto']) ?></span>
-                <span class="producto-pos__pie"><span class="producto-pos__precio monto"><span class="monto__moneda">Bs</span><?= bs($p['precio']) ?></span><?= $agotado ? '<span class="insignia insignia--aviso">Agotado</span>' : '' ?></span>
+                <span class="producto-pos__pie"><span class="producto-pos__precio monto"><span class="monto__moneda">Bs</span><?= bs($p['precio']) ?></span><?= $agotado ? '<span class="insignia insignia--aviso">Agotado</span>' : ($promo ? '<span class="insignia insignia--promo">Promo</span>' : '') ?></span>
               </button>
             </li>
 <?php endforeach; ?>
@@ -117,7 +139,8 @@ $datos = array_map(static fn (array $p): array => [
             <div class="totales">
               <dl class="totales__lista" id="desglose" hidden>
                 <div><dt>Subtotal</dt><dd class="num" id="t-subtotal">0,00</dd></div>
-                <div class="totales__descuento"><dt>Descuento <span class="totales__motivo" id="t-descuento-motivo"></span></dt><dd class="num" id="t-descuento">0,00</dd></div>
+                <div class="totales__descuento" id="fila-promociones" hidden><dt>Promociones</dt><dd class="num" id="t-promociones">0,00</dd></div>
+                <div class="totales__descuento" id="fila-descuento" hidden><dt>Descuento <span class="totales__motivo" id="t-descuento-motivo"></span></dt><dd class="num" id="t-descuento">0,00</dd></div>
               </dl>
               <p class="totales__total">
                 <span class="totales__etiqueta">Total</span>

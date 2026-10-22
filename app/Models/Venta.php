@@ -38,10 +38,17 @@ final class Venta
         );
     }
 
-    public static function detalle(int $id, array $l): void
+    public static function detalle(int $id, array $l): int
     {
-        DB::insertar('INSERT INTO detalle_venta (venta_id, producto_id, descripcion, cantidad, precio_unitario, subtotal, nota) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [$id, $l['producto_id'], $l['nombre'], $l['cantidad'], $l['precio'], $l['subtotal'], $l['nota'] ?: null]);
+        return DB::insertar('INSERT INTO detalle_venta (venta_id, producto_id, descripcion, cantidad, precio_unitario, descuento, subtotal, nota) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [$id, $l['producto_id'], $l['nombre'], $l['cantidad'], $l['precio'], $l['descuento'] ?? '0.00', $l['subtotal'], $l['nota'] ?: null]);
+    }
+
+    /** HU-46: qué promoción descontó la línea, con su nombre de ese momento. */
+    public static function promocion(int $ventaId, int $detalleId, array $promocion, string $monto): void
+    {
+        DB::insertar('INSERT INTO venta_promociones (venta_id, detalle_id, promocion_id, etiqueta, monto) VALUES (?, ?, ?, ?, ?)',
+            [$ventaId, $detalleId, $promocion['id'], $promocion['etiqueta'], $monto]);
     }
 
     public static function pago(int $id, string $total, string $recibido, string $cambio): void
@@ -85,6 +92,13 @@ final class Venta
             [$cajaId],
         ) ?? [];
 
+        // Los descuentos de promoción (HU-46) están en cada línea; el manual (HU-06), en la venta
+        $promociones = (float) (DB::valor(
+            "SELECT COALESCE(SUM(d.descuento), 0) FROM detalle_venta d JOIN ventas v ON v.id = d.venta_id
+             WHERE v.caja_id = ? AND v.estado = 'cobrada'",
+            [$cajaId],
+        ) ?? 0);
+
         $efectivo = (float) ($pagos['efectivo'] ?? 0);
         $qrConfirmado = (float) ($pagos['qr_confirmado'] ?? 0);
         $qrPendiente = (float) ($pagos['qr_pendiente'] ?? 0);
@@ -100,7 +114,7 @@ final class Venta
             // El ERS solo cobra en efectivo, QR o mixto: tarjeta y otro quedan en cero
             'tarjeta' => self::monto(0),
             'otro' => self::monto(0),
-            'descuentos' => self::monto((float) ($ventas['descuentos'] ?? 0)),
+            'descuentos' => self::monto((float) ($ventas['descuentos'] ?? 0) + $promociones),
             'anuladas' => self::monto((float) ($ventas['anuladas'] ?? 0)),
         ];
 
