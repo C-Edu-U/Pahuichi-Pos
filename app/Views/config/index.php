@@ -16,7 +16,7 @@ $pendiente = static function (string $id, string $titulo, string $historias, str
           <a href="#fiscal">Parámetros fiscales</a>
           <a href="#leyendas">Leyendas</a>
           <a href="#turnos">Turnos</a>
-          <a href="#impresoras">Impresoras</a>
+          <a href="#impresoras">Tickets en PDF</a>
           <a href="#caja-cobro">Caja y cobro</a>
           <a href="#seguridad">Seguridad</a>
           <a href="#respaldos">Copias de seguridad</a>
@@ -229,9 +229,7 @@ $cufdVigente = !isset($errores['f-vigencia']) && ParametrosFiscales::cufdVigente
             </div>
           </form>
 
-<?php
-$pendiente('impresoras', 'Impresoras', 'HU-12', 'Ancho de 76 o 58 mm, columnas y qué ticket imprime cada una.');
-?>
+<?php require __DIR__ . '/_tickets.php'; ?>
 
           <form class="panel-bloque config__seccion" id="caja-cobro" method="post" action="/config/caja-cobro" novalidate aria-labelledby="t-caja-cobro">
             <?= csrf_campo() ?>

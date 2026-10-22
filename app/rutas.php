@@ -54,6 +54,7 @@ $router->post('/config/negocio', [ConfigController::class, 'negocio'], $config);
 $router->post('/config/fiscal', [ConfigController::class, 'fiscal'], $config);
 $router->post('/config/caja-cobro', [ConfigController::class, 'cajaCobro'], $config);
 $router->post('/config/turnos', [ConfigController::class, 'turnos'], $config);
+$router->post('/config/tickets/{destino}', [ConfigController::class, 'tickets'], $config);
 // Leyendas de la Ley 453 (HU-10)
 $router->post('/config/leyendas', [ConfigController::class, 'agregarLeyenda'], $config);
 $router->post('/config/leyendas/{id}/estado', [ConfigController::class, 'estadoLeyenda'], $config);
@@ -122,3 +123,6 @@ foreach (Config::get('modulos') as $clave => $m) {
 // Flujo recuperado de HU-10: tickets guardados y verificación del QR académico.
 $router->post('/facturas/{id}/reimpresion', [FacturaController::class, 'reimprimir'], ['auth', 'permiso:modulo.ventas']);
 $router->get('/verificar', [FacturaController::class, 'verificar']);
+
+// HU-12: salida PDF con perfil de caja o cocina; mantiene los permisos de la factura.
+$router->get('/facturas/{id}/pdf', [FacturaController::class, 'pdf'], ['auth', 'permiso:modulo.ventas']);

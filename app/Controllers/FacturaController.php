@@ -10,6 +10,9 @@ use App\Core\Peticion;
 use App\Core\Respuesta;
 use App\Models\Bitacora;
 use App\Models\Factura;
+use App\Models\ConfiguracionTickets;
+use App\Services\TicketsPdf;
+use DomainException;
 
 final class FacturaController extends Controller
 {
@@ -35,7 +38,31 @@ final class FacturaController extends Controller
         $s = $f['snapshot'];
         return $this->vista('facturas/tickets', ['titulo' => 'Factura N° ' . $f['numero'], 'h1' => 'Pedido ' . $s['pedido'] . ' · factura N° ' . $f['numero'],
             'modulo' => 'ventas', 'claseBody' => 'panel--tickets', 'css' => ['modulos.css', 'tickets.css', 'tickets-hu10.css'],
-            'js' => ['qrcode.js', 'tickets.js', 'anular.js'], 'f' => $f, 's' => $s]);
+            'js' => ['qrcode.js', 'tickets.js', 'anular.js'], 'f' => $f, 's' => $s, 'perfilesTickets' => ConfiguracionTickets::todas()]);
+    }
+
+    /** Entrega un PDF real; nunca abre un diálogo ni envía trabajos a una impresora. */
+    public function pdf(Peticion $peticion): Respuesta
+    {
+        $f = $this->permitida((int) $peticion->parametro('id'));
+        $destino = $peticion->consulta('destino', 'caja');
+        $soloFactura = $peticion->consulta('solo') === 'factura';
+        if ($soloFactura && $destino !== 'caja') throw new ErrorHttp(422, 'La factura individual utiliza el perfil de caja.');
+        try {
+            $salida = TicketsPdf::preparar($destino, $soloFactura);
+        } catch (DomainException $e) {
+            throw new ErrorHttp(422, $e->getMessage());
+        }
+        $bytes = TicketsPdf::generar($f['snapshot'], $salida);
+        $nombre = 'Tickets-' . $destino . '-factura-' . (int) $f['numero'] . '.pdf';
+        $disposicion = $peticion->consulta('descargar') === '1' ? 'attachment' : 'inline';
+        return new Respuesta($bytes, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => $disposicion . '; filename="' . $nombre . '"',
+            'Content-Length' => (string) strlen($bytes),
+            'Cache-Control' => 'private, no-store',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     public function reimprimir(Peticion $peticion): Respuesta
