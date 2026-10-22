@@ -64,7 +64,7 @@ Los cajeros también tienen la contraseña `Pahuichi2026`. El PIN de autorizaci�
 | HU-28 | Cuadrícula del POS: favoritos primero, categorías con su color, búsqueda por nombre o código; agotado visible sin poder venderse | `/pos` |
 | HU-29 | Carrito: un toque agrega y otro suma; +, − y quitar por línea; total siempre visible; cancelar pedido con confirmación | `/pos` |
 | HU-10 | Leyendas de la Ley 453: agregar, activar y desactivar con mínimo 8 activas; `Leyenda::alAzar()` elige una para cada factura | `/config#leyendas` |
-| HU-06 | Descuento manual con el PIN del administrador: permiso de un solo uso por 5 minutos, bloqueo tras 5 PIN errados, menor que el subtotal; venta, factura y bitácora guardan monto, motivo y quién autorizó | `/pos` |
+| HU-06 | Descuento manual con el PIN del administrador: permiso de un solo uso por 5 minutos, bloqueo tras 5 PIN errados, menor que el subtotal; venta, factura y bitácora guardan monto, motivo y quién autorizó. «Anular venta» en los tickets ya pide y valida el PIN (anular es HU-44). Cada administrador elige su PIN en Usuarios → «Mi PIN de autorización» | `/pos`, `/facturas/{id}`, `/usuarios` |
 | HU-46 | Promociones: descuento por producto o categoría, en % o Bs por unidad; se aplica solo al agregar, se ve como línea de descuento y, si dos tocan el mismo producto, gana la de mayor beneficio. El servidor la recalcula al cobrar | `/promociones`, `/pos` |
 | HU-30 | Tipo de pedido: mesa con su número (1 a 99, sin valor por defecto) o para llevar; la comanda dice «MESA 4» o «PARA LLEVAR» | `/pos` |
 | HU-31 | Nota por ítem para cocina (hasta 60 caracteres, Enter la guarda): sale solo en la comanda; las bebidas y lo que no va a cocina no la ofrecen | `/pos` |
