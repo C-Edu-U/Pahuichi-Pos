@@ -144,6 +144,42 @@ final class PromocionesTest extends CasoPrueba
         $this->assertSame(0, (int) DB::valor('SELECT COUNT(*) FROM promociones'));
     }
 
+    /**
+     * Escenario: Crear un regalo por compra
+     *   Dado soy administrador
+     *   Cuando creo «Promo martes»: por cada Picante de pollo, 1 Soda cola 500 ml gratis
+     *   Entonces queda guardada y la lista la muestra como regalo
+     */
+    public function testCreaUnRegaloPorCompra(): void
+    {
+        $picante = (int) DB::valor("SELECT id FROM productos WHERE codigo = 'PL-03'");
+        $soda = (int) DB::valor("SELECT id FROM productos WHERE codigo = 'SO-01'");
+
+        $r = $this->crear(['nombre' => 'Promo martes', 'tipo' => 'regalo', 'aplica' => 'p:' . $picante, 'cantidad_compra' => '1', 'regalo' => (string) $soda, 'valor' => '']);
+
+        $this->assertRedirige('/promociones', $r);
+        $p = DB::fila("SELECT tipo, valor, valor_tipo, producto_id, cantidad_compra, regalo_producto_id FROM promociones WHERE nombre = 'Promo martes'");
+        $this->assertSame(['regalo', null, null, $picante, 1, $soda], [$p['tipo'], $p['valor'], $p['valor_tipo'], (int) $p['producto_id'], (int) $p['cantidad_compra'], (int) $p['regalo_producto_id']]);
+        $lista = $this->get('/promociones')->cuerpo;
+        $this->assertStringContainsString('Regalo por compra', $lista);
+        $this->assertStringContainsString('1 Soda cola 500 ml gratis por cada uno', $lista);
+        $this->assertStringContainsString('"descuento":"1 Soda cola 500 ml gratis por cada uno"', (string) Bitacora::ultimos('promocion.alta')[0]['detalle']);
+
+        $form = $this->get('/promociones/' . DB::valor('SELECT id FROM promociones') . '/editar')->cuerpo;
+        $this->assertStringContainsString('name="tipo" value="regalo" checked', $form);
+        $this->assertStringContainsString('<option value="' . $soda . '" selected>', $form);
+    }
+
+    public function testValidaElRegalo(): void
+    {
+        $r = $this->crear(['tipo' => 'regalo', 'cantidad_compra' => '0', 'regalo' => '']);
+
+        $this->assertSame(422, $r->estado);
+        $this->assertStringContainsString('De 1 a 99 unidades.', $r->cuerpo);
+        $this->assertStringContainsString('Elige el producto que se regala.', $r->cuerpo);
+        $this->assertSame(0, (int) DB::valor('SELECT COUNT(*) FROM promociones'));
+    }
+
     public function testSinPromocionesMuestraElEstadoVacio(): void
     {
         $this->assertStringContainsString('Todavía no hay promociones', $this->get('/promociones')->cuerpo);

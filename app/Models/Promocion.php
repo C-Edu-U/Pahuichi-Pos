@@ -9,10 +9,11 @@ use App\Core\DB;
 /** Promociones (HU-46): por ahora, descuento por producto o por categoría, en % o en Bs por unidad. */
 final class Promocion
 {
-    private const SELECT = 'SELECT pr.*, p.nombre AS producto, p.precio AS producto_precio, c.nombre AS categoria
+    private const SELECT = 'SELECT pr.*, p.nombre AS producto, p.precio AS producto_precio, c.nombre AS categoria, rg.nombre AS regalo
         FROM promociones pr
         LEFT JOIN productos p ON p.id = pr.producto_id
-        LEFT JOIN categorias c ON c.id = pr.categoria_id';
+        LEFT JOIN categorias c ON c.id = pr.categoria_id
+        LEFT JOIN productos rg ON rg.id = pr.regalo_producto_id';
 
     /** Todas para la administración: las activas primero. */
     public static function todas(): array
@@ -28,23 +29,25 @@ final class Promocion
     /** Las que el motor evalúa al vender. */
     public static function activas(): array
     {
-        return DB::filas('SELECT id, nombre, valor_tipo, valor, producto_id, categoria_id FROM promociones WHERE activo = 1 ORDER BY id');
+        return DB::filas('SELECT id, nombre, tipo, valor_tipo, valor, producto_id, categoria_id, cantidad_compra, regalo_producto_id FROM promociones WHERE activo = 1 ORDER BY id');
     }
 
-    /** @param array{nombre: string, valor_tipo: string, valor: string, producto_id: ?int, categoria_id: ?int, activo: int} $d */
+    /** Columnas que guarda el formulario, en orden. */
+    private const CAMPOS = ['nombre', 'tipo', 'valor_tipo', 'valor', 'producto_id', 'categoria_id', 'cantidad_compra', 'regalo_producto_id', 'activo'];
+
     public static function crear(array $d): int
     {
         return DB::insertar(
-            'INSERT INTO promociones (nombre, valor_tipo, valor, producto_id, categoria_id, activo) VALUES (?, ?, ?, ?, ?, ?)',
-            [$d['nombre'], $d['valor_tipo'], $d['valor'], $d['producto_id'], $d['categoria_id'], $d['activo']],
+            'INSERT INTO promociones (' . implode(', ', self::CAMPOS) . ') VALUES (' . implode(', ', array_fill(0, count(self::CAMPOS), '?')) . ')',
+            array_map(static fn (string $c): mixed => $d[$c], self::CAMPOS),
         );
     }
 
     public static function actualizar(int $id, array $d): void
     {
         DB::consulta(
-            'UPDATE promociones SET nombre = ?, valor_tipo = ?, valor = ?, producto_id = ?, categoria_id = ?, activo = ? WHERE id = ?',
-            [$d['nombre'], $d['valor_tipo'], $d['valor'], $d['producto_id'], $d['categoria_id'], $d['activo'], $id],
+            'UPDATE promociones SET ' . implode(', ', array_map(static fn (string $c): string => "{$c} = ?", self::CAMPOS)) . ' WHERE id = ?',
+            [...array_map(static fn (string $c): mixed => $d[$c], self::CAMPOS), $id],
         );
     }
 

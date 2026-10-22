@@ -5,7 +5,7 @@
  * $productos (activos, con su categoría), $categorias (activas).
  */
 $accion = $promocion ? '/promociones/' . (int) $promocion['id'] : '/promociones/nueva';
-$etiquetas = ['nombre' => 'Nombre', 'aplica' => 'Se aplica a', 'valor' => 'Descuento'];
+$etiquetas = ['nombre' => 'Nombre', 'aplica' => 'Producto o categoría', 'valor' => 'Descuento', 'cantidad_compra' => 'Por cada', 'regalo' => 'Regalo'];
 ?>
     <main class="contenido" id="contenido">
       <a class="volver" href="/promociones">
@@ -36,12 +36,13 @@ $etiquetas = ['nombre' => 'Nombre', 'aplica' => 'Se aplica a', 'valor' => 'Descu
             <p class="campo__ayuda" id="nombre-ayuda">Así se verá en el pedido y en la copia de caja.</p>
             <?= mensaje_error($errores, 'nombre') ?>
           </div>
-        </fieldset>
-
-        <fieldset class="grupo-campos">
-          <legend class="grupo-campos__titulo">Descuento</legend>
-          <div class="campo">
-            <label class="campo__etiqueta" for="aplica">Se aplica a</label>
+          <fieldset class="tipos campo--ancho">
+            <legend class="campo__etiqueta">Tipo</legend>
+            <label class="tipo-opcion"><input type="radio" name="tipo" value="descuento"<?= $v['tipo'] === 'descuento' ? ' checked' : '' ?>><span class="tipo-opcion__caja"><?= icono('promocion') ?><span class="tipo-opcion__titulo">Descuento</span><span class="tipo-opcion__ayuda">A un producto o categoría, en % o en Bs</span></span></label>
+            <label class="tipo-opcion"><input type="radio" name="tipo" value="regalo"<?= $v['tipo'] === 'regalo' ? ' checked' : '' ?>><span class="tipo-opcion__caja"><?= icono('regalo') ?><span class="tipo-opcion__titulo">Regalo por compra</span><span class="tipo-opcion__ayuda">Compra X y se agrega Y gratis</span></span></label>
+          </fieldset>
+          <div class="campo campo--ancho">
+            <label class="campo__etiqueta" for="aplica">Producto o categoría</label>
             <select class="control" id="aplica" name="aplica"<?= campo_error($errores, 'aplica') ?>>
               <option value="">Elige un producto o una categoría</option>
               <optgroup label="Una categoría completa">
@@ -55,8 +56,34 @@ $etiquetas = ['nombre' => 'Nombre', 'aplica' => 'Se aplica a', 'valor' => 'Descu
 <?php endforeach; ?>
               </optgroup>
             </select>
+            <p class="campo__ayuda" id="aplica-ayuda">En un descuento, lo que se descuenta. En un regalo, lo que hay que comprar.</p>
             <?= mensaje_error($errores, 'aplica') ?>
           </div>
+        </fieldset>
+
+        <fieldset class="grupo-campos" data-tipo-campos="regalo"<?= $v['tipo'] === 'regalo' ? '' : ' hidden' ?>>
+          <legend class="grupo-campos__titulo">Regalo por compra</legend>
+          <div class="campo">
+            <label class="campo__etiqueta" for="cantidad_compra">Por cada</label>
+            <input class="control control--numero" id="cantidad_compra" name="cantidad_compra" type="text" inputmode="numeric" maxlength="2" value="<?= e($v['cantidad_compra']) ?>"<?= campo_error($errores, 'cantidad_compra', 'cantidad-compra-ayuda') ?>>
+            <p class="campo__ayuda" id="cantidad-compra-ayuda">Unidades compradas por cada regalo.</p>
+            <?= mensaje_error($errores, 'cantidad_compra') ?>
+          </div>
+          <div class="campo">
+            <label class="campo__etiqueta" for="regalo">Se regala</label>
+            <select class="control" id="regalo" name="regalo"<?= campo_error($errores, 'regalo', 'regalo-ayuda') ?>>
+              <option value="">Elige el producto de regalo</option>
+<?php foreach ($productos as $p): ?>
+              <option value="<?= (int) $p['id'] ?>"<?= $v['regalo'] === (string) $p['id'] ? ' selected' : '' ?>><?= e($p['nombre']) ?> · Bs <?= bs($p['precio']) ?></option>
+<?php endforeach; ?>
+            </select>
+            <p class="campo__ayuda" id="regalo-ayuda">Se agrega solo al pedido a Bs 0. Si está agotado, no se agrega.</p>
+            <?= mensaje_error($errores, 'regalo') ?>
+          </div>
+        </fieldset>
+
+        <fieldset class="grupo-campos" data-tipo-campos="descuento"<?= $v['tipo'] === 'descuento' ? '' : ' hidden' ?>>
+          <legend class="grupo-campos__titulo">Descuento</legend>
           <div class="campo">
             <label class="campo__etiqueta" for="valor">Descuento</label>
             <div class="control-grupo">
@@ -69,6 +96,10 @@ $etiquetas = ['nombre' => 'Nombre', 'aplica' => 'Se aplica a', 'valor' => 'Descu
             <p class="campo__ayuda" id="valor-ayuda">En %, sobre el subtotal de la línea. En Bs, por cada unidad. Nunca deja un producto gratis ni en negativo.</p>
             <?= mensaje_error($errores, 'valor') ?>
           </div>
+        </fieldset>
+
+        <fieldset class="grupo-campos">
+          <legend class="grupo-campos__titulo">Estado</legend>
           <label class="casilla campo--ancho"><input type="checkbox" id="activo" name="activo" value="1"<?= (int) $v['activo'] ? ' checked' : '' ?>><span class="casilla__texto"><span class="casilla__titulo">Activa</span><span class="casilla__ayuda">Se aplica desde ya en el punto de venta. Pausada, no se aplica.</span></span></label>
         </fieldset>
 

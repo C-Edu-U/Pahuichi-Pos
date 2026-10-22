@@ -143,6 +143,20 @@
   // Subtotal con las promociones ya descontadas: el descuento manual debe ser menor
   function neto() { return (centavos(carrito.total()) - promoCentavos()) / 100; }
   function aCobrar() { return (centavos(neto()) - (descuento ? descuento.centavos : 0)) / 100; }
+  // Regalo por compra: se agrega solo a Bs 0 mientras el pedido tenga lo que lo activa
+  function regalos() { return Promos.regalos(carrito.lineas, promociones, carrito.catalogo); }
+  function regalosCentavos() { return regalos().reduce(function (s, r) { return s + r.centavos; }, 0); }
+
+  function lineaRegalo(r) {
+    var li = document.createElement('li');
+    li.className = 'linea linea--regalo';
+    li.innerHTML = '<svg class="icono icono--sm" aria-hidden="true"><use href="#i-regalo"></use></svg>' +
+      '<div class="linea__texto"><span class="linea__nombre"></span><span class="linea__unitario"></span></div>' +
+      '<span class="linea__subtotal num">0,00</span>';
+    li.querySelector('.linea__nombre').textContent = r.cantidad + ' × ' + r.producto.nombre;
+    li.querySelector('.linea__unitario').textContent = 'Regalo · ' + r.promocion.nombre;
+    return li;
+  }
 
   function lineaPromo(g) {
     var li = document.createElement('li');
@@ -157,6 +171,7 @@
     var ul = $('lineas');
     ul.innerHTML = '';
     carrito.lineas.forEach(function (l) { ul.appendChild(lineaHtml(l)); });
+    regalos().forEach(function (r) { ul.appendChild(lineaRegalo(r)); });
     var grupos = Promos.agrupar(Promos.aplicar(carrito.lineas, promociones));
     grupos.forEach(function (g) { ul.appendChild(lineaPromo(g)); });
     var promo = grupos.reduce(function (s, g) { return s + g.centavos; }, 0);
@@ -370,7 +385,7 @@
       pendiente = {uuid: crypto.randomUUID(), caja_id: $('pos').getAttribute('data-caja'),
         tipo: tipoPedido, mesa: $('mesa').value, exacto: exacto ? '1' : '0',
         recibido: $('recibido').value, total_esperado: carrito.total().toFixed(2),
-        promociones: (promoCentavos() / 100).toFixed(2),
+        promociones: (promoCentavos() / 100).toFixed(2), regalos: (regalosCentavos() / 100).toFixed(2),
         descuento: descuento ? (descuento.centavos / 100).toFixed(2) : '', autorizacion: descuento ? descuento.token : '',
         a_cobrar: aCobrar().toFixed(2),
         lineas: JSON.stringify(carrito.lineas.map(function (l) { return {id: Number(l.producto.id), cantidad: l.cantidad, nota: l.nota || ''}; }))};

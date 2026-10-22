@@ -23,10 +23,13 @@ $datos = array_map(static fn (array $p): array => [
 $promos = array_map(static fn (array $pr): array => [
     'id' => (int) $pr['id'],
     'nombre' => $pr['nombre'],
+    'tipo' => $pr['tipo'],
     'valor_tipo' => $pr['valor_tipo'],
-    'valor' => (int) round((float) $pr['valor'] * 100),
+    'valor' => $pr['valor'] === null ? null : (int) round((float) $pr['valor'] * 100),
     'producto_id' => $pr['producto_id'] !== null ? (int) $pr['producto_id'] : null,
     'categoria_id' => $pr['categoria_id'] !== null ? (int) $pr['categoria_id'] : null,
+    'cantidad_compra' => $pr['cantidad_compra'] !== null ? (int) $pr['cantidad_compra'] : null,
+    'regalo_producto_id' => $pr['regalo_producto_id'] !== null ? (int) $pr['regalo_producto_id'] : null,
 ], $promociones);
 $conPromo = [];
 foreach ($productos as $p) {

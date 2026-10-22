@@ -151,6 +151,70 @@ final class CobroConPromocionTest extends CasoPrueba
         $this->assertSame('72.00', $resumen['efectivo']);
     }
 
+    private function regalo(string $nombre, int $compra, int $regalo, int $cada = 1): int
+    {
+        return DB::insertar("INSERT INTO promociones (nombre, tipo, producto_id, cantidad_compra, regalo_producto_id) VALUES (?, 'regalo', ?, ?, ?)",
+            [$nombre, $compra, $cada, $regalo]);
+    }
+
+    /**
+     * Escenario: Regalo por compra
+     *   Dado la promoción «Promo martes»: por cada Picante de pollo, 1 Soda cola 500 ml gratis
+     *   Cuando el cajero agrega 1 picante de pollo y cobra
+     *   Entonces se agrega 1 soda personal a Bs 0 con la etiqueta «Promo martes»
+     */
+    public function testElRegaloSeAgregaABsCero(): void
+    {
+        $picante = (int) DB::valor("SELECT id FROM productos WHERE codigo = 'PL-03'");   // Bs 45
+        $soda = (int) DB::valor("SELECT id FROM productos WHERE codigo = 'SO-01'");      // Bs 8
+        $promo = $this->regalo('Promo martes', $picante, $soda);
+
+        $r = $this->cobrar([$picante => 1], '45.00', '0.00', ['regalos' => '8.00']);
+
+        $this->assertSame(200, $r->estado, $r->cuerpo);
+        $f = Factura::buscar((int) json_decode($r->cuerpo, true)['id']);
+        $this->assertSame(['subtotal' => '45.00', 'descuento' => '0.00', 'total' => '45.00'], DB::fila('SELECT subtotal, descuento, total FROM ventas WHERE id = ?', [$f['venta_id']]));
+        $linea = DB::fila('SELECT id, cantidad, precio_unitario, descuento, subtotal FROM detalle_venta WHERE venta_id = ? AND producto_id = ?', [$f['venta_id'], $soda]);
+        $this->assertSame([1, '8.00', '8.00', '0.00'], [(int) $linea['cantidad'], $linea['precio_unitario'], $linea['descuento'], $linea['subtotal']]);
+        $uso = DB::fila('SELECT promocion_id, detalle_id, etiqueta, monto FROM venta_promociones WHERE venta_id = ?', [$f['venta_id']]);
+        $this->assertSame([$promo, (int) $linea['id'], 'Promo martes', '8.00'], [(int) $uso['promocion_id'], (int) $uso['detalle_id'], $uso['etiqueta'], $uso['monto']]);
+
+        $html = $this->get('/facturas/' . $f['id'])->cuerpo;
+        $this->assertStringContainsString('<li><span>1 × Soda cola 500 ml</span><span class="num">8,00</span></li><li class="ticket__promo"><span>Promo martes</span><span class="num">−8,00</span></li>', $html);
+        $this->assertStringContainsString('1,00 × 8,00 − 8,00</span><span class="ticket__sub num">0,00</span>', $html);
+        $this->assertSame('45.00', (string) $f['monto_total']);
+    }
+
+    public function testSinElRegaloEnPantallaNoSeCobra(): void
+    {
+        $picante = (int) DB::valor("SELECT id FROM productos WHERE codigo = 'PL-03'");
+        $this->regalo('Promo martes', $picante, (int) DB::valor("SELECT id FROM productos WHERE codigo = 'SO-01'"));
+
+        $r = $this->cobrar([$picante => 1], '45.00', '0.00');
+
+        $this->assertSame(422, $r->estado);
+        $this->assertSame('Cambió una promoción. Recarga el punto de venta y revisa el total antes de cobrar.', json_decode($r->cuerpo, true)['error']);
+    }
+
+    /**
+     * Escenario: Regalo agotado
+     *   Dado la soda de regalo está agotada
+     *   Cuando el cajero cobra un picante
+     *   Entonces la venta se guarda sin regalo
+     */
+    public function testUnRegaloAgotadoNoSeAgrega(): void
+    {
+        $picante = (int) DB::valor("SELECT id FROM productos WHERE codigo = 'PL-03'");
+        $soda = (int) DB::valor("SELECT id FROM productos WHERE codigo = 'SO-01'");
+        $this->regalo('Promo martes', $picante, $soda);
+        DB::consulta('UPDATE productos SET agotado = 1 WHERE id = ?', [$soda]);
+
+        $r = $this->cobrar([$picante => 2], '90.00', '0.00', ['regalos' => '0.00']);
+
+        $this->assertSame(200, $r->estado, $r->cuerpo);
+        $this->assertSame(1, (int) DB::valor('SELECT COUNT(*) FROM detalle_venta'));
+    }
+
     /**
      * Escenario: El punto de venta conoce las promociones activas
      *   Dado una promoción activa al Majadito y otra pausada al Locro
@@ -166,7 +230,8 @@ final class CobroConPromocionTest extends CasoPrueba
 
         preg_match('/data-promociones="([^"]+)"/', $html, $m);
         $promos = json_decode(html_entity_decode($m[1]), true);
-        $this->assertSame([['id' => $activa, 'nombre' => 'Martes de majadito', 'valor_tipo' => 'porcentaje', 'valor' => 1250, 'producto_id' => $this->majadito, 'categoria_id' => null]], $promos);
+        $this->assertSame([['id' => $activa, 'nombre' => 'Martes de majadito', 'tipo' => 'descuento', 'valor_tipo' => 'porcentaje', 'valor' => 1250,
+            'producto_id' => $this->majadito, 'categoria_id' => null, 'cantidad_compra' => null, 'regalo_producto_id' => null]], $promos);
         $this->assertMatchesRegularExpression('/aria-label="Majadito de charque, 40,00 bolivianos, con promoción">.*?<span class="insignia insignia--promo">Promo<\/span>/s', $html);
         $this->assertStringNotContainsString('Locro carretero, 35,00 bolivianos, con promoción', $html);
         $this->assertStringContainsString('<script src="/assets/js/motor-promociones.js"></script>', $html);
