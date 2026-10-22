@@ -17,6 +17,8 @@
   var items = Array.prototype.slice.call(grilla.children);
   var categoria = grilla.getAttribute('data-inicial') || 'todo';
   var carrito = new window.PahuichiCarrito(JSON.parse($('pos').getAttribute('data-productos') || '[]'));
+  // HU-55: conserva qué notas se están editando al volver a dibujar el pedido.
+  var notasAbiertas = new Map();
 
   function anunciar(texto) { $('anuncio').textContent = texto; }
 
@@ -111,18 +113,23 @@
     paso.insertBefore(boton('paso__boton', 'menos', ['data-paso', '-1'], l.cantidad === 1 ? 'Quitar ' + p.nombre : 'Una menos de ' + p.nombre), paso.firstChild);
     paso.appendChild(boton('paso__boton', 'mas', ['data-paso', '1'], 'Una más de ' + p.nombre));
     // HU-31: nota libre para cocina, solo en lo que sale en la comanda. Se guarda al escribir.
+    // HU-55: si se estaba escribiendo, sigue abierta aunque el pedido se vuelva a dibujar.
     if (p.cocina) {
+      var abierta = notasAbiertas.has(String(p.id));
       var notaBoton = boton('boton--fantasma', 'nota', ['data-nota', ''], 'Nota para cocina de ' + p.nombre);
-      notaBoton.setAttribute('aria-expanded', 'false');
+      notaBoton.setAttribute('aria-expanded', String(abierta));
       li.querySelector('.linea__controles').appendChild(notaBoton);
+      var notas = document.createElement('div');
+      notas.className = 'linea__notas';
+      li.appendChild(notas);
+      var notaTexto = document.createElement('p'); notaTexto.className = 'linea__nota-texto';
+      notaTexto.textContent = l.nota || ''; notaTexto.hidden = abierta || !(l.nota || '').trim(); notas.appendChild(notaTexto);
       var notaCampo = document.createElement('label');
-      notaCampo.className = 'linea__nota'; notaCampo.hidden = true;
+      notaCampo.className = 'linea__nota'; notaCampo.hidden = !abierta;
       notaCampo.innerHTML = '<span class="visualmente-oculto">Nota para cocina de </span><input class="control" type="text" maxlength="60" enterkeyhint="done" placeholder="Nota para cocina, p. ej. sin cebolla">';
       notaCampo.querySelector('.visualmente-oculto').textContent += p.nombre;
       notaCampo.querySelector('input').value = l.nota || '';
-      li.appendChild(notaCampo);
-      var notaTexto = document.createElement('p'); notaTexto.className = 'linea__nota-texto';
-      notaTexto.textContent = l.nota || ''; notaTexto.hidden = !l.nota; li.appendChild(notaTexto);
+      notas.appendChild(notaCampo);
     }
     li.querySelector('.linea__controles').appendChild(boton('boton--fantasma', 'basura', ['data-quitar', ''], 'Quitar ' + p.nombre + ' del pedido'));
     return li;
@@ -273,6 +280,7 @@
     if (paso) {
       var delta = parseInt(paso.getAttribute('data-paso'), 10);
       var queda = carrito.cambiar(id, delta);
+      if (!queda) notasAbiertas.delete(id);
       anunciar(queda ? nombre + ': ' + queda + ' en el pedido.' : nombre + ' quitado del pedido.');
       pintar();
       // El foco se queda en el mismo botón si la línea sigue; si no, vuelve a la búsqueda
@@ -282,6 +290,7 @@
     }
     if (e.target.closest('[data-quitar]')) {
       carrito.quitar(id);
+      notasAbiertas.delete(id);
       anunciar(nombre + ' quitado del pedido.');
       pintar();
       buscador.focus();
@@ -290,6 +299,7 @@
 
   // Mientras se escribe, la nota se ve solo en el campo; al cerrarlo queda debajo del plato
   function abrirNota(li) {
+    notasAbiertas.set(li.dataset.id, true);
     li.querySelector('.linea__nota').hidden = false;
     li.querySelector('.linea__nota-texto').hidden = true;
     li.querySelector('[data-nota]').setAttribute('aria-expanded', 'true');
@@ -297,7 +307,10 @@
   }
   function cerrarNota(li) {
     var l = carrito.linea(li.dataset.id);
+    notasAbiertas.delete(li.dataset.id);
+    if (l) l.nota = (l.nota || '').trim();
     li.querySelector('.linea__nota').hidden = true;
+    li.querySelector('.linea__nota-texto').textContent = l ? l.nota : '';
     li.querySelector('.linea__nota-texto').hidden = !(l && l.nota);
     var abre = li.querySelector('[data-nota]');
     abre.setAttribute('aria-expanded', 'false');
@@ -308,7 +321,8 @@
     if (!e.target.matches('.linea__nota input') || pendiente) return;
     var li = e.target.closest('.linea');
     var l = carrito.linea(li.dataset.id);
-    l.nota = e.target.value.trim();
+    // No recorta mientras se escribe: conserva espacios y el texto al redibujar.
+    l.nota = e.target.value;
     li.querySelector('.linea__nota-texto').textContent = l.nota;
   });
 
@@ -330,7 +344,7 @@
   });
   modal.addEventListener('close', function () {
     if (modal.returnValue !== 'vaciar') return;
-    carrito.vaciar();
+    carrito.vaciar(); notasAbiertas.clear();
     window.PahuichiCliente.reset();
     pintar();
     anunciar('Pedido cancelado.');
@@ -477,7 +491,7 @@
       // HU-49: esta venta cuenta para el tope de hoy de sus promociones
       usadasPendiente.forEach(function (id) { usos[id] = (usos[id] || 0) + 1; });
       usadasPendiente = [];
-      carrito.vaciar();
+      carrito.vaciar(); notasAbiertas.clear();
       window.PahuichiCliente.reset();
       if (dialogoCobro.open) dialogoCobro.close();
       // El siguiente pedido vuelve a elegir su mesa
