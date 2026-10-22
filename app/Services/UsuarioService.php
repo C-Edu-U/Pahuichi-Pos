@@ -135,6 +135,49 @@ final class UsuarioService
         return $credenciales;
     }
 
+    /**
+     * HU-06: el administrador elige su propio PIN de autorización. Confirma con su
+     * contraseña. El PIN no puede ser obvio ni repetir el de otro usuario: si fuera
+     * igual al de un cajero, ese cajero podría autorizarse a sí mismo.
+     * @return array<string, string> errores por campo (vacío si se guardó)
+     */
+    public function cambiarMiPin(string $clave, string $pin, string $confirmacion): array
+    {
+        $u = $this->buscar((int) Auth::id());
+        if ($u['rol'] !== 'administrador') {
+            throw new DomainException('Solo el administrador tiene PIN de autorización.');
+        }
+        $errores = [];
+        if ($u['password_hash'] === null || !password_verify($clave, $u['password_hash'])) {
+            $errores['mp-clave'] = 'Tu contraseña actual no coincide.';
+        }
+        if (!preg_match('/^\d{4,6}$/D', $pin)) {
+            $errores['mp-pin'] = 'El PIN tiene de 4 a 6 dígitos.';
+        } elseif ($this->pinObvio($pin)) {
+            $errores['mp-pin'] = 'Elige un PIN menos obvio: sin dígitos repetidos ni seguidos (1111, 1234).';
+        } elseif ($this->pinUsado($pin, (int) $u['id'])) {
+            $errores['mp-pin'] = 'Ese PIN ya lo usa otra persona. Elige otro.';
+        } elseif ($pin !== $confirmacion) {
+            $errores['mp-confirmacion'] = 'Los dos PIN no coinciden.';
+        }
+        if ($errores) {
+            return $errores;
+        }
+        DB::consulta('UPDATE usuarios SET pin_hash = ? WHERE id = ?', [password_hash($pin, PASSWORD_BCRYPT), (int) $u['id']]);
+        Bitacora::registrar('usuario.cambio_pin', 'usuarios', (int) $u['id']);
+        return [];
+    }
+
+    private function pinUsado(string $pin, int $excepto): bool
+    {
+        foreach (DB::filas('SELECT pin_hash FROM usuarios WHERE pin_hash IS NOT NULL AND id <> ?', [$excepto]) as $o) {
+            if (password_verify($pin, $o['pin_hash'])) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** Credenciales iniciales según el rol: cocina no usa ninguna. */
     private function credencialesPara(string $rol): array
     {

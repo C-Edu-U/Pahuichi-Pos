@@ -80,6 +80,24 @@ final class UsuarioController extends Controller
         ]);
     }
 
+    /** HU-06: el administrador cambia su propio PIN de autorización. */
+    public function miPin(Peticion $peticion): Respuesta
+    {
+        try {
+            $errores = (new UsuarioService())->cambiarMiPin(
+                (string) $peticion->entrada('clave'),
+                (string) $peticion->entrada('pin'),
+                (string) $peticion->entrada('confirmacion'),
+            );
+        } catch (DomainException $e) {
+            return $this->redirigirConAviso('/usuarios', $e->getMessage());
+        }
+        if ($errores) {
+            return $this->pantalla(['erroresPin' => $errores], 422);
+        }
+        return $this->redirigirConAviso('/usuarios', 'Tu PIN de autorización se cambió. El anterior ya no sirve.');
+    }
+
     /** Corre una acción sobre el usuario {id}; los errores de regla vuelven como aviso. */
     private function accion(Peticion $peticion, callable $fn): Respuesta
     {
@@ -119,6 +137,7 @@ final class UsuarioController extends Controller
             'usuarios' => $usuarios,
             'yo' => Auth::id(),
             'errores' => [],
+            'erroresPin' => [],
             'viejo' => ['nombre' => '', 'usuario' => '', 'rol' => 'cajero'],
             'credenciales' => Sesion::tomarFlash('credenciales'),
         ], $estado);
