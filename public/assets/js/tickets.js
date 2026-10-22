@@ -14,20 +14,8 @@
       document.querySelectorAll('[data-ancho]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
     });
   });
-  // Mantener el modo factura hasta que el navegador termine o cancele el diálogo.
-  window.addEventListener('afterprint', function () { document.body.classList.remove('solo-factura'); });
+  // HU-12: el servidor aplica ancho, columnas, selección y copias vigentes.
   document.getElementById('descargar-pdf').addEventListener('click', function () {
-    document.body.classList.add('solo-factura'); window.print();
-  });
-  document.getElementById('reimprimir').addEventListener('click', async function () {
-    var boton = this; boton.disabled = true;
-    try {
-      var r = await fetch('/facturas/' + tickets.dataset.factura + '/reimpresion', { method: 'POST', headers: { Accept: 'application/json', 'X-CSRF-Token': document.body.dataset.csrf } });
-      if (!r.ok) throw new Error('No se pudo registrar la reimpresión. Recarga e inténtalo de nuevo.');
-      document.querySelectorAll('.ticket__reimpresion').forEach(function (p) { p.hidden = false; });
-      document.getElementById('aviso-reimpresion').hidden = false;
-      document.body.classList.remove('solo-factura'); window.print();
-    } catch (err) { window.Pahuichi.aviso(err.message); }
-    finally { boton.disabled = false; }
+    window.location.assign('/facturas/' + tickets.dataset.factura + '/pdf?destino=caja&solo=factura');
   });
 })();

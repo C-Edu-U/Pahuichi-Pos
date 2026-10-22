@@ -39,6 +39,7 @@ return [
 
         'config.negocio' => ['Datos del negocio', 'configuracion', 'neutra'],
         'config.fiscal' => ['Parámetros fiscales', 'configuracion', 'aviso'],
+        'config.tickets' => ['Configuración de tickets en PDF', 'configuracion', 'neutra'],
         'config.turnos' => ['Horario de turnos', 'configuracion', 'neutra'],
         'config.turnos.agregar' => ['Turno agregado', 'configuracion', 'neutra'],
         'config.turnos.eliminar' => ['Turno eliminado', 'configuracion', 'aviso'],

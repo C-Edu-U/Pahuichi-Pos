@@ -15,6 +15,8 @@ use App\Models\Leyenda;
 use App\Services\LeyendaService;
 use App\Models\ParametrosFiscales;
 use App\Models\Turno;
+use App\Models\ConfiguracionTickets;
+use App\Services\TicketsPdf;
 use App\Services\Imagenes;
 use DomainException;
 
@@ -256,6 +258,17 @@ final class ConfigController extends Controller
             : $this->redirigirConAviso('/config#leyendas', 'Estado de la leyenda guardado.');
     }
 
+    /** HU-12: el permiso de administrador y CSRF se aplican en la ruta. */
+    public function tickets(Peticion $peticion): Respuesta
+    {
+        try {
+            TicketsPdf::guardar($peticion->parametro('destino'), $peticion->datos);
+        } catch (DomainException $e) {
+            return $this->pantalla(['errorTickets' => $e->getMessage()], 422);
+        }
+        return $this->redirigirConAviso('/config#impresoras', 'Configuración de tickets en PDF guardada.');
+    }
+
     private function pantalla(array $datos = [], int $estado = 200): Respuesta
     {
         return $this->vista('config/index', $datos + [
@@ -269,6 +282,7 @@ final class ConfigController extends Controller
             'fiscal' => ParametrosFiscales::obtener(),
             'turnos' => Turno::todos(),
             'leyendas' => Leyenda::todas(),
+            'perfilesTickets' => ConfiguracionTickets::todas(),
         ], $estado);
     }
 }
