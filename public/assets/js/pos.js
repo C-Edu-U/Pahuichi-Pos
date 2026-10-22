@@ -17,6 +17,8 @@
   var items = Array.prototype.slice.call(grilla.children);
   var categoria = grilla.getAttribute('data-inicial') || 'todo';
   var carrito = new window.PahuichiCarrito(JSON.parse($('pos').getAttribute('data-productos') || '[]'));
+  // HU-55: conserva qué notas se están editando al volver a dibujar el pedido.
+  var notasAbiertas = new Map();
 
   function anunciar(texto) { $('anuncio').textContent = texto; }
 
@@ -110,16 +112,20 @@
     paso.querySelector('.paso__valor').textContent = l.cantidad;
     paso.insertBefore(boton('paso__boton', 'menos', ['data-paso', '-1'], l.cantidad === 1 ? 'Quitar ' + p.nombre : 'Una menos de ' + p.nombre), paso.firstChild);
     paso.appendChild(boton('paso__boton', 'mas', ['data-paso', '1'], 'Una más de ' + p.nombre));
+    var notaAbierta = notasAbiertas.has(String(p.id)) ? notasAbiertas.get(String(p.id)) : !!(l.nota || '').trim();
     var notaBoton = boton('boton--fantasma', 'nota', ['data-nota', ''], 'Nota para cocina de ' + p.nombre);
-    notaBoton.setAttribute('aria-expanded', 'false');
+    notaBoton.setAttribute('aria-expanded', String(notaAbierta));
     li.querySelector('.linea__controles').appendChild(notaBoton);
+    var notas = document.createElement('div');
+    notas.className = 'linea__notas';
+    li.appendChild(notas);
     var notaCampo = document.createElement('label');
-    notaCampo.className = 'linea__nota'; notaCampo.hidden = true;
-    notaCampo.innerHTML = '<span class="visualmente-oculto">Nota para cocina</span><input class="control" type="text" maxlength="60" placeholder="Nota para cocina, p. ej. sin cebolla">';
-    notaCampo.querySelector('input').value = l.nota || '';
-    li.appendChild(notaCampo);
+    notaCampo.className = 'linea__nota'; notaCampo.hidden = !notaAbierta;
+    notaCampo.innerHTML = '<span>Editar nota para cocina</span><textarea class="control" rows="2" maxlength="60" placeholder="Por ejemplo: sin ají y sin arroz"></textarea><small>Máximo 60 caracteres. Puedes volver a escribir haciendo clic en el campo.</small>';
+    notaCampo.querySelector('textarea').value = l.nota || '';
+    notas.appendChild(notaCampo);
     var notaTexto = document.createElement('p'); notaTexto.className = 'linea__nota-texto';
-    notaTexto.textContent = l.nota || ''; notaTexto.hidden = !l.nota; li.appendChild(notaTexto);
+    notaTexto.textContent = l.nota || ''; notaTexto.hidden = notaAbierta || !(l.nota || '').trim(); notas.insertBefore(notaTexto, notaCampo);
     li.querySelector('.linea__controles').appendChild(boton('boton--fantasma', 'basura', ['data-quitar', ''], 'Quitar ' + p.nombre + ' del pedido'));
     return li;
   }
@@ -166,14 +172,17 @@
     var nota = e.target.closest('[data-nota]');
     if (nota) {
       var campo = li.querySelector('.linea__nota'); campo.hidden = !campo.hidden;
+      notasAbiertas.set(id, !campo.hidden);
+      li.querySelector('.linea__nota-texto').hidden = !campo.hidden || !(carrito.linea(id).nota || '').trim();
       nota.setAttribute('aria-expanded', String(!campo.hidden));
-      if (!campo.hidden) campo.querySelector('input').focus();
+      if (!campo.hidden) campo.querySelector('textarea').focus();
       return;
     }
     var paso = e.target.closest('[data-paso]');
     if (paso) {
       var delta = parseInt(paso.getAttribute('data-paso'), 10);
       var queda = carrito.cambiar(id, delta);
+      if (!queda) notasAbiertas.delete(id);
       anunciar(queda ? nombre + ': ' + queda + ' en el pedido.' : nombre + ' quitado del pedido.');
       pintar();
       // El foco se queda en el mismo botón si la línea sigue; si no, vuelve a la búsqueda
@@ -183,6 +192,7 @@
     }
     if (e.target.closest('[data-quitar]')) {
       carrito.quitar(id);
+      notasAbiertas.delete(id);
       anunciar(nombre + ' quitado del pedido.');
       pintar();
       buscador.focus();
@@ -190,12 +200,13 @@
   });
 
   $('lineas').addEventListener('input', function (e) {
-    if (!e.target.matches('.linea__nota input') || pendiente) return;
+    if (!e.target.matches('.linea__nota textarea') || pendiente) return;
     var li = e.target.closest('.linea');
     var l = carrito.linea(li.dataset.id);
-    l.nota = e.target.value.trim();
+    // No recorta mientras se escribe: conserva espacios y el texto al redibujar.
+    l.nota = e.target.value;
     li.querySelector('.linea__nota-texto').textContent = l.nota;
-    li.querySelector('.linea__nota-texto').hidden = !l.nota;
+    li.querySelector('.linea__nota-texto').hidden = !li.querySelector('.linea__nota').hidden || !l.nota.trim();
   });
 
   // Cancelar el pedido: pide confirmación porque se pierde lo cargado
@@ -206,7 +217,7 @@
   });
   modal.addEventListener('close', function () {
     if (modal.returnValue !== 'vaciar') return;
-    carrito.vaciar();
+    carrito.vaciar(); notasAbiertas.clear();
     window.PahuichiCliente.reset();
     pintar();
     anunciar('Pedido cancelado.');
@@ -300,7 +311,7 @@
       sessionStorage.removeItem(claveCobro);
       pendiente = null;
       enviando = false;
-      carrito.vaciar();
+      carrito.vaciar(); notasAbiertas.clear();
       window.PahuichiCliente.reset();
       if (dialogoCobro.open) dialogoCobro.close();
       pintar(); bloquearPedido(false);

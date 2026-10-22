@@ -539,19 +539,41 @@
   margin-right: auto;
 }
 
-.linea__nota,
-.linea__nota-texto {
+.linea__notas {
   grid-area: nota;
+  min-width: 0;
+}
+
+.linea__nota {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+  font-size: var(--texto-sm);
 }
 
 .linea__nota-texto {
+  margin: 0;
+  padding-top: 0.5rem;
   font-size: var(--texto-sm);
   font-style: italic;
   color: var(--color-texto-2);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
 
 .linea__nota .control {
-  min-height: 2.75rem;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 4.5rem;
+  resize: vertical;
+  overflow-wrap: anywhere;
+}
+
+.linea__nota small {
+  color: var(--color-texto-2);
+  line-height: 1.4;
 }
 
 .paso {
