@@ -1,10 +1,12 @@
 <?php
 /**
  * Punto de venta con caja abierta: cuadrícula (HU-28) y carrito (HU-29). Variables: $caja, $productos (activos, favoritos
- * primero), $categorias (activas con productos), $hayFavoritos, $promociones (activas, HU-46).
+ * primero), $categorias (activas con productos), $hayFavoritos, $promociones (activas, HU-46),
+ * $contextoPromos y $ahora (HU-49: momento del servidor y usos de hoy).
  * Los datos de cada producto van en data-* para el JS (la CSP no permite scripts en línea).
  */
 use App\Models\Categoria;
+use App\Services\PromocionService;
 
 $inicial = $hayFavoritos ? 'favoritos' : 'todo';
 $datos = array_map(static fn (array $p): array => [
@@ -19,26 +21,38 @@ $datos = array_map(static fn (array $p): array => [
     'cocina' => (bool) (int) $p['va_a_cocina'],
     'categoria' => (int) $p['categoria_id'],
 ], $productos);
-// HU-46: valor en centésimos (12,50 → 1250), igual que lo calcula PromocionService
+// HU-46: valor en centésimos (12,50 → 1250), igual que lo calcula PromocionService.
+// HU-49: restricciones y usos de hoy; montos en centavos, horas como «HH:MM:SS».
+$entero = static fn (mixed $x): ?int => $x === null ? null : (int) $x;
 $promos = array_map(static fn (array $pr): array => [
     'id' => (int) $pr['id'],
     'nombre' => $pr['nombre'],
     'valor_tipo' => $pr['valor_tipo'],
-    'valor' => (int) round((float) $pr['valor'] * 100),
-    'producto_id' => $pr['producto_id'] !== null ? (int) $pr['producto_id'] : null,
-    'categoria_id' => $pr['categoria_id'] !== null ? (int) $pr['categoria_id'] : null,
+    'valor' => PromocionService::centesimos((string) $pr['valor']),
+    'producto_id' => $entero($pr['producto_id']),
+    'categoria_id' => $entero($pr['categoria_id']),
+    'fecha_desde' => $pr['fecha_desde'],
+    'fecha_hasta' => $pr['fecha_hasta'],
+    'dias' => (int) $pr['dias'],
+    'hora_desde' => $pr['hora_desde'],
+    'hora_hasta' => $pr['hora_hasta'],
+    'cantidad_minima' => $entero($pr['cantidad_minima']),
+    'monto_minimo' => $pr['monto_minimo'] === null ? null : PromocionService::centesimos((string) $pr['monto_minimo']),
+    'tope_usos_dia' => $entero($pr['tope_usos_dia']),
+    'usos' => (int) ($contextoPromos['usos'][(int) $pr['id']] ?? 0),
 ], $promociones);
+// Promociones que tocan cada producto; la marca «Promo» se ve si alguna vale ahora (pos.js la actualiza)
 $conPromo = [];
 foreach ($productos as $p) {
-    foreach ($promos as $pr) {
-        if ($pr['producto_id'] === (int) $p['id'] || $pr['categoria_id'] === (int) $p['categoria_id']) {
-            $conPromo[(int) $p['id']] = true;
+    foreach ($promociones as $pr) {
+        if ((int) $pr['producto_id'] === (int) $p['id'] || (int) $pr['categoria_id'] === (int) $p['categoria_id']) {
+            $conPromo[(int) $p['id']][(int) $pr['id']] = PromocionService::vigente($pr, $contextoPromos);
         }
     }
 }
 ?>
     <main class="contenido contenido--pos" id="contenido">
-      <div class="pos" data-caja="<?= (int) $caja['id'] ?>" id="pos" data-productos="<?= e(json_encode($datos, JSON_UNESCAPED_UNICODE)) ?>" data-promociones="<?= e(json_encode($promos, JSON_UNESCAPED_UNICODE)) ?>">
+      <div class="pos" data-caja="<?= (int) $caja['id'] ?>" id="pos" data-productos="<?= e(json_encode($datos, JSON_UNESCAPED_UNICODE)) ?>" data-promociones="<?= e(json_encode($promos, JSON_UNESCAPED_UNICODE)) ?>" data-ahora="<?= e($ahora->format('Y-m-d\TH:i:s')) ?>">
         <section class="pos__catalogo" aria-labelledby="t-catalogo">
           <h2 class="visualmente-oculto" id="t-catalogo">Productos</h2>
           <div class="pos__busqueda">
@@ -66,13 +80,14 @@ foreach ($productos as $p) {
     $agotado = (bool) (int) $p['agotado'];
     $favorito = (bool) (int) $p['favorito'];
     $visible = $inicial === 'todo' || $favorito;
-    $promo = isset($conPromo[(int) $p['id']]);
+    $promosProducto = $conPromo[(int) $p['id']] ?? [];
+    $promoAhora = in_array(true, $promosProducto, true);
 ?>
             <li data-categoria="<?= (int) $p['categoria_id'] ?>" data-favorito="<?= (int) $favorito ?>" data-busqueda="<?= e($p['nombre'] . ' ' . $p['nombre_corto'] . ' ' . $p['codigo']) ?>"<?= $visible ? '' : ' hidden' ?>>
-              <button class="producto-pos <?= e(Categoria::clase($p['categoria_color'])) ?>" type="button" data-id="<?= (int) $p['id'] ?>"<?= $agotado ? ' disabled' : '' ?> aria-label="<?= e($p['nombre'] . ', ' . bs($p['precio']) . ' bolivianos' . ($agotado ? ', agotado' : ($promo ? ', con promoción' : ''))) ?>">
+              <button class="producto-pos <?= e(Categoria::clase($p['categoria_color'])) ?>" type="button" data-id="<?= (int) $p['id'] ?>"<?= $promosProducto ? ' data-promos="' . e(implode(',', array_keys($promosProducto))) . '"' : '' ?><?= $agotado ? ' disabled' : '' ?> aria-label="<?= e($p['nombre'] . ', ' . bs($p['precio']) . ' bolivianos' . ($agotado ? ', agotado' : '')) ?>">
                 <span class="producto-pos__foto" aria-hidden="true"><?php if ($p['foto'] !== null): ?><img src="/catalogo/productos/<?= (int) $p['id'] ?>/foto?v=<?= e(rawurlencode($p['foto'])) ?>" alt="" loading="lazy"><?php else: ?><?= icono(Categoria::icono($p['categoria']), 'producto-pos__icono') ?><?php endif; ?></span>
                 <span class="producto-pos__nombre"><?= e($p['nombre_corto']) ?></span>
-                <span class="producto-pos__pie"><span class="producto-pos__precio monto"><span class="monto__moneda">Bs</span><?= bs($p['precio']) ?></span><?= $agotado ? '<span class="insignia insignia--aviso">Agotado</span>' : ($promo ? '<span class="insignia insignia--promo">Promo</span>' : '') ?></span>
+                <span class="producto-pos__pie"><span class="producto-pos__precio monto"><span class="monto__moneda">Bs</span><?= bs($p['precio']) ?></span><?= $agotado ? '<span class="insignia insignia--aviso">Agotado</span>' : ($promosProducto ? '<span class="insignia insignia--promo"' . ($promoAhora ? '' : ' hidden') . '>Promo</span>' : '') ?></span>
               </button>
             </li>
 <?php endforeach; ?>

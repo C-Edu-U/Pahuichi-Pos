@@ -5,11 +5,15 @@ declare(strict_types=1);
 namespace Tests\Integracion;
 
 use App\Core\DB;
+use App\Core\Reloj;
 use App\Core\Respuesta;
 use App\Models\Bitacora;
 use Tests\CasoPrueba;
 
-/** HU-46: el administrador crea, edita, pausa y activa descuentos por producto o categoría. */
+/**
+ * HU-46: el administrador crea, edita, pausa y activa descuentos por producto o categoría.
+ * HU-49: restricciones de fechas, días, horario, cantidad, monto y tope por día.
+ */
 final class PromocionesTest extends CasoPrueba
 {
     private int $majadito;
@@ -18,6 +22,7 @@ final class PromocionesTest extends CasoPrueba
     protected function setUp(): void
     {
         parent::setUp();
+        Reloj::fijar('2026-10-22 12:30:00');   // jueves
         $this->entrarComo('admin');
         $this->majadito = (int) DB::valor("SELECT id FROM productos WHERE codigo = 'PL-01'");
         $this->platos = (int) DB::valor("SELECT id FROM categorias WHERE nombre = 'Platos'");
@@ -25,7 +30,8 @@ final class PromocionesTest extends CasoPrueba
 
     private function crear(array $datos): Respuesta
     {
-        return $this->post('/promociones/nueva', $datos + ['nombre' => 'Martes de majadito', 'aplica' => 'p:' . $this->majadito, 'valor' => '10', 'valor_tipo' => 'porcentaje', 'activo' => '1']);
+        return $this->post('/promociones/nueva', $datos + ['nombre' => 'Martes de majadito', 'aplica' => 'p:' . $this->majadito, 'valor' => '10', 'valor_tipo' => 'porcentaje', 'activo' => '1',
+            'dias' => ['1', '2', '3', '4', '5', '6', '7']]);
     }
 
     /**
@@ -106,7 +112,7 @@ final class PromocionesTest extends CasoPrueba
         $this->assertStringContainsString('value="Martes de majadito"', $form);
         $this->assertStringContainsString('value="p:' . $this->majadito . '" selected', $form);
 
-        $r = $this->post('/promociones/' . $id, ['nombre' => 'Martes de majadito', 'aplica' => 'p:' . $this->majadito, 'valor' => '15', 'valor_tipo' => 'porcentaje', 'activo' => '1']);
+        $r = $this->post('/promociones/' . $id, ['nombre' => 'Martes de majadito', 'aplica' => 'p:' . $this->majadito, 'valor' => '15', 'valor_tipo' => 'porcentaje', 'activo' => '1', 'dias' => ['2']]);
 
         $this->assertRedirige('/promociones', $r);
         $this->assertSame('15.00', DB::valor('SELECT valor FROM promociones WHERE id = ?', [$id]));
@@ -142,6 +148,93 @@ final class PromocionesTest extends CasoPrueba
         $this->assertSame(403, $this->get('/promociones')->estado);
         $this->assertSame(403, $this->crear([])->estado);
         $this->assertSame(0, (int) DB::valor('SELECT COUNT(*) FROM promociones'));
+    }
+
+    /**
+     * Escenario: Restricciones combinables
+     *   Dado soy administrador
+     *   Cuando creo una promoción de lunes a viernes, de 12:00 a medianoche, en noviembre,
+     *        desde 2 unidades, con pedidos desde Bs 50 y tope de 20 ventas por día
+     *   Entonces se guardan todas y la lista las muestra en palabras
+     */
+    public function testGuardaLasRestriccionesYLasMuestra(): void
+    {
+        $r = $this->crear(['fecha_desde' => '2026-11-01', 'fecha_hasta' => '2026-11-30', 'dias' => ['1', '2', '3', '4', '5'],
+            'hora_desde' => '12:00', 'hora_hasta' => '23:59', 'cantidad_minima' => '2', 'monto_minimo' => '50', 'tope_usos_dia' => '20']);
+
+        $this->assertRedirige('/promociones', $r);
+        $p = DB::fila('SELECT fecha_desde, fecha_hasta, dias, hora_desde, hora_hasta, cantidad_minima, monto_minimo, tope_usos_dia FROM promociones');
+        $this->assertSame(['2026-11-01', '2026-11-30', 31, '12:00:00', '24:00:00', 2, '50.00', 20],
+            [$p['fecha_desde'], $p['fecha_hasta'], (int) $p['dias'], $p['hora_desde'], $p['hora_hasta'], (int) $p['cantidad_minima'], $p['monto_minimo'], (int) $p['tope_usos_dia']]);
+
+        $lista = $this->get('/promociones')->cuerpo;
+        $this->assertStringContainsString('De lunes a viernes, 12:00 a 24:00 · del 01/11/2026 al 30/11/2026', $lista);
+        $this->assertStringContainsString('Desde 2 unidades · pedido desde Bs 50,00 · tope 20 por día', $lista);
+        $this->assertStringContainsString('Programada', $lista);
+        $this->assertStringContainsString('"cuando":"De lunes a viernes, 12:00 a 24:00', (string) Bitacora::ultimos('promocion.alta')[0]['detalle']);
+    }
+
+    public function testElFormularioDeEdicionRecuperaLasRestricciones(): void
+    {
+        $this->crear(['dias' => ['2', '4'], 'hora_desde' => '18:00', 'hora_hasta' => '23:59', 'monto_minimo' => '75,5']);
+        $id = (int) DB::valor('SELECT id FROM promociones');
+
+        $form = $this->get('/promociones/' . $id . '/editar')->cuerpo;
+
+        $this->assertStringContainsString('name="dias[]" value="2" checked', $form);
+        $this->assertStringContainsString('name="dias[]" value="4" checked', $form);
+        $this->assertStringContainsString('name="dias[]" value="1">', $form);
+        $this->assertStringContainsString('id="hora_hasta" name="hora_hasta" type="time" value="23:59"', $form);
+        $this->assertStringContainsString('value="75,50"', $form);
+    }
+
+    public static function restriccionesInvalidas(): array
+    {
+        return [
+            'fecha imposible' => [['fecha_desde' => '2026-02-30'], 'fecha_desde', 'Escribe una fecha válida, o déjala vacía.'],
+            'fechas al revés' => [['fecha_desde' => '2026-11-30', 'fecha_hasta' => '2026-11-01'], 'fecha_hasta', 'La fecha final no puede ser anterior a la inicial.'],
+            'sin días' => [['dias' => []], 'dias', 'Elige al menos un día.'],
+            'una sola hora' => [['hora_desde' => '12:00'], 'hora_hasta', 'Escribe las dos horas de la franja, o deja las dos vacías.'],
+            'horas al revés' => [['hora_desde' => '15:00', 'hora_hasta' => '12:00'], 'hora_hasta', 'La hora final debe ser después de la inicial.'],
+            'cantidad 1' => [['cantidad_minima' => '1'], 'cantidad_minima', 'De 2 a 999 unidades. Déjala vacía si basta con una.'],
+            'monto cero' => [['monto_minimo' => '0'], 'monto_minimo', 'Escribe un monto mayor que cero, o déjalo vacío.'],
+            'tope cero' => [['tope_usos_dia' => '0'], 'tope_usos_dia', 'De 1 a 9999 ventas por día, o déjalo vacío.'],
+        ];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('restriccionesInvalidas')]
+    public function testValidaLasRestricciones(array $datos, string $campo, string $mensaje): void
+    {
+        $r = $this->crear($datos);
+
+        $this->assertSame(422, $r->estado);
+        $this->assertStringContainsString(e($mensaje), $r->cuerpo);
+        $this->assertStringContainsString('id="' . $campo . '"', $r->cuerpo);
+        $this->assertSame(0, (int) DB::valor('SELECT COUNT(*) FROM promociones'));
+    }
+
+    /**
+     * Escenario: Estado en este momento
+     *   Dado es jueves a las 12:30
+     *   Cuando miro la lista
+     *   Entonces cada promoción dice si aplica ahora o por qué no
+     */
+    public function testLaListaDiceSiAplicaAhora(): void
+    {
+        $todos = ['1', '2', '3', '4', '5', '6', '7'];
+        $this->crear(['nombre' => 'Siempre']);
+        $this->crear(['nombre' => 'Fin de semana', 'dias' => ['6', '7']]);
+        $this->crear(['nombre' => 'Noche', 'hora_desde' => '18:00', 'hora_hasta' => '23:59', 'dias' => $todos]);
+        $this->crear(['nombre' => 'Septiembre', 'fecha_desde' => '2026-09-01', 'fecha_hasta' => '2026-09-30']);
+
+        $filas = [];
+        preg_match_all('/<tr>\s*<td><span class="tabla__principal">([^<]+)<\/span>.*?data-etiqueta="Ahora"><span class="insignia[^"]*">([^<]+)<\/span>/s', $this->get('/promociones')->cuerpo, $m, PREG_SET_ORDER);
+        foreach ($m as [, $nombre, $estado]) {
+            $filas[$nombre] = $estado;
+        }
+
+        ksort($filas);
+        $this->assertSame(['Fin de semana' => 'Hoy no aplica', 'Noche' => 'Fuera de horario', 'Septiembre' => 'Vencida', 'Siempre' => 'Aplica ahora'], $filas);
     }
 
     public function testSinPromocionesMuestraElEstadoVacio(): void

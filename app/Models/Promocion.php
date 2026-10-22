@@ -6,7 +6,10 @@ namespace App\Models;
 
 use App\Core\DB;
 
-/** Promociones (HU-46): por ahora, descuento por producto o por categoría, en % o en Bs por unidad. */
+/**
+ * Promociones (HU-46): descuento por producto o por categoría, en % o en Bs por unidad.
+ * HU-49: restricciones de fechas, días, horario, cantidad y monto mínimos y tope por día.
+ */
 final class Promocion
 {
     private const SELECT = 'SELECT pr.*, p.nombre AS producto, p.precio AS producto_precio, c.nombre AS categoria
@@ -28,23 +31,30 @@ final class Promocion
     /** Las que el motor evalúa al vender. */
     public static function activas(): array
     {
-        return DB::filas('SELECT id, nombre, valor_tipo, valor, producto_id, categoria_id FROM promociones WHERE activo = 1 ORDER BY id');
+        return DB::filas(
+            'SELECT id, nombre, valor_tipo, valor, producto_id, categoria_id, fecha_desde, fecha_hasta, dias,
+                    hora_desde, hora_hasta, cantidad_minima, monto_minimo, tope_usos_dia
+             FROM promociones WHERE activo = 1 ORDER BY id'
+        );
     }
 
-    /** @param array{nombre: string, valor_tipo: string, valor: string, producto_id: ?int, categoria_id: ?int, activo: int} $d */
+    /** Columnas que guarda el formulario, en orden. */
+    private const CAMPOS = ['nombre', 'valor_tipo', 'valor', 'producto_id', 'categoria_id', 'activo', 'fecha_desde', 'fecha_hasta',
+        'dias', 'hora_desde', 'hora_hasta', 'cantidad_minima', 'monto_minimo', 'tope_usos_dia'];
+
     public static function crear(array $d): int
     {
         return DB::insertar(
-            'INSERT INTO promociones (nombre, valor_tipo, valor, producto_id, categoria_id, activo) VALUES (?, ?, ?, ?, ?, ?)',
-            [$d['nombre'], $d['valor_tipo'], $d['valor'], $d['producto_id'], $d['categoria_id'], $d['activo']],
+            'INSERT INTO promociones (' . implode(', ', self::CAMPOS) . ') VALUES (' . implode(', ', array_fill(0, count(self::CAMPOS), '?')) . ')',
+            array_map(static fn (string $c): mixed => $d[$c], self::CAMPOS),
         );
     }
 
     public static function actualizar(int $id, array $d): void
     {
         DB::consulta(
-            'UPDATE promociones SET nombre = ?, valor_tipo = ?, valor = ?, producto_id = ?, categoria_id = ?, activo = ? WHERE id = ?',
-            [$d['nombre'], $d['valor_tipo'], $d['valor'], $d['producto_id'], $d['categoria_id'], $d['activo'], $id],
+            'UPDATE promociones SET ' . implode(', ', array_map(static fn (string $c): string => "{$c} = ?", self::CAMPOS)) . ' WHERE id = ?',
+            [...array_map(static fn (string $c): mixed => $d[$c], self::CAMPOS), $id],
         );
     }
 
@@ -53,11 +63,29 @@ final class Promocion
         DB::consulta('UPDATE promociones SET activo = ? WHERE id = ?', [$activa ? 1 : 0, $id]);
     }
 
-    /** Cuántas veces descontó en ventas cobradas (se muestra en la lista). */
+    /**
+     * HU-49: en cuántas ventas cobradas de ese día se aplicó cada promoción (una venta
+     * cuenta una vez aunque la promoción toque varias líneas). Los cobros no compiten:
+     * se serializan sobre la fila de la única caja abierta.
+     * @return array<int, int> promocion_id => ventas
+     */
+    public static function usosDelDia(string $fecha): array
+    {
+        $filas = DB::filas(
+            "SELECT vp.promocion_id, COUNT(DISTINCT vp.venta_id) AS usos FROM venta_promociones vp
+             JOIN ventas v ON v.id = vp.venta_id
+             WHERE v.estado = 'cobrada' AND v.creado_en >= ? AND v.creado_en < CAST(? AS DATE) + INTERVAL 1 DAY
+             GROUP BY vp.promocion_id",
+            [$fecha, $fecha],
+        );
+        return array_map('intval', array_column($filas, 'usos', 'promocion_id'));
+    }
+
+    /** En cuántas ventas cobradas descontó, en total (se muestra en la lista). */
     public static function usos(): array
     {
         $filas = DB::filas(
-            "SELECT vp.promocion_id, COUNT(*) AS usos FROM venta_promociones vp
+            "SELECT vp.promocion_id, COUNT(DISTINCT vp.venta_id) AS usos FROM venta_promociones vp
              JOIN ventas v ON v.id = vp.venta_id WHERE v.estado = 'cobrada' GROUP BY vp.promocion_id"
         );
         return array_column($filas, 'usos', 'promocion_id');

@@ -8,16 +8,19 @@ use App\Core\Controller;
 use App\Core\DB;
 use App\Core\ErrorHttp;
 use App\Core\Peticion;
+use App\Core\Reloj;
 use App\Core\Respuesta;
 use App\Models\Bitacora;
 use App\Models\Categoria;
 use App\Models\Producto;
 use App\Models\Promocion;
 use App\Services\PromocionService;
+use DateTimeImmutable;
 
 /**
  * Promociones (HU-46), solo el administrador. Por ahora, descuento por producto o por
  * categoría. Nada se borra: una promoción se pausa y se vuelve a activar.
+ * HU-49: restricciones combinables de fechas, días, horario, cantidad, monto y tope por día.
  */
 final class PromocionController extends Controller
 {
@@ -30,12 +33,15 @@ final class PromocionController extends Controller
             'css' => ['modulos.css'],
             'promociones' => Promocion::todas(),
             'usos' => Promocion::usos(),
+            'contexto' => PromocionService::contexto(Reloj::ahora()),
         ]);
     }
 
     public function nueva(Peticion $peticion): Respuesta
     {
-        return $this->formulario(null, ['nombre' => '', 'aplica' => '', 'valor' => '', 'valor_tipo' => 'porcentaje', 'activo' => 1]);
+        return $this->formulario(null, ['nombre' => '', 'aplica' => '', 'valor' => '', 'valor_tipo' => 'porcentaje', 'activo' => 1,
+            'fecha_desde' => '', 'fecha_hasta' => '', 'dias' => array_keys(PromocionService::DIAS), 'hora_desde' => '', 'hora_hasta' => '',
+            'cantidad_minima' => '', 'monto_minimo' => '', 'tope_usos_dia' => '']);
     }
 
     public function editar(Peticion $peticion): Respuesta
@@ -47,6 +53,15 @@ final class PromocionController extends Controller
             'valor' => bs($p['valor']),
             'valor_tipo' => $p['valor_tipo'],
             'activo' => (int) $p['activo'],
+            'fecha_desde' => (string) $p['fecha_desde'],
+            'fecha_hasta' => (string) $p['fecha_hasta'],
+            'dias' => array_values(array_filter(array_keys(PromocionService::DIAS), static fn (int $d): bool => (bool) (((int) $p['dias'] >> ($d - 1)) & 1))),
+            'hora_desde' => $p['hora_desde'] === null ? '' : substr($p['hora_desde'], 0, 5),
+            // <input type="time"> no admite 24:00: medianoche se muestra 23:59, como en los turnos
+            'hora_hasta' => $p['hora_hasta'] === null ? '' : ($p['hora_hasta'] === '24:00:00' ? '23:59' : substr($p['hora_hasta'], 0, 5)),
+            'cantidad_minima' => (string) $p['cantidad_minima'],
+            'monto_minimo' => $p['monto_minimo'] === null ? '' : bs($p['monto_minimo']),
+            'tope_usos_dia' => (string) $p['tope_usos_dia'],
         ]);
     }
 
@@ -136,7 +151,84 @@ final class PromocionController extends Controller
                 $datos['valor'] = number_format($valor, 2, '.', '');
             }
         }
+        $this->validarRestricciones($peticion, $v, $datos, $errores);
         return [$v, $datos, $errores];
+    }
+
+    /** HU-49: restricciones, todas opcionales salvo elegir al menos un día. */
+    private function validarRestricciones(Peticion $peticion, array &$v, array &$datos, array &$errores): void
+    {
+        foreach (['fecha_desde', 'fecha_hasta', 'hora_desde', 'hora_hasta', 'cantidad_minima', 'monto_minimo', 'tope_usos_dia'] as $c) {
+            $v[$c] = trim((string) $peticion->entrada($c));
+        }
+        $dias = $peticion->entrada('dias', []);
+        $v['dias'] = array_values(array_unique(array_map('intval', array_filter(is_array($dias) ? $dias : [], static fn ($d): bool => is_string($d) && preg_match('/^[1-7]$/D', $d) === 1))));
+
+        // Fechas: AAAA-MM-DD, ambas incluidas
+        $fecha = static function (string $texto): ?string {
+            $f = DateTimeImmutable::createFromFormat('!Y-m-d', $texto);
+            return $f && $f->format('Y-m-d') === $texto ? $texto : null;
+        };
+        $datos['fecha_desde'] = $v['fecha_desde'] === '' ? null : $fecha($v['fecha_desde']);
+        $datos['fecha_hasta'] = $v['fecha_hasta'] === '' ? null : $fecha($v['fecha_hasta']);
+        if ($v['fecha_desde'] !== '' && $datos['fecha_desde'] === null) {
+            $errores['fecha_desde'] = 'Escribe una fecha válida, o déjala vacía.';
+        }
+        if ($v['fecha_hasta'] !== '' && $datos['fecha_hasta'] === null) {
+            $errores['fecha_hasta'] = 'Escribe una fecha válida, o déjala vacía.';
+        } elseif ($datos['fecha_desde'] !== null && $datos['fecha_hasta'] !== null && $datos['fecha_hasta'] < $datos['fecha_desde']) {
+            $errores['fecha_hasta'] = 'La fecha final no puede ser anterior a la inicial.';
+        }
+
+        // Días: bits de lunes (1) a domingo (64)
+        $datos['dias'] = array_reduce($v['dias'], static fn (int $b, int $d): int => $b | (1 << ($d - 1)), 0);
+        if ($datos['dias'] === 0) {
+            $errores['dias'] = 'Elige al menos un día.';
+        }
+
+        // Franja horaria: las dos horas o ninguna; 23:59 en el fin es hasta medianoche
+        $hora = static fn (string $t): bool => preg_match('/^([01]\d|2[0-3]):[0-5]\d$/D', $t) === 1;
+        $datos['hora_desde'] = $datos['hora_hasta'] = null;
+        if ($v['hora_desde'] !== '' || $v['hora_hasta'] !== '') {
+            if (!$hora($v['hora_desde']) || !$hora($v['hora_hasta'])) {
+                $errores['hora_hasta'] = 'Escribe las dos horas de la franja, o deja las dos vacías.';
+            } else {
+                $desde = $v['hora_desde'] . ':00';
+                $hasta = $v['hora_hasta'] === '23:59' ? '24:00:00' : $v['hora_hasta'] . ':00';
+                if ($hasta <= $desde) {
+                    $errores['hora_hasta'] = 'La hora final debe ser después de la inicial.';
+                } else {
+                    [$datos['hora_desde'], $datos['hora_hasta']] = [$desde, $hasta];
+                }
+            }
+        }
+
+        // Condiciones del pedido y tope del día
+        $datos['cantidad_minima'] = null;
+        if ($v['cantidad_minima'] !== '') {
+            if (!preg_match('/^\d{1,3}$/D', $v['cantidad_minima']) || (int) $v['cantidad_minima'] < 2) {
+                $errores['cantidad_minima'] = 'De 2 a 999 unidades. Déjala vacía si basta con una.';
+            } else {
+                $datos['cantidad_minima'] = (int) $v['cantidad_minima'];
+            }
+        }
+        $datos['monto_minimo'] = null;
+        if ($v['monto_minimo'] !== '') {
+            $monto = leer_monto($v['monto_minimo']);
+            if ($monto === null || $monto <= 0) {
+                $errores['monto_minimo'] = 'Escribe un monto mayor que cero, o déjalo vacío.';
+            } else {
+                $datos['monto_minimo'] = number_format($monto, 2, '.', '');
+            }
+        }
+        $datos['tope_usos_dia'] = null;
+        if ($v['tope_usos_dia'] !== '') {
+            if (!preg_match('/^\d{1,4}$/D', $v['tope_usos_dia']) || (int) $v['tope_usos_dia'] < 1) {
+                $errores['tope_usos_dia'] = 'De 1 a 9999 ventas por día, o déjalo vacío.';
+            } else {
+                $datos['tope_usos_dia'] = (int) $v['tope_usos_dia'];
+            }
+        }
     }
 
     /** El precio más bajo que tocaría un descuento en Bs: el del producto, o el más barato activo de la categoría. */
@@ -158,7 +250,8 @@ final class PromocionController extends Controller
         $aplica = $d['producto_id'] !== null
             ? 'Producto ' . (Producto::buscar((int) $d['producto_id'])['nombre'] ?? '')
             : 'Categoría ' . (Categoria::buscar((int) $d['categoria_id'])['nombre'] ?? '');
-        return ['nombre' => $d['nombre'], 'aplica' => $aplica, 'descuento' => PromocionService::regla($d), 'activo' => (bool) (int) $d['activo']];
+        return ['nombre' => $d['nombre'], 'aplica' => $aplica, 'descuento' => PromocionService::regla($d),
+            'cuando' => PromocionService::cuando($d), 'condiciones' => PromocionService::condiciones($d), 'activo' => (bool) (int) $d['activo']];
     }
 
     private function formulario(?array $promocion, array $v, array $errores = [], int $estado = 200): Respuesta

@@ -14,6 +14,8 @@ use Tests\CasoPrueba;
 /**
  * HU-46: la promoción se aplica sola en el punto de venta y el servidor la recalcula al
  * cobrar. La venta guarda el descuento en la línea; la copia de caja y la factura lo muestran.
+ * HU-49: al cobrar valen la fecha, el día y la hora del servidor, el tope de hoy y las condiciones del pedido.
+ * El 22/10/2026 es jueves.
  */
 final class CobroConPromocionTest extends CasoPrueba
 {
@@ -36,10 +38,15 @@ final class CobroConPromocionTest extends CasoPrueba
         $this->caja = (int) DB::valor("SELECT id FROM cajas WHERE estado = 'abierta'");
     }
 
-    private function promo(string $nombre, string $tipo, string $valor, ?int $producto, ?int $categoria = null, int $activo = 1): int
+    private function promo(string $nombre, string $tipo, string $valor, ?int $producto, ?int $categoria = null, int $activo = 1, array $restricciones = []): int
     {
-        return DB::insertar('INSERT INTO promociones (nombre, valor_tipo, valor, producto_id, categoria_id, activo) VALUES (?, ?, ?, ?, ?, ?)',
+        $id = DB::insertar('INSERT INTO promociones (nombre, valor_tipo, valor, producto_id, categoria_id, activo) VALUES (?, ?, ?, ?, ?, ?)',
             [$nombre, $tipo, $valor, $producto, $categoria, $activo]);
+        if ($restricciones) {
+            $campos = implode(', ', array_map(static fn (string $c): string => "{$c} = ?", array_keys($restricciones)));
+            DB::consulta("UPDATE promociones SET {$campos} WHERE id = ?", [...array_values($restricciones), $id]);
+        }
+        return $id;
     }
 
     /** @param array<int, int> $cantidades producto => cantidad */
@@ -152,6 +159,96 @@ final class CobroConPromocionTest extends CasoPrueba
     }
 
     /**
+     * Escenario: Fuera de horario no se aplica
+     *   Dado «Happy hour», 10 % al Majadito de 18:00 a 21:00
+     *   Cuando cobro a las 12:00
+     *   Entonces no hay descuento; si la pantalla lo mostrara, el cobro se rechaza
+     */
+    public function testFueraDeHorarioNoSeAplica(): void
+    {
+        $this->promo('Happy hour', 'porcentaje', '10.00', $this->majadito, null, 1, ['hora_desde' => '18:00:00', 'hora_hasta' => '21:00:00']);
+
+        $this->assertSame(422, $this->cobrar([$this->majadito => 2], '80.00', '8.00')->estado);
+        $r = $this->cobrar([$this->majadito => 2], '80.00', '0.00');
+
+        $this->assertSame(200, $r->estado, $r->cuerpo);
+        $this->assertSame('80.00', (string) DB::valor('SELECT total FROM ventas'));
+
+        Reloj::fijar('2026-10-22 18:30:00');
+        $this->assertSame(200, $this->cobrar([$this->majadito => 2], '80.00', '8.00')->estado);
+    }
+
+    public function testOtroDiaOFueraDeFechasNoSeAplica(): void
+    {
+        $this->promo('Fin de semana', 'porcentaje', '10.00', $this->majadito, null, 1, ['dias' => 96]);
+        $this->promo('Noviembre', 'porcentaje', '20.00', $this->majadito, null, 1, ['fecha_desde' => '2026-11-01']);
+
+        $r = $this->cobrar([$this->majadito => 2], '80.00', '0.00');
+
+        $this->assertSame(200, $r->estado, $r->cuerpo);
+        $this->assertSame(0, (int) DB::valor('SELECT COUNT(*) FROM venta_promociones'));
+    }
+
+    /**
+     * Escenario: Tope de usos por día
+     *   Dado «Primeros 2», Bs 5 al Majadito con tope de 2 ventas por día
+     *   Cuando ya se aplicó en 2 ventas hoy
+     *   Entonces la tercera venta se cobra sin descuento; una venta anulada no cuenta, y al día siguiente vuelve
+     */
+    public function testElTopeDeUsosSeCuentaPorVentaYPorDia(): void
+    {
+        $this->promo('Primeros 2', 'monto', '5.00', $this->majadito, null, 1, ['tope_usos_dia' => 2]);
+
+        $this->assertSame(200, $this->cobrar([$this->majadito => 2], '80.00', '10.00')->estado);
+        $this->assertSame(200, $this->cobrar([$this->majadito => 1], '40.00', '5.00')->estado);
+        $this->assertSame(422, $this->cobrar([$this->majadito => 1], '40.00', '5.00')->estado);
+        $this->assertSame(200, $this->cobrar([$this->majadito => 1], '40.00', '0.00')->estado);
+
+        // Una venta anulada libera su uso
+        DB::consulta("UPDATE ventas SET estado = 'anulada' WHERE id = (SELECT MIN(venta_id) FROM venta_promociones)");
+        $this->assertSame(200, $this->cobrar([$this->majadito => 1], '40.00', '5.00')->estado);
+
+        $id = (int) DB::valor('SELECT id FROM promociones');
+        $this->assertSame([$id => 2], \App\Models\Promocion::usosDelDia('2026-10-22'));
+
+        // Al día siguiente el tope vuelve a empezar
+        Reloj::fijar('2026-10-23 12:00:00');
+        $this->assertSame([], \App\Models\Promocion::usosDelDia('2026-10-23'));
+        $this->assertSame(200, $this->cobrar([$this->majadito => 1], '40.00', '5.00')->estado);
+    }
+
+    /**
+     * Escenario: Condiciones del pedido
+     *   Dado 10 % al Majadito desde 2 unidades y con pedidos desde Bs 90
+     *   Cuando el pedido tiene 2 Majaditos (Bs 80) no se aplica; con un Mocochinchi más (Bs 90), sí
+     */
+    public function testCantidadYMontoMinimoAlCobrar(): void
+    {
+        $this->promo('Combo grande', 'porcentaje', '10.00', $this->majadito, null, 1, ['cantidad_minima' => 2, 'monto_minimo' => '90.00']);
+
+        $this->assertSame(422, $this->cobrar([$this->majadito => 2], '80.00', '8.00')->estado);
+        $this->assertSame(200, $this->cobrar([$this->majadito => 2], '80.00', '0.00')->estado);
+        $this->assertSame(200, $this->cobrar([$this->majadito => 2, $this->moco => 1], '90.00', '8.00')->estado);
+    }
+
+    public function testElPuntoDeVentaRecibeLaHoraYLosUsosDeHoy(): void
+    {
+        $id = $this->promo('Primeros 2', 'monto', '5.00', $this->majadito, null, 1, ['tope_usos_dia' => 2]);
+        $noche = $this->promo('Noche', 'monto', '3.00', $this->locro, null, 1, ['hora_desde' => '18:00:00', 'hora_hasta' => '24:00:00']);
+        $this->cobrar([$this->majadito => 1], '40.00', '5.00');
+
+        $html = $this->get('/pos')->cuerpo;
+
+        $this->assertStringContainsString('data-ahora="2026-10-22T12:00:00"', $html);
+        preg_match('/data-promociones="([^"]+)"/', $html, $m);
+        $promos = array_column(json_decode(html_entity_decode($m[1]), true), null, 'id');
+        $this->assertSame([1, 2], [$promos[$id]['usos'], $promos[$id]['tope_usos_dia']]);
+        $this->assertSame(['18:00:00', '24:00:00'], [$promos[$noche]['hora_desde'], $promos[$noche]['hora_hasta']]);
+        // El Locro tiene promoción, pero no a esta hora: su marca empieza oculta
+        $this->assertMatchesRegularExpression('/data-id="' . $this->locro . '" data-promos="' . $noche . '".*?<span class="insignia insignia--promo" hidden>Promo<\/span>/s', $html);
+    }
+
+    /**
      * Escenario: El punto de venta conoce las promociones activas
      *   Dado una promoción activa al Majadito y otra pausada al Locro
      *   Cuando abro el punto de venta
@@ -166,9 +263,11 @@ final class CobroConPromocionTest extends CasoPrueba
 
         preg_match('/data-promociones="([^"]+)"/', $html, $m);
         $promos = json_decode(html_entity_decode($m[1]), true);
-        $this->assertSame([['id' => $activa, 'nombre' => 'Martes de majadito', 'valor_tipo' => 'porcentaje', 'valor' => 1250, 'producto_id' => $this->majadito, 'categoria_id' => null]], $promos);
-        $this->assertMatchesRegularExpression('/aria-label="Majadito de charque, 40,00 bolivianos, con promoción">.*?<span class="insignia insignia--promo">Promo<\/span>/s', $html);
-        $this->assertStringNotContainsString('Locro carretero, 35,00 bolivianos, con promoción', $html);
+        $this->assertSame([['id' => $activa, 'nombre' => 'Martes de majadito', 'valor_tipo' => 'porcentaje', 'valor' => 1250, 'producto_id' => $this->majadito, 'categoria_id' => null,
+            'fecha_desde' => null, 'fecha_hasta' => null, 'dias' => 127, 'hora_desde' => null, 'hora_hasta' => null,
+            'cantidad_minima' => null, 'monto_minimo' => null, 'tope_usos_dia' => null, 'usos' => 0]], $promos);
+        $this->assertMatchesRegularExpression('/data-id="' . $this->majadito . '" data-promos="' . $activa . '" aria-label="Majadito de charque, 40,00 bolivianos">.*?<span class="insignia insignia--promo">Promo<\/span>/s', $html);
+        $this->assertMatchesRegularExpression('/data-id="' . $this->locro . '" aria-label="Locro carretero, 35,00 bolivianos">/', $html);
         $this->assertStringContainsString('<script src="/assets/js/motor-promociones.js"></script>', $html);
     }
 }
