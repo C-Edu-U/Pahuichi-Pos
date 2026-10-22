@@ -13,6 +13,7 @@ use App\Controllers\AutorizacionController;
 use App\Controllers\BitacoraController;
 use App\Controllers\CajaController;
 use App\Controllers\CategoriaController;
+use App\Controllers\ClienteController;
 use App\Controllers\ConfigController;
 use App\Controllers\InicioController;
 use App\Controllers\ModuloController;
@@ -112,6 +113,12 @@ $router->post('/promociones/{id}/estado', [PromocionController::class, 'estado']
 
 // Bitácora (HU-05): solo lectura, solo el administrador
 $router->get('/bitacora', [BitacoraController::class, 'index'], ['auth', 'permiso:modulo.bitacora']);
+
+// HU-32: catálogo y autocompletado; administrador y cajero. CSRF global para el alta.
+$clientes = ['auth', 'permiso:modulo.clientes'];
+$router->get('/clientes', [ClienteController::class, 'index'], $clientes);
+$router->get('/clientes/buscar', [ClienteController::class, 'buscar'], $clientes);
+$router->post('/clientes', [ClienteController::class, 'crear'], [...$clientes, 'permiso:clientes.crear']);
 
 // Módulos aún sin construir: pantalla «próximamente»
 foreach (Config::get('modulos') as $clave => $m) {

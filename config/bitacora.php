@@ -14,6 +14,7 @@ return [
         'usuarios' => 'Usuarios',
         'configuracion' => 'Configuración',
         'catalogo' => 'Catálogo',
+        'clientes' => 'Clientes',
         'caja' => 'Caja',
         'ventas' => 'Ventas y tickets',
         'promociones' => 'Promociones',
@@ -51,6 +52,8 @@ return [
         'leyenda.alta' => ['Leyenda agregada', 'configuracion', 'neutra'],
         'leyenda.activar' => ['Leyenda activada', 'configuracion', 'neutra'],
         'leyenda.desactivar' => ['Leyenda desactivada', 'configuracion', 'aviso'],
+
+        'cliente.alta' => ['Cliente nuevo', 'clientes', 'neutra'],
 
         'categoria.alta' => ['Categoría nueva', 'catalogo', 'neutra'],
         'categoria.edicion' => ['Categoría editada', 'catalogo', 'neutra'],

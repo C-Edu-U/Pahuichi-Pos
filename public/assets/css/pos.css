@@ -1048,3 +1048,16 @@
     height: 1.5rem;
   }
 }
+
+/* HU-32: reutiliza el buscador de la demo y mantiene los campos dentro del pedido móvil. */
+.cliente-pos__buscador--hu32 > .campo--ancho { grid-column: 1 / -1; min-width: 0; }
+.cliente-pos__buscador--hu32 .control { width: 100%; min-width: 0; }
+.cliente-pos__buscador--hu32 .cliente-pos__sugerencia[aria-selected="true"] { background: var(--verde-50); }
+.cliente-pos__buscador--hu32 .cliente-pos__sugerencia span { overflow-wrap: anywhere; }
+#cliente-dato { overflow-wrap: anywhere; min-width: 0; }
+.cliente-pos__resumen,
+.cliente-pos__buscador--hu32 .control,
+.cliente-pos__buscador--hu32 .boton,
+.cliente-pos__buscador--hu32 .cliente-pos__sugerencia { min-height: 3rem; }
+.cliente-pos__buscador--hu32 .control,
+.cliente-pos__buscador--hu32 .boton { font-size: 1rem; }
