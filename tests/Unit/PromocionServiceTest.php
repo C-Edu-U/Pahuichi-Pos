@@ -272,6 +272,52 @@ final class PromocionServiceTest extends TestCase
         $this->assertSame('Desde 2 unidades · pedido desde Bs 50,00 · tope 20 por día', PromocionService::condiciones(['cantidad_minima' => 2, 'monto_minimo' => '50.00', 'tope_usos_dia' => 20]));
     }
 
+    private static function regalo(int $id, int $cada, int $regalo, ?int $producto = null, ?int $categoria = null): array
+    {
+        return ['id' => $id, 'nombre' => 'Regalo ' . $id, 'tipo' => 'regalo', 'valor_tipo' => null, 'valor' => null,
+            'producto_id' => $producto, 'categoria_id' => $categoria, 'cantidad_compra' => $cada, 'regalo_producto_id' => $regalo];
+    }
+
+    /**
+     * Escenario: Regalo por compra
+     *   Dado «Picante + soda»: por cada picante, una soda gratis
+     *   Cuando el pedido tiene 1 picante
+     *   Entonces corresponde 1 soda de regalo
+     */
+    public function testRegaloPorCadaUnidadComprada(): void
+    {
+        $picante = ['producto_id' => 3, 'categoria_id' => 1];
+
+        $uno = PromocionService::regalos([self::linea($picante, 1, 4500)], [self::regalo(1, 1, 58, 3)]);
+        $tres = PromocionService::regalos([self::linea($picante, 3, 4500)], [self::regalo(1, 1, 58, 3)]);
+
+        $this->assertSame([['promocion' => self::regalo(1, 1, 58, 3), 'producto_id' => 58, 'cantidad' => 1]], $uno);
+        $this->assertSame(3, $tres[0]['cantidad']);
+    }
+
+    public function testRegaloPorCadaNUnidadesDeLaCategoria(): void
+    {
+        // Por cada 2 platos, un mocochinchi: 2 Majaditos y 1 Locro = 3 platos → 1 regalo
+        $r = PromocionService::regalos(
+            [self::linea(self::MAJADITO, 2, 4000), self::linea(self::LOCRO, 1, 3500), self::linea(self::MOCOCHINCHI, 4, 1000)],
+            [self::regalo(1, 2, 10, null, 1)],
+        );
+
+        $this->assertSame(1, $r[0]['cantidad']);
+        $this->assertSame([], PromocionService::regalos([self::linea(self::MAJADITO, 1, 4000)], [self::regalo(1, 2, 10, null, 1)]));
+    }
+
+    public function testElRegaloNoDescuentaYElDescuentoNoRegala(): void
+    {
+        $promos = [self::regalo(1, 1, 58, 1), self::promo(2, 'porcentaje', '10.00', 10)];
+        $lineas = [self::linea(self::MAJADITO, 1, 4000), self::linea(self::MOCOCHINCHI, 1, 1000)];
+
+        $this->assertSame([0, 100], array_column(PromocionService::aplicar($lineas, $promos), 'descuento'));
+        $this->assertCount(1, PromocionService::regalos($lineas, $promos));
+        $this->assertSame('1 Soda cola 500 ml gratis por cada uno', PromocionService::regla(['regalo' => 'Soda cola 500 ml'] + self::regalo(1, 1, 58, 3)));
+        $this->assertSame('1 Mocochinchi gratis por cada 2', PromocionService::regla(['regalo' => 'Mocochinchi'] + self::regalo(1, 2, 10, 3)));
+    }
+
     public function testLaReglaSeLeeEnPalabras(): void
     {
         $this->assertSame('10 % menos', PromocionService::regla(['valor_tipo' => 'porcentaje', 'valor' => '10.00']));

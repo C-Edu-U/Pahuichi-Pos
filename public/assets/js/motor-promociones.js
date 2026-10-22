@@ -6,6 +6,8 @@
    - Si varias tocan la misma línea, gana la de mayor beneficio (a igual beneficio, la más antigua).
    - HU-49: solo valen las que cumplen fechas, día, franja horaria y tope de usos de hoy
      (contexto), y la cantidad mínima y el monto mínimo del pedido.
+   - Regalo por compra: por cada N del producto o la categoría, 1 del producto regalo a Bs 0,
+     si está disponible y la promoción vale. Espejo de PromocionService::regalos().
    Todo en centavos enteros. Las promociones llegan con su valor en centésimos (12,50 → 1250)
    y su monto mínimo en centavos. */
 (function () {
@@ -55,7 +57,7 @@
       var bruto = centavos(l.producto.precio) * l.cantidad;
       var mejor = { centavos: 0, promocion: null };
       validas.forEach(function (p) {   // vienen ordenadas por id
-        if (!alcanza(p, l.producto)) return;
+        if (p.tipo !== 'descuento' || !alcanza(p, l.producto)) return;
         var d = descuento(p, bruto, l.cantidad);
         if (d > mejor.centavos) mejor = { centavos: d, promocion: p };
       });
@@ -75,5 +77,21 @@
     return orden.map(function (id) { return porId[id]; });
   }
 
-  window.PahuichiPromociones = { aplicar: aplicar, agrupar: agrupar, fueraDeVigencia: fueraDeVigencia };
+  /* catalogo: { id: producto } con los productos que se pueden vender.
+     Devuelve [{ promocion, producto, cantidad, centavos }] (centavos = precio del regalo). */
+  function regalos(lineas, promociones, catalogo, contexto) {
+    var lista = [];
+    promociones.forEach(function (p) {
+      if (p.tipo !== 'regalo' || (contexto && fueraDeVigencia(p, contexto) !== null) || !cumple(p, lineas)) return;
+      var unidades = lineas.reduce(function (s, l) { return s + (alcanza(p, l.producto) ? l.cantidad : 0); }, 0);
+      var cantidad = Math.floor(unidades / Math.max(1, p.cantidad_compra));
+      var producto = catalogo[String(p.regalo_producto_id)];
+      if (cantidad > 0 && producto && !producto.agotado) {
+        lista.push({ promocion: p, producto: producto, cantidad: cantidad, centavos: centavos(producto.precio) * cantidad });
+      }
+    });
+    return lista;
+  }
+
+  window.PahuichiPromociones = { aplicar: aplicar, agrupar: agrupar, regalos: regalos, fueraDeVigencia: fueraDeVigencia };
 })();

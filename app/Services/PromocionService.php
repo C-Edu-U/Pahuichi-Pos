@@ -23,6 +23,10 @@ use DateTimeImmutable;
  *   días de la semana, franja horaria y tope de usos por día. Del pedido: cantidad
  *   mínima del producto o la categoría y monto mínimo del pedido.
  *
+ * - Regalo por compra: por cada N unidades del producto o la categoría, se agrega solo
+ *   1 del producto regalo a Bs 0, con el nombre de la promoción. Si el regalo está
+ *   agotado o inactivo, no se agrega. Respeta las mismas restricciones de HU-49.
+ *
  * Todo en centavos enteros, para que el navegador y el servidor den lo mismo.
  */
 final class PromocionService
@@ -61,7 +65,7 @@ final class PromocionService
         foreach ($lineas as $l) {
             $mejor = ['descuento' => 0, 'promocion' => null];
             foreach ($validas as $p) {
-                if (!self::alcanza($p, $l)) {
+                if (($p['tipo'] ?? 'descuento') !== 'descuento' || !self::alcanza($p, $l)) {
                     continue;
                 }
                 $d = self::descuento($p, $l);
@@ -73,6 +77,31 @@ final class PromocionService
             $resultado[] = $mejor;
         }
         return $resultado;
+    }
+
+    /**
+     * Regalos por compra: cuántas unidades de cada producto regalo corresponden al pedido.
+     * @param list<array{producto_id: int, categoria_id: int, cantidad: int, bruto: int}> $lineas
+     * @param ?array $contexto de contexto(); sin él no se miran fecha, hora ni tope
+     * @return list<array{promocion: array, producto_id: int, cantidad: int}>
+     */
+    public static function regalos(array $lineas, array $promociones, ?array $contexto = null): array
+    {
+        $regalos = [];
+        foreach ($promociones as $p) {
+            if (($p['tipo'] ?? 'descuento') !== 'regalo' || ($contexto !== null && !self::vigente($p, $contexto)) || !self::cumple($p, $lineas)) {
+                continue;
+            }
+            $unidades = 0;
+            foreach ($lineas as $l) {
+                $unidades += self::alcanza($p, $l) ? $l['cantidad'] : 0;
+            }
+            $cantidad = intdiv($unidades, max(1, (int) $p['cantidad_compra']));
+            if ($cantidad > 0) {
+                $regalos[] = ['promocion' => $p, 'producto_id' => (int) $p['regalo_producto_id'], 'cantidad' => $cantidad];
+            }
+        }
+        return $regalos;
     }
 
     /** ¿Vale en este momento? Fechas, día, franja horaria y tope de usos del día. */
@@ -146,9 +175,16 @@ final class PromocionService
         return (int) $p[0] * 100 + (int) str_pad(substr($p[1] ?? '', 0, 2), 2, '0');
     }
 
-    /** Texto de la regla para la lista y el formulario: «10 % menos» o «Bs 5,00 menos por unidad». */
+    /**
+     * Texto de la regla para la lista y el formulario: «10 % menos», «Bs 5,00 menos por unidad»
+     * o «1 Soda cola 500 ml gratis por cada uno» (el regalo con su nombre en $p['regalo']).
+     */
     public static function regla(array $p): string
     {
+        if (($p['tipo'] ?? 'descuento') === 'regalo') {
+            $n = (int) $p['cantidad_compra'];
+            return '1 ' . ($p['regalo'] ?? 'regalo') . ' gratis por cada ' . ($n === 1 ? 'uno' : $n);
+        }
         return $p['valor_tipo'] === 'porcentaje'
             ? rtrim(rtrim(number_format((float) $p['valor'], 2, ',', ''), '0'), ',') . ' % menos'
             : 'Bs ' . bs($p['valor']) . ' menos por unidad';

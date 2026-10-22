@@ -248,6 +248,75 @@ final class CobroConPromocionTest extends CasoPrueba
         $this->assertMatchesRegularExpression('/data-id="' . $this->locro . '" data-promos="' . $noche . '".*?<span class="insignia insignia--promo" hidden>Promo<\/span>/s', $html);
     }
 
+    private function regalo(string $nombre, int $compra, int $regalo, int $cada = 1, array $restricciones = []): int
+    {
+        $id = DB::insertar("INSERT INTO promociones (nombre, tipo, producto_id, cantidad_compra, regalo_producto_id) VALUES (?, 'regalo', ?, ?, ?)",
+            [$nombre, $compra, $cada, $regalo]);
+        if ($restricciones) {
+            $campos = implode(', ', array_map(static fn (string $c): string => "{$c} = ?", array_keys($restricciones)));
+            DB::consulta("UPDATE promociones SET {$campos} WHERE id = ?", [...array_values($restricciones), $id]);
+        }
+        return $id;
+    }
+
+    /**
+     * Escenario: Regalo por compra (Picante + soda)
+     *   Dado hoy es martes y la promoción «Promo martes» está activa: por cada Picante de pollo, 1 Soda cola 500 ml
+     *   Cuando el cajero agrega 1 picante de pollo al carrito y cobra
+     *   Entonces se agrega 1 soda personal a 0 Bs con la etiqueta «Promo martes»
+     *   Y otro día de la semana la promoción no se aplica
+     */
+    public function testPicanteMasSodaLosMartes(): void
+    {
+        $picante = (int) DB::valor("SELECT id FROM productos WHERE codigo = 'PL-03'");   // Bs 45
+        $soda = (int) DB::valor("SELECT id FROM productos WHERE codigo = 'SO-01'");      // Bs 8
+        $promo = $this->regalo('Promo martes', $picante, $soda, 1, ['dias' => 2]);
+
+        // Jueves 22/10: no aplica
+        $this->assertSame(422, $this->cobrar([$picante => 1], '45.00', '0.00', ['regalos' => '8.00'])->estado);
+        $this->assertSame(200, $this->cobrar([$picante => 1], '45.00', '0.00', ['regalos' => '0.00'])->estado);
+
+        // Martes 27/10: la soda se agrega a Bs 0 con la etiqueta de la promoción
+        Reloj::fijar('2026-10-27 12:00:00');
+        $r = $this->cobrar([$picante => 1], '45.00', '0.00', ['regalos' => '8.00']);
+
+        $this->assertSame(200, $r->estado, $r->cuerpo);
+        $f = Factura::buscar((int) json_decode($r->cuerpo, true)['id']);
+        $this->assertSame('45.00', (string) $f['monto_total']);
+        $linea = DB::fila('SELECT id, cantidad, precio_unitario, descuento, subtotal FROM detalle_venta WHERE venta_id = ? AND producto_id = ?', [$f['venta_id'], $soda]);
+        $this->assertSame([1, '8.00', '8.00', '0.00'], [(int) $linea['cantidad'], $linea['precio_unitario'], $linea['descuento'], $linea['subtotal']]);
+        $uso = DB::fila('SELECT promocion_id, detalle_id, etiqueta, monto FROM venta_promociones WHERE venta_id = ?', [$f['venta_id']]);
+        $this->assertSame([$promo, (int) $linea['id'], 'Promo martes', '8.00'], [(int) $uso['promocion_id'], (int) $uso['detalle_id'], $uso['etiqueta'], $uso['monto']]);
+
+        $html = $this->get('/facturas/' . $f['id'])->cuerpo;
+        $this->assertStringContainsString('<li><span>1 × Soda cola 500 ml</span><span class="num">8,00</span></li><li class="ticket__promo"><span>Promo martes</span><span class="num">−8,00</span></li>', $html);
+        $this->assertStringContainsString('1,00 × 8,00 − 8,00</span><span class="ticket__sub num">0,00</span>', $html);
+    }
+
+    public function testElRegaloRespetaElTopeYLaCantidad(): void
+    {
+        $picante = (int) DB::valor("SELECT id FROM productos WHERE codigo = 'PL-03'");
+        $soda = (int) DB::valor("SELECT id FROM productos WHERE codigo = 'SO-01'");
+        $this->regalo('Dos picantes, una soda', $picante, $soda, 2, ['tope_usos_dia' => 1]);
+
+        $this->assertSame(200, $this->cobrar([$picante => 1], '45.00', '0.00', ['regalos' => '0.00'])->estado);   // falta un picante
+        $this->assertSame(200, $this->cobrar([$picante => 4], '180.00', '0.00', ['regalos' => '16.00'])->estado); // 2 sodas
+        $this->assertSame(200, $this->cobrar([$picante => 2], '90.00', '0.00', ['regalos' => '0.00'])->estado);   // tope de hoy alcanzado
+    }
+
+    public function testUnRegaloAgotadoNoSeAgrega(): void
+    {
+        $picante = (int) DB::valor("SELECT id FROM productos WHERE codigo = 'PL-03'");
+        $soda = (int) DB::valor("SELECT id FROM productos WHERE codigo = 'SO-01'");
+        $this->regalo('Promo martes', $picante, $soda);
+        DB::consulta('UPDATE productos SET agotado = 1 WHERE id = ?', [$soda]);
+
+        $r = $this->cobrar([$picante => 2], '90.00', '0.00', ['regalos' => '0.00']);
+
+        $this->assertSame(200, $r->estado, $r->cuerpo);
+        $this->assertSame(1, (int) DB::valor('SELECT COUNT(*) FROM detalle_venta'));
+    }
+
     /**
      * Escenario: El punto de venta conoce las promociones activas
      *   Dado una promoción activa al Majadito y otra pausada al Locro
@@ -263,8 +332,8 @@ final class CobroConPromocionTest extends CasoPrueba
 
         preg_match('/data-promociones="([^"]+)"/', $html, $m);
         $promos = json_decode(html_entity_decode($m[1]), true);
-        $this->assertSame([['id' => $activa, 'nombre' => 'Martes de majadito', 'valor_tipo' => 'porcentaje', 'valor' => 1250, 'producto_id' => $this->majadito, 'categoria_id' => null,
-            'fecha_desde' => null, 'fecha_hasta' => null, 'dias' => 127, 'hora_desde' => null, 'hora_hasta' => null,
+        $this->assertSame([['id' => $activa, 'nombre' => 'Martes de majadito', 'tipo' => 'descuento', 'valor_tipo' => 'porcentaje', 'valor' => 1250, 'producto_id' => $this->majadito, 'categoria_id' => null,
+            'cantidad_compra' => null, 'regalo_producto_id' => null, 'fecha_desde' => null, 'fecha_hasta' => null, 'dias' => 127, 'hora_desde' => null, 'hora_hasta' => null,
             'cantidad_minima' => null, 'monto_minimo' => null, 'tope_usos_dia' => null, 'usos' => 0]], $promos);
         $this->assertMatchesRegularExpression('/data-id="' . $this->majadito . '" data-promos="' . $activa . '" aria-label="Majadito de charque, 40,00 bolivianos">.*?<span class="insignia insignia--promo">Promo<\/span>/s', $html);
         $this->assertMatchesRegularExpression('/data-id="' . $this->locro . '" aria-label="Locro carretero, 35,00 bolivianos">/', $html);

@@ -12,10 +12,11 @@ use App\Core\DB;
  */
 final class Promocion
 {
-    private const SELECT = 'SELECT pr.*, p.nombre AS producto, p.precio AS producto_precio, c.nombre AS categoria
+    private const SELECT = 'SELECT pr.*, p.nombre AS producto, p.precio AS producto_precio, c.nombre AS categoria, rg.nombre AS regalo
         FROM promociones pr
         LEFT JOIN productos p ON p.id = pr.producto_id
-        LEFT JOIN categorias c ON c.id = pr.categoria_id';
+        LEFT JOIN categorias c ON c.id = pr.categoria_id
+        LEFT JOIN productos rg ON rg.id = pr.regalo_producto_id';
 
     /** Todas para la administración: las activas primero. */
     public static function todas(): array
@@ -32,14 +33,14 @@ final class Promocion
     public static function activas(): array
     {
         return DB::filas(
-            'SELECT id, nombre, valor_tipo, valor, producto_id, categoria_id, fecha_desde, fecha_hasta, dias,
+            'SELECT id, nombre, tipo, valor_tipo, valor, producto_id, categoria_id, cantidad_compra, regalo_producto_id, fecha_desde, fecha_hasta, dias,
                     hora_desde, hora_hasta, cantidad_minima, monto_minimo, tope_usos_dia
              FROM promociones WHERE activo = 1 ORDER BY id'
         );
     }
 
     /** Columnas que guarda el formulario, en orden. */
-    private const CAMPOS = ['nombre', 'valor_tipo', 'valor', 'producto_id', 'categoria_id', 'activo', 'fecha_desde', 'fecha_hasta',
+    private const CAMPOS = ['nombre', 'tipo', 'valor_tipo', 'valor', 'producto_id', 'categoria_id', 'cantidad_compra', 'regalo_producto_id', 'activo', 'fecha_desde', 'fecha_hasta',
         'dias', 'hora_desde', 'hora_hasta', 'cantidad_minima', 'monto_minimo', 'tope_usos_dia'];
 
     public static function crear(array $d): int
