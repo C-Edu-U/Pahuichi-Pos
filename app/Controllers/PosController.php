@@ -6,12 +6,14 @@ namespace App\Controllers;
 
 use App\Core\Controller;
 use App\Core\Peticion;
+use App\Core\Reloj;
 use App\Core\Respuesta;
 use App\Models\Categoria;
 use App\Models\Producto;
 use App\Models\Promocion;
 use App\Services\AutorizacionInvalida;
 use App\Services\CajaService;
+use App\Services\PromocionService;
 use App\Services\VentaService;
 use DomainException;
 use JsonException;
@@ -21,6 +23,7 @@ use JsonException;
  * HU-28: cuadrícula de productos con favoritos primero, categorías y búsqueda.
  * HU-29: carrito en el navegador (carrito.js); el precio al cobrar lo valida VentaService (soporte de HU-57).
  * HU-46: las promociones activas viajan a la pantalla para que motor-promociones.js las aplique al agregar.
+ * HU-49: también la hora del servidor y los usos de hoy, para las restricciones de horario y tope.
  */
 final class PosController extends Controller
 {
@@ -47,6 +50,8 @@ final class PosController extends Controller
             'productos' => $productos,
             'categorias' => $categorias,
             'promociones' => Promocion::activas(),
+            'contextoPromos' => PromocionService::contexto(Reloj::ahora()),
+            'ahora' => Reloj::ahora(),
             'hayFavoritos' => in_array(1, array_map('intval', array_column($productos, 'favorito')), true),
         ]);
     }

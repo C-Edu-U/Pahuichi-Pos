@@ -137,15 +137,53 @@
      descuento; el servidor recalcula al cobrar con el mismo motor. */
   var promociones = JSON.parse($('pos').getAttribute('data-promociones') || '[]');
   var Promos = window.PahuichiPromociones;
+  var promoPorId = {};
+  var usos = {};   // HU-49: ventas de hoy con cada promoción, para el tope
+  promociones.forEach(function (p) { promoPorId[p.id] = p; usos[p.id] = p.usos; });
+
+  /* HU-49: el momento es la hora del servidor al cargar más lo transcurrido; así vale
+     la hora de La Paz aunque el reloj del equipo esté mal. La fecha y hora se leen
+     tratándolas como UTC, sin conversión de zona. */
+  var ahoraServidor = Date.parse($('pos').getAttribute('data-ahora') + 'Z');
+  var cargado = Date.now();
+  function contexto() {
+    var d = new Date(ahoraServidor + (Date.now() - cargado));
+    var iso = d.toISOString();
+    return { fecha: iso.slice(0, 10), dia: d.getUTCDay() || 7, hora: iso.slice(11, 19), usos: usos };
+  }
+  function aplicadas() { return Promos.aplicar(carrito.lineas, promociones, contexto()); }
+  function firma(aps) { return aps.map(function (a) { return a.promocion ? a.promocion.id + ':' + a.centavos : '-'; }).join(','); }
+  var firmaPintada = '';
   function promoCentavos() {
-    return Promos.aplicar(carrito.lineas, promociones).reduce(function (s, a) { return s + a.centavos; }, 0);
+    return aplicadas().reduce(function (s, a) { return s + a.centavos; }, 0);
+  }
+
+  // La marca «Promo» de cada producto se ve solo si alguna de sus promociones vale ahora
+  function marcarProductos() {
+    var c = contexto();
+    grilla.querySelectorAll('.producto-pos').forEach(function (b) {
+      var marca = b.querySelector('.insignia--promo');
+      if (marca) {
+        marca.hidden = !(b.getAttribute('data-promos') || '').split(',').some(function (id) {
+          return promoPorId[id] && Promos.fueraDeVigencia(promoPorId[id], c) === null;
+        });
+      }
+      var n = carrito.cantidadDe(b.getAttribute('data-id'));
+      var base = b.getAttribute('data-etiqueta') || b.getAttribute('aria-label');
+      b.setAttribute('data-etiqueta', base);
+      b.setAttribute('aria-label', base + (marca && !marca.hidden ? ', con promoción' : '') + (n ? ', ' + n + ' en el pedido' : ''));
+    });
   }
   // Subtotal con las promociones ya descontadas: el descuento manual debe ser menor
   function neto() { return (centavos(carrito.total()) - promoCentavos()) / 100; }
   function aCobrar() { return (centavos(neto()) - (descuento ? descuento.centavos : 0)) / 100; }
   // Regalo por compra: se agrega solo a Bs 0 mientras el pedido tenga lo que lo activa
-  function regalos() { return Promos.regalos(carrito.lineas, promociones, carrito.catalogo); }
+  function regalos() { return Promos.regalos(carrito.lineas, promociones, carrito.catalogo, contexto()); }
   function regalosCentavos() { return regalos().reduce(function (s, r) { return s + r.centavos; }, 0); }
+  // Lo que vale ahora, para notar si cambió (descuentos por línea y regalos)
+  function firmaActual() {
+    return firma(aplicadas()) + '|' + regalos().map(function (r) { return r.promocion.id + ':' + r.cantidad; }).join(',');
+  }
 
   function lineaRegalo(r) {
     var li = document.createElement('li');
@@ -171,8 +209,10 @@
     var ul = $('lineas');
     ul.innerHTML = '';
     carrito.lineas.forEach(function (l) { ul.appendChild(lineaHtml(l)); });
+    var aps = aplicadas();
+    firmaPintada = firmaActual();
     regalos().forEach(function (r) { ul.appendChild(lineaRegalo(r)); });
-    var grupos = Promos.agrupar(Promos.aplicar(carrito.lineas, promociones));
+    var grupos = Promos.agrupar(aps);
     grupos.forEach(function (g) { ul.appendChild(lineaPromo(g)); });
     var promo = grupos.reduce(function (s, g) { return s + g.centavos; }, 0);
 
@@ -216,10 +256,8 @@
       if (cuenta) {
         if (n) cuenta.textContent = n; else cuenta.remove();
       }
-      var base = b.getAttribute('data-etiqueta') || b.getAttribute('aria-label');
-      b.setAttribute('data-etiqueta', base);
-      b.setAttribute('aria-label', base + (n ? ', ' + n + ' en el pedido' : ''));
     });
+    marcarProductos();
   }
 
   $('lineas').addEventListener('click', function (e) {
@@ -372,16 +410,36 @@
   });
   $('cobrar').addEventListener('click', function () {
     if (pendiente) { cobrar(false); return; }
-    if (!exigirMesa()) return;
+    if (!exigirMesa() || !promocionesAlDia()) return;
     $('cobro-total').textContent = P.bs(aCobrar());
     $('recibido').value = aCobrar().toFixed(2);
     errorCobro(''); cambio(); dialogoCobro.showModal(); $('recibido').focus();
   });
+  /* HU-49: una promoción puede empezar o terminar mientras se arma el pedido (horario,
+     tope). Si lo que vale ahora no es lo que se ve, se repinta y no se cobra a ciegas. */
+  var usadasPendiente = [];
+  function promocionesAlDia() {
+    if (firmaActual() === firmaPintada) return true;
+    if (dialogoCobro.open) dialogoCobro.close();
+    pintar();
+    errorCobro('Cambió una promoción por su horario o su tope. Revisa el total y vuelve a cobrar.');
+    anunciar('Cambió una promoción. Revisa el total.');
+    return false;
+  }
+  // Cada 30 segundos: marcas «Promo» al día y, si cambió una promoción del pedido, se repinta
+  setInterval(function () {
+    if (enviando || pendiente || document.querySelector('dialog[open]')) return;
+    var escribiendo = $('lineas').contains(document.activeElement) && document.activeElement.matches('input');
+    if (firmaActual() !== firmaPintada && !escribiendo) pintar(); else marcarProductos();
+  }, 30000);
+
   async function cobrar(exacto) {
     if (enviando || (!pendiente && carrito.vacio())) return;
-    if (!pendiente && !exigirMesa()) return;
+    if (!pendiente && (!exigirMesa() || !promocionesAlDia())) return;
     errorCobro('');
     if (!pendiente) {
+      usadasPendiente = Promos.agrupar(aplicadas()).map(function (g) { return g.promocion.id; })
+        .concat(regalos().map(function (r) { return r.promocion.id; }));
       pendiente = {uuid: crypto.randomUUID(), caja_id: $('pos').getAttribute('data-caja'),
         tipo: tipoPedido, mesa: $('mesa').value, exacto: exacto ? '1' : '0',
         recibido: $('recibido').value, total_esperado: carrito.total().toFixed(2),
@@ -410,6 +468,9 @@
       pendiente = null;
       enviando = false;
       descuento = null;
+      // HU-49: esta venta cuenta para el tope de hoy de sus promociones
+      usadasPendiente.forEach(function (id) { usos[id] = (usos[id] || 0) + 1; });
+      usadasPendiente = [];
       carrito.vaciar();
       if (dialogoCobro.open) dialogoCobro.close();
       // El siguiente pedido vuelve a elegir su mesa

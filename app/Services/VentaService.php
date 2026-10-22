@@ -103,10 +103,12 @@ final class VentaService
             }
             if ($total <= 0 || $total > 9999999999) throw new DomainException('El total está fuera del rango permitido. Revisa el pedido.');
             if ($total !== $esperado) throw new DomainException('Cambió el precio de un producto. Recarga y revisa el total antes de cobrar.');
-            // HU-46: descuento de promoción por línea; la línea guarda su subtotal ya descontado
+            // HU-46: descuento de promoción por línea; la línea guarda su subtotal ya descontado.
+            // HU-49: con la fecha, el día y la hora del cobro, y los usos de hoy para el tope.
             $promo = 0;
             $promociones = Promocion::activas();
-            foreach (PromocionService::aplicar($base, $promociones) as $i => $a) {
+            $contexto = PromocionService::contexto(Reloj::ahora());
+            foreach (PromocionService::aplicar($base, $promociones, $contexto) as $i => $a) {
                 if ($a['descuento'] === 0) continue;
                 $promo += $a['descuento'];
                 $lineas[$i]['descuento'] = self::decimal($a['descuento']);
@@ -115,7 +117,7 @@ final class VentaService
             }
             // Regalo por compra: una línea más a Bs 0 (su descuento es su precio), si el regalo está disponible
             $regalos = 0;
-            $porRegalar = PromocionService::regalos($base, $promociones);
+            $porRegalar = PromocionService::regalos($base, $promociones, $contexto);
             $disponibles = $porRegalar ? array_column(Venta::productosParaCobrar(array_values(array_unique(array_column($porRegalar, 'producto_id')))), null, 'id') : [];
             foreach ($porRegalar as $r) {
                 $p = $disponibles[$r['producto_id']] ?? null;

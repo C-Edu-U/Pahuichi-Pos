@@ -1,12 +1,15 @@
-/* Motor de promociones (HU-46): espejo de App\Services\PromocionService::aplicar().
+/* Motor de promociones (HU-46, HU-49): espejo de App\Services\PromocionService::aplicar().
    Calcula en el navegador lo mismo que el servidor, para mostrar el pedido al
    instante; al cobrar, el servidor recalcula y rechaza si no coincide.
    - Descuento por producto o por categoría: % del subtotal de la línea, o Bs por unidad.
    - Nunca deja una línea en negativo.
    - Si varias tocan la misma línea, gana la de mayor beneficio (a igual beneficio, la más antigua).
+   - HU-49: solo valen las que cumplen fechas, día, franja horaria y tope de usos de hoy
+     (contexto), y la cantidad mínima y el monto mínimo del pedido.
    - Regalo por compra: por cada N del producto o la categoría, 1 del producto regalo a Bs 0,
-     si está disponible. Espejo de PromocionService::regalos().
-   Todo en centavos enteros. Las promociones llegan con su valor en centésimos (12,50 → 1250). */
+     si está disponible y la promoción vale. Espejo de PromocionService::regalos().
+   Todo en centavos enteros. Las promociones llegan con su valor en centésimos (12,50 → 1250)
+   y su monto mínimo en centavos. */
 (function () {
   'use strict';
 
@@ -21,35 +24,45 @@
     return Math.min(d, bruto);
   }
 
+  /* Por qué no vale en ese momento ('programada', 'vencida', 'dia', 'hora', 'tope') o null.
+     contexto: { fecha: 'AAAA-MM-DD', dia: 1 (lunes) … 7, hora: 'HH:MM:SS', usos: { id: n } } */
+  function fueraDeVigencia(p, c) {
+    if (p.fecha_desde && c.fecha < p.fecha_desde) return 'programada';
+    if (p.fecha_hasta && c.fecha > p.fecha_hasta) return 'vencida';
+    if (!((p.dias >> (c.dia - 1)) & 1)) return 'dia';
+    if (p.hora_desde && (c.hora < p.hora_desde || c.hora >= p.hora_hasta)) return 'hora';
+    if (p.tope_usos_dia !== null && (c.usos[p.id] || 0) >= p.tope_usos_dia) return 'tope';
+    return null;
+  }
+
+  function cumple(p, lineas) {
+    if (p.monto_minimo !== null) {
+      var bruto = lineas.reduce(function (s, l) { return s + centavos(l.producto.precio) * l.cantidad; }, 0);
+      if (bruto < p.monto_minimo) return false;
+    }
+    if (p.cantidad_minima !== null) {
+      var unidades = lineas.reduce(function (s, l) { return s + (alcanza(p, l.producto) ? l.cantidad : 0); }, 0);
+      if (unidades < p.cantidad_minima) return false;
+    }
+    return true;
+  }
+
   /* lineas: [{ producto: {id, categoria, precio}, cantidad }]
      Devuelve una entrada por línea: { centavos, promocion } (promocion es null si no hay). */
-  function aplicar(lineas, promociones) {
+  function aplicar(lineas, promociones, contexto) {
+    var validas = promociones.filter(function (p) {
+      return (!contexto || fueraDeVigencia(p, contexto) === null) && cumple(p, lineas);
+    });
     return lineas.map(function (l) {
       var bruto = centavos(l.producto.precio) * l.cantidad;
       var mejor = { centavos: 0, promocion: null };
-      promociones.forEach(function (p) {   // vienen ordenadas por id
+      validas.forEach(function (p) {   // vienen ordenadas por id
         if (p.tipo !== 'descuento' || !alcanza(p, l.producto)) return;
         var d = descuento(p, bruto, l.cantidad);
         if (d > mejor.centavos) mejor = { centavos: d, promocion: p };
       });
       return mejor;
     });
-  }
-
-  /* catalogo: { id: producto } con los productos que se pueden vender.
-     Devuelve [{ promocion, producto, cantidad, centavos }] (centavos = precio del regalo). */
-  function regalos(lineas, promociones, catalogo) {
-    var lista = [];
-    promociones.forEach(function (p) {
-      if (p.tipo !== 'regalo') return;
-      var unidades = lineas.reduce(function (s, l) { return s + (alcanza(p, l.producto) ? l.cantidad : 0); }, 0);
-      var cantidad = Math.floor(unidades / Math.max(1, p.cantidad_compra));
-      var producto = catalogo[String(p.regalo_producto_id)];
-      if (cantidad > 0 && producto && !producto.agotado) {
-        lista.push({ promocion: p, producto: producto, cantidad: cantidad, centavos: centavos(producto.precio) * cantidad });
-      }
-    });
-    return lista;
   }
 
   /* Agrupa por promoción para mostrarlas como líneas de descuento: [{ promocion, centavos }] */
@@ -64,5 +77,21 @@
     return orden.map(function (id) { return porId[id]; });
   }
 
-  window.PahuichiPromociones = { aplicar: aplicar, agrupar: agrupar, regalos: regalos };
+  /* catalogo: { id: producto } con los productos que se pueden vender.
+     Devuelve [{ promocion, producto, cantidad, centavos }] (centavos = precio del regalo). */
+  function regalos(lineas, promociones, catalogo, contexto) {
+    var lista = [];
+    promociones.forEach(function (p) {
+      if (p.tipo !== 'regalo' || (contexto && fueraDeVigencia(p, contexto) !== null) || !cumple(p, lineas)) return;
+      var unidades = lineas.reduce(function (s, l) { return s + (alcanza(p, l.producto) ? l.cantidad : 0); }, 0);
+      var cantidad = Math.floor(unidades / Math.max(1, p.cantidad_compra));
+      var producto = catalogo[String(p.regalo_producto_id)];
+      if (cantidad > 0 && producto && !producto.agotado) {
+        lista.push({ promocion: p, producto: producto, cantidad: cantidad, centavos: centavos(producto.precio) * cantidad });
+      }
+    });
+    return lista;
+  }
+
+  window.PahuichiPromociones = { aplicar: aplicar, agrupar: agrupar, regalos: regalos, fueraDeVigencia: fueraDeVigencia };
 })();
