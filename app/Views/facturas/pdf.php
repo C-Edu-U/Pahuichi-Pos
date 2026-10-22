@@ -16,15 +16,27 @@ ul { list-style: none; }
 .ticket__chico { font-size: 90%; }
 .ticket__separador { margin: 2mm 0; border-top: 0.5pt dashed #000; }
 .ticket__datos div, .ticket__totales div { margin-bottom: 0.5mm; }
-.ticket__datos dd { text-align: right; }
+/* Dompdf: filas de dos celdas para mantener etiqueta y valor a la misma altura. */
+.ticket__datos div { display: table; table-layout: fixed; width: 100%; }
+.ticket__datos dt, .ticket__datos dd { display: table-cell; vertical-align: top; }
+.ticket__datos dt { width: 42%; padding-right: 1mm; }
+.ticket__datos dd { width: 58%; text-align: right; overflow-wrap: break-word; }
+.ticket__datos--apilado div, .ticket__datos--apilado dt, .ticket__datos--apilado dd { display: block; width: auto; padding-right: 0; }
 .ticket__datos--apilado dd { text-align: center; }
 .ticket__totales div { display: table; width: 100%; }
 .ticket__totales dt, .ticket__totales dd { display: table-cell; }
 .ticket__totales dt { width: 65%; font-weight: normal; }
 .ticket__totales dd { text-align: right; white-space: nowrap; }
-.ticket__lineas li { margin-bottom: 1.5mm; }
-.ticket__lineas li > span { display: block; }
-.ticket__lineas li > span.num, .ticket__sub { text-align: right; }
+/* Copia de caja: descripcion e importe en la misma fila; el nombre puede envolver. */
+.ticket__lineas li { display: table; table-layout: fixed; width: 100%; margin-bottom: 1.5mm; }
+.ticket__lineas li > span { display: table-cell; vertical-align: top; }
+.ticket__lineas li > span:first-child { width: 70%; padding-right: 1mm; }
+.ticket__lineas li > span.num { width: 30%; text-align: right; white-space: nowrap; }
+/* Factura: conserva el detalle apilado; calculo e importe comparten la ultima fila. */
+.ticket__lineas--factura li { display: block; }
+.ticket__lineas--factura li > span { display: block; width: auto; padding-right: 0; }
+.ticket__lineas--factura li > span.ticket__calculo { display: inline-block; width: 70%; vertical-align: top; white-space: normal; text-align: left; }
+.ticket__lineas--factura li > span.ticket__sub { display: inline-block; width: 25%; margin-left: 5%; text-align: right; vertical-align: top; white-space: nowrap; }
 .ticket__literal { margin-top: 1.5mm; }
 .factura__academica { margin: 1mm 0 2mm; padding: 1mm; border: 0.5pt solid #000; font-weight: bold; text-align: center; }
 .ticket__qr { text-align: center; margin: 2mm 0; }
