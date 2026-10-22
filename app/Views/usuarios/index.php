@@ -1,6 +1,7 @@
 <?php
 /**
  * Usuarios. Variables: $usuarios, $yo (id del usuario de la sesión), $errores, $viejo,
+ * $erroresPin (HU-06: formulario «Mi PIN de autorización»),
  * $credenciales (['nombre', 'claves'] tras crear o resetear, una sola vez).
  */
 use App\Models\Usuario;
@@ -12,17 +13,55 @@ $acceso = [
     'cocina' => 'Sin acceso al panel',
 ];
 $abierto = $errores !== [];
+$abiertoPin = $erroresPin !== [];
 ?>
     <main class="contenido" id="contenido">
       <div class="cabeza-pagina">
         <p class="cabeza-pagina__texto">El cajero entra con PIN en la PC de caja; el resto, con usuario y contraseña. Cocina no entra al panel: recibe la comanda impresa.</p>
         <div class="cabeza-pagina__acciones">
+          <button class="boton" type="button" data-alternar="form-mi-pin" aria-expanded="<?= $abiertoPin ? 'true' : 'false' ?>" aria-controls="form-mi-pin">
+            <?= icono('llave') ?>
+            Mi PIN de autorización
+          </button>
           <button class="boton boton--primario" type="button" data-alternar="form-usuario" aria-expanded="<?= $abierto ? 'true' : 'false' ?>" aria-controls="form-usuario">
             <?= icono('usuarioMas') ?>
             Nuevo usuario
           </button>
         </div>
       </div>
+
+      <!-- HU-06: el PIN con que este administrador autoriza descuentos y anulaciones -->
+      <form class="panel-bloque formulario-rapido" id="form-mi-pin" method="post" action="/usuarios/mi-pin" novalidate<?= $abiertoPin ? '' : ' hidden' ?> aria-labelledby="t-mi-pin">
+        <?= csrf_campo() ?>
+        <div class="panel-bloque__cabecera">
+          <h2 class="panel-bloque__titulo" id="t-mi-pin">Mi PIN de autorización</h2>
+          <button class="boton boton--fantasma boton--icono" type="button" data-alternar="form-mi-pin" aria-label="Cerrar formulario">
+            <?= icono('cerrar') ?>
+          </button>
+        </div>
+        <div class="panel-bloque__cuerpo formulario-rapido__campos">
+          <p class="campo--ancho formulario-rapido__nota">Con este PIN autorizas en caja los descuentos manuales y las anulaciones. No sirve para entrar al sistema.</p>
+          <div class="campo campo--ancho">
+            <label class="campo__etiqueta" for="mp-clave">Tu contraseña actual</label>
+            <input class="control" id="mp-clave" name="clave" type="password" autocomplete="current-password"<?= campo_error($erroresPin, 'mp-clave') ?>>
+            <?= mensaje_error($erroresPin, 'mp-clave') ?>
+          </div>
+          <div class="campo">
+            <label class="campo__etiqueta" for="mp-pin">PIN nuevo</label>
+            <input class="control" id="mp-pin" name="pin" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password"<?= campo_error($erroresPin, 'mp-pin', 'mp-pin-ayuda') ?>>
+            <p class="campo__ayuda" id="mp-pin-ayuda">De 4 a 6 dígitos, sin repetidos ni seguidos.</p>
+            <?= mensaje_error($erroresPin, 'mp-pin') ?>
+          </div>
+          <div class="campo">
+            <label class="campo__etiqueta" for="mp-confirmacion">Repite el PIN</label>
+            <input class="control" id="mp-confirmacion" name="confirmacion" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password"<?= campo_error($erroresPin, 'mp-confirmacion') ?>>
+            <?= mensaje_error($erroresPin, 'mp-confirmacion') ?>
+          </div>
+        </div>
+        <div class="panel-bloque__pie">
+          <button class="boton boton--primario" type="submit">Guardar mi PIN</button>
+        </div>
+      </form>
 
       <form class="panel-bloque formulario-rapido" id="form-usuario" method="post" action="/usuarios" novalidate<?= $abierto ? '' : ' hidden' ?> aria-labelledby="t-nuevo-usuario">
         <?= csrf_campo() ?>

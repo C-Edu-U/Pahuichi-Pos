@@ -38,6 +38,7 @@ return [
         'usuario.reseteo_clave' => ['Reseteo de contraseña', 'usuarios', 'aviso'],
         'usuario.reseteo_pin' => ['Reseteo de PIN', 'usuarios', 'aviso'],
         'usuario.cambio_clave' => ['Cambio de contraseña', 'usuarios', 'neutra'],
+        'usuario.cambio_pin' => ['Cambio de PIN de autorización', 'usuarios', 'aviso'],
 
         'config.negocio' => ['Datos del negocio', 'configuracion', 'neutra'],
         'config.fiscal' => ['Parámetros fiscales', 'configuracion', 'aviso'],

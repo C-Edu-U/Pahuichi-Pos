@@ -15,16 +15,19 @@ use DomainException;
 
 /**
  * Autorización con el PIN del administrador (HU-06, RF-05) para acciones del cajero
- * que la necesitan: hoy el descuento manual; la anulación (HU-44) usará la misma.
+ * que la necesitan: el descuento manual y la anulación de una venta.
  *
  * El PIN se compara con los administradores activos; el de un cajero no autoriza.
  * Tras 5 PIN errados seguidos, la autorización queda bloqueada 15 minutos para ese
  * cajero (como el login). Un PIN correcto entrega un permiso de un solo uso, guardado
  * en la sesión del cajero, que vence en 5 minutos y lleva lo que se autorizó.
+ * La anulación pide el PIN en el mismo formulario en que se anula: usa verificarPin().
  */
 final class AutorizacionService
 {
-    public const ACCIONES = ['descuento' => 'del descuento'];
+    public const ACCIONES = ['descuento' => 'del descuento', 'anulacion' => 'de la anulación'];
+    /** Acciones que se autorizan antes y se ejecutan después, con un permiso de un solo uso. */
+    private const CON_PERMISO = ['descuento'];
     private const VIGENCIA_MIN = 5;
     private const SESION = 'autorizaciones';
 
@@ -34,7 +37,7 @@ final class AutorizacionService
      */
     public static function autorizar(string $accion, string $pin, array $datos): array
     {
-        if (!isset(self::ACCIONES[$accion])) {
+        if (!in_array($accion, self::CON_PERMISO, true)) {
             throw new DomainException('Esa acción no necesita autorización.');
         }
         $monto = self::monto($datos['monto'] ?? null);
@@ -43,6 +46,29 @@ final class AutorizacionService
             throw new DomainException('Escribe el motivo del descuento (de 3 a 120 caracteres).');
         }
 
+        $admin = self::verificarPin($accion, $pin);
+        $token = bin2hex(random_bytes(16));
+        $permisos = self::vigentes();
+        $permisos[$token] = [
+            'accion' => $accion,
+            'monto' => $monto,
+            'motivo' => $motivo,
+            'admin_id' => (int) $admin['id'],
+            'admin' => $admin['nombre'],
+            'vence' => Reloj::ahora()->modify('+' . self::VIGENCIA_MIN . ' minutes')->getTimestamp(),
+        ];
+        Sesion::set(self::SESION, $permisos);
+
+        return ['token' => $token, 'autorizado_por' => $admin['nombre'], 'monto' => $monto, 'motivo' => $motivo];
+    }
+
+    /**
+     * Valida el PIN contra los administradores activos y devuelve al que autoriza.
+     * Tras 5 PIN errados seguidos, bloquea 15 minutos la autorización de ese cajero;
+     * cada fallo y el bloqueo quedan en la bitácora.
+     */
+    public static function verificarPin(string $accion, string $pin): array
+    {
         $clave = 'autoriza:' . Auth::id();
         if ($hasta = IntentoAcceso::bloqueadoHasta($clave)) {
             throw new DomainException('Demasiados PIN errados. La autorización se habilita a las ' . $hasta->format('H:i') . '.');
@@ -73,19 +99,7 @@ final class AutorizacionService
         }
 
         IntentoAcceso::limpiar($clave);
-        $token = bin2hex(random_bytes(16));
-        $permisos = self::vigentes();
-        $permisos[$token] = [
-            'accion' => $accion,
-            'monto' => $monto,
-            'motivo' => $motivo,
-            'admin_id' => (int) $admin['id'],
-            'admin' => $admin['nombre'],
-            'vence' => Reloj::ahora()->modify('+' . self::VIGENCIA_MIN . ' minutes')->getTimestamp(),
-        ];
-        Sesion::set(self::SESION, $permisos);
-
-        return ['token' => $token, 'autorizado_por' => $admin['nombre'], 'monto' => $monto, 'motivo' => $motivo];
+        return $admin;
     }
 
     /** Lee un permiso sin gastarlo: el cobro lo gasta recién al guardarse la venta. */

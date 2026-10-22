@@ -43,6 +43,8 @@ $router->post('/usuarios/{id}/estado', [UsuarioController::class, 'estado'], $us
 $router->post('/usuarios/{id}/desbloquear', [UsuarioController::class, 'desbloquear'], $usuarios);
 $router->post('/usuarios/{id}/clave', [UsuarioController::class, 'resetearClave'], $usuarios);
 $router->post('/usuarios/{id}/pin', [UsuarioController::class, 'resetearPin'], $usuarios);
+// HU-06: el administrador elige su propio PIN de autorización
+$router->post('/usuarios/mi-pin', [UsuarioController::class, 'miPin'], $usuarios);
 
 // Configuración (HU-08, HU-09, HU-10, HU-11)
 $config = ['auth', 'permiso:modulo.config'];

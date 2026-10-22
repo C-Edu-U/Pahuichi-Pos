@@ -35,7 +35,7 @@ final class FacturaController extends Controller
         $s = $f['snapshot'];
         return $this->vista('facturas/tickets', ['titulo' => 'Factura N° ' . $f['numero'], 'h1' => 'Pedido ' . $s['pedido'] . ' · factura N° ' . $f['numero'],
             'modulo' => 'ventas', 'claseBody' => 'panel--tickets', 'css' => ['modulos.css', 'tickets.css', 'tickets-hu10.css'],
-            'js' => ['qrcode.js', 'tickets.js'], 'f' => $f, 's' => $s]);
+            'js' => ['qrcode.js', 'tickets.js', 'anular.js'], 'f' => $f, 's' => $s]);
     }
 
     public function reimprimir(Peticion $peticion): Respuesta
