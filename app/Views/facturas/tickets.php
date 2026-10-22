@@ -15,6 +15,10 @@
             <svg class="icono" aria-hidden="true"><use href="#i-pdf"></use></svg>
             Factura en PDF
           </button>
+          <button class="boton boton--peligro" type="button" data-abrir-modal="modal-anular">
+            <svg class="icono" aria-hidden="true"><use href="#i-anular"></use></svg>
+            Anular venta
+          </button>
           <button class="boton boton--primario" type="button" id="reimprimir">
             <svg class="icono" aria-hidden="true"><use href="#i-imprimir"></use></svg>
             Reimprimir los tres
@@ -26,6 +30,26 @@
         <svg class="icono icono--sm" aria-hidden="true"><use href="#i-info"></use></svg>
         Las copias salen con la marca REIMPRESIÓN y la solicitud queda registrada en la bitácora.
       </p>
+
+      <!-- HU-06: el PIN del administrador autoriza la anulación; anular la venta llega con HU-44 -->
+      <dialog class="modal" id="modal-anular" aria-labelledby="anular-titulo" aria-describedby="anular-texto">
+        <form method="dialog" id="form-anular" novalidate>
+          <div class="modal__cuerpo">
+            <h2 class="modal__titulo" id="anular-titulo">Anular venta <span class="insignia insignia--aviso">Próximamente · HU-44</span></h2>
+            <p class="modal__texto" id="anular-texto">Anular una venta requiere el PIN del administrador. Por ahora solo se valida el PIN: la venta no se modifica.</p>
+            <div class="campo">
+              <label class="campo__etiqueta" for="anular-pin">PIN del administrador</label>
+              <input class="control" id="anular-pin" type="password" inputmode="numeric" maxlength="6" autocomplete="off">
+            </div>
+            <p class="campo__error" id="anular-error" role="alert" hidden></p>
+            <p class="alerta alerta--info" id="anular-aviso" role="status" hidden></p>
+          </div>
+          <div class="modal__acciones">
+            <button class="boton" type="button" data-cerrar-modal>Cerrar</button>
+            <button class="boton boton--peligro" type="submit" id="anular-autorizar">Autorizar anulación</button>
+          </div>
+        </form>
+      </dialog>
 
       <div class="tickets" id="tickets" data-factura="<?= (int) $f['id'] ?>">
         <!-- Comanda -->
