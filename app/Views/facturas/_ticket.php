@@ -6,8 +6,9 @@
             <p class="comanda__destino" data-campo="destino"><?= e($s['tipo'] === 'mesa' ? 'MESA ' . $s['mesa'] : 'PARA LLEVAR') ?></p>
             <p class="comanda__hora" data-campo="hora-larga"><?= e($s['fecha_larga']) ?></p>
             <ul class="comanda__items">
-<?php $cocina = array_filter($s['lineas'], static fn (array $l): bool => $l['cocina']); foreach ($cocina as $l): ?>
-              <li><span class="comanda__cantidad"><?= (int) $l['cantidad'] ?> ×</span><span class="comanda__nombre"><?= e($l['nombre']) ?></span><?php if ($l['nota']): ?><span class="comanda__nota">» <?= e(mb_strtoupper($l['nota'])) ?></span><?php endif; ?></li>
+<?php // HU-48: los regalos siempre salen en la comanda, marcados, aunque el producto no vaya a cocina
+$cocina = array_filter($s['lineas'], static fn (array $l): bool => $l['cocina'] || !empty($l['regalo'])); foreach ($cocina as $l): ?>
+              <li><span class="comanda__cantidad"><?= (int) $l['cantidad'] ?> ×</span><span class="comanda__nombre"><?= e($l['nombre']) ?></span><?php if (!empty($l['regalo'])): ?><span class="comanda__nota comanda__regalo">» REGALO · <?= e(mb_strtoupper($l['promocion']['etiqueta'] ?? '')) ?></span><?php endif; ?><?php if ($l['nota']): ?><span class="comanda__nota">» <?= e(mb_strtoupper($l['nota'])) ?></span><?php endif; ?></li>
 <?php endforeach; if (!$cocina): ?><li class="comanda__vacia">Sin platos para cocina.</li><?php endif; ?>
             </ul>
           </article>
