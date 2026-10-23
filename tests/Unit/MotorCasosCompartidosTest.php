@@ -15,7 +15,7 @@ use PHPUnit\Framework\TestCase;
 final class MotorCasosCompartidosTest extends TestCase
 {
     private const VACIA = ['nombre' => '', 'tipo' => 'descuento', 'valor_tipo' => null, 'valor' => null, 'producto_id' => null, 'categoria_id' => null,
-        'cantidad_compra' => null, 'regalo_producto_id' => null, 'fecha_desde' => null, 'fecha_hasta' => null, 'dias' => 127, 'hora_desde' => null,
+        'cantidad_compra' => null, 'regalo_producto_id' => null, 'precio_combo' => null, 'items' => [], 'fecha_desde' => null, 'fecha_hasta' => null, 'dias' => 127, 'hora_desde' => null,
         'hora_hasta' => null, 'cantidad_minima' => null, 'monto_minimo' => null, 'tope_usos_dia' => null, 'acumulable' => false, 'prioridad' => 10];
 
     public static function casos(): array

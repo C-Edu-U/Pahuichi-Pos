@@ -16,7 +16,7 @@ $estados = [
 ?>
     <main class="contenido" id="contenido">
       <div class="cabeza-pagina">
-        <p class="cabeza-pagina__texto">Se aplican solas en el punto de venta al agregar el producto, cuando cumplen su horario y sus condiciones: el descuento se ve como una línea de descuento y el regalo se agrega a Bs 0. Una no acumulable no se combina con ninguna otra: se aplica la opción de mayor beneficio. Las acumulables se suman por prioridad.</p>
+        <p class="cabeza-pagina__texto">Se aplican solas en el punto de venta al agregar el producto, cuando cumplen su horario y sus condiciones: el descuento se ve como una línea de descuento el regalo se agrega a Bs 0 y el combo muestra su ahorro. Una no acumulable no se combina con ninguna otra: se aplica la opción de mayor beneficio. Las acumulables se suman por prioridad.</p>
         <div class="cabeza-pagina__acciones">
           <a class="boton boton--primario" href="/promociones/nueva">
             <?= icono('mas') ?>
@@ -55,8 +55,8 @@ $estados = [
     $hoy = (int) ($contexto['usos'][$id] ?? 0);
 ?>
             <tr>
-              <td><span class="tabla__principal"><?= e($p['nombre']) ?></span><span class="tabla__secundario"><?= $p['tipo'] === 'regalo' ? 'Regalo por compra' : 'Descuento' ?> · <?= e(PromocionService::combinacion($p)) ?></span></td>
-              <td data-etiqueta="Se aplica a"><?= $p['producto_id'] !== null ? e($p['producto']) : 'Categoría ' . e($p['categoria']) ?></td>
+              <td><span class="tabla__principal"><?= e($p['nombre']) ?></span><span class="tabla__secundario"><?= ['regalo' => 'Regalo por compra', 'combo' => 'Combo'][$p['tipo']] ?? 'Descuento' ?> · <?= e(PromocionService::combinacion($p)) ?></span></td>
+              <td data-etiqueta="Se aplica a"><?= $p['tipo'] === 'combo' ? e(implode(', ', array_column($p['items'], 'nombre'))) : ($p['producto_id'] !== null ? e($p['producto']) : 'Categoría ' . e($p['categoria'])) ?></td>
               <td data-etiqueta="Beneficio"><?= e(PromocionService::regla($p)) ?></td>
               <td data-etiqueta="Cuándo"><?= e(PromocionService::cuando($p)) ?></td>
               <td data-etiqueta="Condiciones"><?= e(PromocionService::condiciones($p)) ?></td>
@@ -79,5 +79,5 @@ $estados = [
       </div>
 <?php endif; ?>
 
-      <p class="promociones__pendiente"><span class="insignia insignia--aviso">Próximamente</span> Combos a precio especial (HU-47) y simulador (HU-52).</p>
+      <p class="promociones__pendiente"><span class="insignia insignia--aviso">Próximamente</span> Simulador (HU-52).</p>
     </main>

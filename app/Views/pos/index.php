@@ -34,6 +34,8 @@ $promos = array_map(static fn (array $pr): array => [
     'categoria_id' => $entero($pr['categoria_id']),
     'cantidad_compra' => $entero($pr['cantidad_compra']),
     'regalo_producto_id' => $entero($pr['regalo_producto_id']),
+    'precio_combo' => $pr['precio_combo'] === null ? null : PromocionService::centesimos((string) $pr['precio_combo']),
+    'items' => array_map(static fn (array $it): array => ['producto_id' => $it['producto_id'], 'cantidad' => $it['cantidad']], $pr['items']),
     'fecha_desde' => $pr['fecha_desde'],
     'fecha_hasta' => $pr['fecha_hasta'],
     'dias' => (int) $pr['dias'],
@@ -50,7 +52,8 @@ $promos = array_map(static fn (array $pr): array => [
 $conPromo = [];
 foreach ($productos as $p) {
     foreach ($promociones as $pr) {
-        if ((int) $pr['producto_id'] === (int) $p['id'] || (int) $pr['categoria_id'] === (int) $p['categoria_id']) {
+        if ((int) $pr['producto_id'] === (int) $p['id'] || (int) $pr['categoria_id'] === (int) $p['categoria_id']
+            || in_array((int) $p['id'], array_column($pr['items'], 'producto_id'), true)) {
             $conPromo[(int) $p['id']][(int) $pr['id']] = PromocionService::vigente($pr, $contextoPromos);
         }
     }

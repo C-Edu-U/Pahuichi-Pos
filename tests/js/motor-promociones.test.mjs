@@ -17,7 +17,7 @@ const promocion = (p) => ({
   nombre: 'Promo ' + p.id, tipo: 'descuento', valor_tipo: null, producto_id: null, categoria_id: null, cantidad_compra: null,
   regalo_producto_id: null, fecha_desde: null, fecha_hasta: null, dias: 127, hora_desde: null, hora_hasta: null, cantidad_minima: null,
   tope_usos_dia: null, acumulable: false, prioridad: 10, usos: 0,
-  ...p, valor: centesimos(p.valor), monto_minimo: centesimos(p.monto_minimo),
+  items: [], ...p, valor: centesimos(p.valor), monto_minimo: centesimos(p.monto_minimo), precio_combo: centesimos(p.precio_combo),
 });
 
 let fallas = 0;

@@ -28,6 +28,11 @@ use DateTimeImmutable;
  *   1 del producto regalo a Bs 0, con el nombre de la promoción. Si el regalo está
  *   agotado o inactivo, no se agrega. Respeta las mismas restricciones de HU-49.
  *
+ * - HU-47: combo a precio especial. Cada vez que el pedido trae todos sus productos (en sus
+ *   cantidades), el ahorro es precio normal − precio del combo. Se reparte entre las líneas
+ *   del combo en proporción a su precio, porque la factura lleva el descuento por línea; el
+ *   centavo del redondeo va a la última. Sigue las reglas de combinación de HU-50.
+ *
  * Todo en centavos enteros, para que el navegador y el servidor den lo mismo.
  */
 final class PromocionService
@@ -123,6 +128,43 @@ final class PromocionService
                     $regalos[] = ['promocion' => $p, 'producto_id' => (int) $p['regalo_producto_id'], 'cantidad' => $cantidad, 'monto' => $precio * $cantidad];
                     $beneficio += $precio * $cantidad;
                 }
+            } elseif ($tipo === 'combo') {
+                // Cuántas veces se arma y cuánto cuesta por separado (precio de cada línea)
+                $veces = null;
+                $normal = 0;
+                $bases = [];
+                foreach ($p['items'] ?? [] as $it) {
+                    $i = null;
+                    foreach ($lineas as $k => $l) {
+                        if ($l['producto_id'] === (int) $it['producto_id']) {
+                            $i = $k;
+                        }
+                    }
+                    if ($i === null) {
+                        $veces = 0;
+                        break;
+                    }
+                    $veces = min($veces ?? PHP_INT_MAX, intdiv($lineas[$i]['cantidad'], (int) $it['cantidad']));
+                    $bases[$i] = intdiv($lineas[$i]['bruto'], $lineas[$i]['cantidad']) * (int) $it['cantidad'];
+                    $normal += $bases[$i];
+                }
+                $ahorro = $veces ? ($normal - self::centesimos((string) $p['precio_combo'])) * $veces : 0;
+                if ($ahorro <= 0) {
+                    continue;
+                }
+                $repartido = 0;
+                $ultimo = array_key_last($bases);
+                foreach ($bases as $i => $base) {
+                    $parte = $i === $ultimo ? $ahorro - $repartido : intdiv($ahorro * $base, $normal);
+                    $repartido += $parte;
+                    $parte = min($parte, $restante[$i]);
+                    if ($parte > 0) {
+                        $restante[$i] -= $parte;
+                        $resultado[$i]['descuento'] += $parte;
+                        $resultado[$i]['partes'][] = ['promocion' => $p, 'monto' => $parte];
+                        $beneficio += $parte;
+                    }
+                }
             }
         }
         return ['lineas' => $resultado, 'regalos' => $regalos, 'beneficio' => $beneficio];
@@ -205,6 +247,10 @@ final class PromocionService
      */
     public static function regla(array $p): string
     {
+        if (($p['tipo'] ?? 'descuento') === 'combo') {
+            $partes = array_map(static fn (array $it): string => ((int) $it['cantidad'] > 1 ? (int) $it['cantidad'] . ' ' : '') . ($it['nombre'] ?? 'producto'), $p['items'] ?? []);
+            return implode(' + ', $partes) . ' a Bs ' . bs($p['precio_combo']);
+        }
         if (($p['tipo'] ?? 'descuento') === 'regalo') {
             $n = (int) $p['cantidad_compra'];
             return '1 ' . ($p['regalo'] ?? 'regalo') . ' gratis por cada ' . ($n === 1 ? 'uno' : $n);

@@ -10,6 +10,7 @@ use App\Core\DB;
  * Promociones (HU-46): descuento por producto o por categoría, en % o en Bs por unidad.
  * HU-49: restricciones de fechas, días, horario, cantidad y monto mínimos y tope por día.
  * HU-50: acumulable o no, y prioridad entre las acumulables.
+ * HU-47: combo con sus productos en promocion_items y su precio especial.
  */
 final class Promocion
 {
@@ -22,26 +23,56 @@ final class Promocion
     /** Todas para la administración: las activas primero. */
     public static function todas(): array
     {
-        return DB::filas(self::SELECT . ' ORDER BY pr.activo DESC, pr.nombre');
+        return self::conItems(DB::filas(self::SELECT . ' ORDER BY pr.activo DESC, pr.nombre'));
     }
 
     public static function buscar(int $id): ?array
     {
-        return DB::fila(self::SELECT . ' WHERE pr.id = ?', [$id]);
+        $p = DB::fila(self::SELECT . ' WHERE pr.id = ?', [$id]);
+        return $p === null ? null : self::conItems([$p])[0];
+    }
+
+    /**
+     * Agrega a cada combo sus productos: [producto_id, cantidad, nombre, precio], por producto.
+     * @param list<array> $promociones
+     */
+    private static function conItems(array $promociones): array
+    {
+        // array_values: PDO necesita las claves 0, 1, 2… y array_filter conserva las originales
+        $ids = array_values(array_map(static fn (array $p): int => (int) $p['id'], array_filter($promociones, static fn (array $p): bool => $p['tipo'] === 'combo')));
+        $items = [];
+        if ($ids) {
+            $marcas = implode(',', array_fill(0, count($ids), '?'));
+            foreach (DB::filas("SELECT i.promocion_id, i.producto_id, i.cantidad, p.nombre, p.precio FROM promocion_items i
+                    JOIN productos p ON p.id = i.producto_id WHERE i.promocion_id IN ({$marcas}) ORDER BY i.promocion_id, i.producto_id", $ids) as $it) {
+                $items[(int) $it['promocion_id']][] = ['producto_id' => (int) $it['producto_id'], 'cantidad' => (int) $it['cantidad'],
+                    'nombre' => $it['nombre'], 'precio' => $it['precio']];
+            }
+        }
+        return array_map(static fn (array $p): array => $p + ['items' => $items[(int) $p['id']] ?? []], $promociones);
+    }
+
+    /** Reemplaza los productos de un combo. */
+    public static function guardarItems(int $id, array $items): void
+    {
+        DB::consulta('DELETE FROM promocion_items WHERE promocion_id = ?', [$id]);
+        foreach ($items as $it) {
+            DB::insertar('INSERT INTO promocion_items (promocion_id, producto_id, cantidad) VALUES (?, ?, ?)', [$id, $it['producto_id'], $it['cantidad']]);
+        }
     }
 
     /** Las que el motor evalúa al vender. */
     public static function activas(): array
     {
-        return DB::filas(
-            'SELECT id, nombre, tipo, valor_tipo, valor, producto_id, categoria_id, cantidad_compra, regalo_producto_id, fecha_desde, fecha_hasta, dias,
+        return self::conItems(DB::filas(
+            'SELECT id, nombre, tipo, valor_tipo, valor, producto_id, categoria_id, cantidad_compra, regalo_producto_id, precio_combo, fecha_desde, fecha_hasta, dias,
                     hora_desde, hora_hasta, cantidad_minima, monto_minimo, tope_usos_dia, acumulable, prioridad
              FROM promociones WHERE activo = 1 ORDER BY id'
-        );
+        ));
     }
 
     /** Columnas que guarda el formulario, en orden. */
-    private const CAMPOS = ['nombre', 'tipo', 'valor_tipo', 'valor', 'producto_id', 'categoria_id', 'cantidad_compra', 'regalo_producto_id', 'activo', 'fecha_desde', 'fecha_hasta',
+    private const CAMPOS = ['nombre', 'tipo', 'valor_tipo', 'valor', 'producto_id', 'categoria_id', 'cantidad_compra', 'regalo_producto_id', 'precio_combo', 'activo', 'fecha_desde', 'fecha_hasta',
         'dias', 'hora_desde', 'hora_hasta', 'cantidad_minima', 'monto_minimo', 'tope_usos_dia', 'acumulable', 'prioridad'];
 
     public static function crear(array $d): int

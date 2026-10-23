@@ -9,6 +9,8 @@
      (contexto), y la cantidad mínima y el monto mínimo del pedido.
    - Regalo por compra: por cada N del producto o la categoría, 1 del producto regalo a Bs 0,
      si está disponible y la promoción vale. Espejo de PromocionService::regalos().
+   - HU-47: combo a precio especial; el ahorro se reparte entre sus líneas por su precio y el
+     centavo del redondeo va a la última. Espejo de la rama «combo» de PromocionService::simular().
    Todo en centavos enteros. Las promociones llegan con su valor en centésimos (12,50 → 1250)
    y su monto mínimo en centavos. */
 (function () {
@@ -74,6 +76,37 @@
         if (cantidad > 0 && precio !== undefined) {
           regalos.push({ promocion: p, producto_id: p.regalo_producto_id, cantidad: cantidad, centavos: precio * cantidad });
           beneficio += precio * cantidad;
+        }
+      } else if (p.tipo === 'combo') {
+        // HU-47: cuántas veces se arma; el ahorro se reparte entre sus líneas por su precio
+        var veces = null;
+        var normal = 0;
+        var bases = [];   // [{ i, base }] en el orden de los items
+        var falta = (p.items || []).some(function (it) {
+          var i = -1;
+          lineas.forEach(function (l, k) { if (Number(l.producto.id) === it.producto_id) i = k; });
+          if (i === -1) return true;
+          var v = Math.floor(lineas[i].cantidad / it.cantidad);
+          veces = veces === null ? v : Math.min(veces, v);
+          var base = centavos(lineas[i].producto.precio) * it.cantidad;
+          bases.push({ i: i, base: base });
+          normal += base;
+          return false;
+        });
+        var ahorro = !falta && veces ? (normal - p.precio_combo) * veces : 0;
+        if (ahorro > 0) {
+          var repartido = 0;
+          bases.forEach(function (b, n) {
+            var parte = n === bases.length - 1 ? ahorro - repartido : Math.floor(ahorro * b.base / normal);
+            repartido += parte;
+            parte = Math.min(parte, restante[b.i]);
+            if (parte > 0) {
+              restante[b.i] -= parte;
+              resultado[b.i].centavos += parte;
+              resultado[b.i].partes.push({ promocion: p, centavos: parte });
+              beneficio += parte;
+            }
+          });
         }
       }
     });

@@ -1,4 +1,5 @@
-/* Formulario de promoción: muestra solo los campos del tipo elegido (descuento o regalo).
+/* Formulario de promoción: muestra solo los campos del tipo elegido (descuento, regalo o combo).
+   data-tipo-campos puede nombrar varios tipos separados por espacio.
    El servidor ignora los campos del otro tipo; sin JS, ambos grupos quedan visibles. */
 (function () {
   'use strict';
@@ -10,7 +11,7 @@
     var elegido = form.querySelector('input[name="tipo"]:checked');
     var tipo = elegido ? elegido.value : 'descuento';
     form.querySelectorAll('[data-tipo-campos]').forEach(function (g) {
-      g.hidden = g.getAttribute('data-tipo-campos') !== tipo;
+      g.hidden = g.getAttribute('data-tipo-campos').split(' ').indexOf(tipo) === -1;
     });
   }
 
