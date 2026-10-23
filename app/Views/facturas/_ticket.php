@@ -8,7 +8,7 @@
             <ul class="comanda__items">
 <?php // HU-48: los regalos siempre salen en la comanda, marcados, aunque el producto no vaya a cocina
 $cocina = array_filter($s['lineas'], static fn (array $l): bool => $l['cocina'] || !empty($l['regalo'])); foreach ($cocina as $l): ?>
-              <li><span class="comanda__cantidad"><?= (int) $l['cantidad'] ?> ×</span><span class="comanda__nombre"><?= e($l['nombre']) ?></span><?php if (!empty($l['regalo'])): ?><span class="comanda__nota comanda__regalo">» REGALO · <?= e(mb_strtoupper($l['promocion']['etiqueta'] ?? '')) ?></span><?php endif; ?><?php if ($l['nota']): ?><span class="comanda__nota">» <?= e(mb_strtoupper($l['nota'])) ?></span><?php endif; ?></li>
+              <li><span class="comanda__cantidad"><?= (int) $l['cantidad'] ?> ×</span><span class="comanda__nombre"><?= e($l['nombre']) ?></span><?php if (!empty($l['regalo'])): ?><span class="comanda__nota comanda__regalo">» REGALO · <?= e(mb_strtoupper($l['promociones'][0]['etiqueta'] ?? $l['promocion']['etiqueta'] ?? '')) ?></span><?php endif; ?><?php if ($l['nota']): ?><span class="comanda__nota">» <?= e(mb_strtoupper($l['nota'])) ?></span><?php endif; ?></li>
 <?php endforeach; if (!$cocina): ?><li class="comanda__vacia">Sin platos para cocina.</li><?php endif; ?>
             </ul>
           </article>
@@ -28,7 +28,7 @@ $cocina = array_filter($s['lineas'], static fn (array $l): bool => $l['cocina'] 
             </dl>
             <div class="ticket__separador"></div>
             <ul class="ticket__lineas">
-<?php foreach ($s['lineas'] as $l): ?><li><span><?= (int) $l['cantidad'] ?> × <?= e($l['nombre']) ?></span><span class="num"><?= bs($l['bruto'] ?? $l['subtotal']) ?></span></li><?php if (!empty($l['promocion'])): ?><li class="ticket__promo"><span><?= e($l['promocion']['etiqueta']) ?></span><span class="num">−<?= bs($l['descuento']) ?></span></li><?php endif; endforeach; ?>
+<?php foreach ($s['lineas'] as $l): ?><li><span><?= (int) $l['cantidad'] ?> × <?= e($l['nombre']) ?></span><span class="num"><?= bs($l['bruto'] ?? $l['subtotal']) ?></span></li><?php foreach ($l['promociones'] ?? (!empty($l['promocion']) ? [$l['promocion'] + ['monto' => $l['descuento']]] : []) as $pr): ?><li class="ticket__promo"><span><?= e($pr['etiqueta']) ?></span><span class="num">−<?= bs($pr['monto']) ?></span></li><?php endforeach; endforeach; ?>
             </ul>
             <div class="ticket__separador"></div>
             <dl class="ticket__totales"><div><dt>Subtotal</dt><dd><?= bs($s['subtotal']) ?></dd></div><?php if ((float) $s['descuento'] > 0): ?><div><dt>Descuento</dt><dd><?= bs($s['descuento']) ?></dd></div><?php endif; ?><div class="ticket__fuerte"><dt>TOTAL Bs</dt><dd><?= bs($s['total']) ?></dd></div></dl>

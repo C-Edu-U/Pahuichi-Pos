@@ -17,6 +17,25 @@ final class PromocionServiceTest extends TestCase
     private const LOCRO = ['producto_id' => 2, 'categoria_id' => 1];
     private const MOCOCHINCHI = ['producto_id' => 10, 'categoria_id' => 2];
 
+    /** Descuento por línea con la promoción que lo dio (la primera aplicada), como antes de HU-50. */
+    private static function aplicar(array $lineas, array $promociones, ?array $contexto = null): array
+    {
+        return array_map(
+            static fn (array $l): array => ['descuento' => $l['descuento'], 'promocion' => $l['partes'][0]['promocion'] ?? null],
+            PromocionService::evaluar($lineas, $promociones, $contexto)['lineas'],
+        );
+    }
+
+    /** Regalos que corresponden, con todo producto regalo disponible a Bs 1. */
+    private static function regalos(array $lineas, array $promociones, ?array $contexto = null): array
+    {
+        $regalables = array_fill_keys(array_map(static fn (array $p): int => (int) ($p['regalo_producto_id'] ?? 0), $promociones), 100);
+        return array_map(
+            static fn (array $g): array => ['promocion' => $g['promocion'], 'producto_id' => $g['producto_id'], 'cantidad' => $g['cantidad']],
+            PromocionService::evaluar($lineas, $promociones, $contexto, $regalables)['regalos'],
+        );
+    }
+
     private static function linea(array $producto, int $cantidad, int $precio): array
     {
         return $producto + ['cantidad' => $cantidad, 'bruto' => $precio * $cantidad];
@@ -35,7 +54,7 @@ final class PromocionServiceTest extends TestCase
      */
     public function testPorcentajeSobreLaLinea(): void
     {
-        $r = PromocionService::aplicar([self::linea(self::MAJADITO, 2, 4000)], [self::promo(1, 'porcentaje', '10.00', 1)]);
+        $r = self::aplicar([self::linea(self::MAJADITO, 2, 4000)], [self::promo(1, 'porcentaje', '10.00', 1)]);
 
         $this->assertSame(800, $r[0]['descuento']);
         $this->assertSame(1, $r[0]['promocion']['id']);
@@ -44,7 +63,7 @@ final class PromocionServiceTest extends TestCase
     public function testElPorcentajeRedondeaAlCentavo(): void
     {
         // 12,5 % de Bs 35,00 = 4,375 → 4,38
-        $r = PromocionService::aplicar([self::linea(self::LOCRO, 1, 3500)], [self::promo(1, 'porcentaje', '12.50', 2)]);
+        $r = self::aplicar([self::linea(self::LOCRO, 1, 3500)], [self::promo(1, 'porcentaje', '12.50', 2)]);
 
         $this->assertSame(438, $r[0]['descuento']);
     }
@@ -57,7 +76,7 @@ final class PromocionServiceTest extends TestCase
      */
     public function testMontoFijoPorUnidad(): void
     {
-        $r = PromocionService::aplicar([self::linea(self::MAJADITO, 3, 4000)], [self::promo(1, 'monto', '5.00', 1)]);
+        $r = self::aplicar([self::linea(self::MAJADITO, 3, 4000)], [self::promo(1, 'monto', '5.00', 1)]);
 
         $this->assertSame(1500, $r[0]['descuento']);
     }
@@ -70,7 +89,7 @@ final class PromocionServiceTest extends TestCase
      */
     public function testPorCategoria(): void
     {
-        $r = PromocionService::aplicar(
+        $r = self::aplicar(
             [self::linea(self::MAJADITO, 1, 4000), self::linea(self::LOCRO, 1, 3500), self::linea(self::MOCOCHINCHI, 1, 1000)],
             [self::promo(1, 'porcentaje', '20.00', null, 1)],
         );
@@ -87,40 +106,38 @@ final class PromocionServiceTest extends TestCase
      */
     public function testNuncaDejaLaLineaEnNegativo(): void
     {
-        $r = PromocionService::aplicar([self::linea(self::MAJADITO, 1, 4000)], [self::promo(1, 'monto', '50.00', null, 1)]);
+        $r = self::aplicar([self::linea(self::MAJADITO, 1, 4000)], [self::promo(1, 'monto', '50.00', null, 1)]);
 
         $this->assertSame(4000, $r[0]['descuento']);
     }
 
     /**
-     * Escenario: Dos promociones sobre el mismo producto
-     *   Dado 10 % a la categoría Platos y Bs 6 por unidad al Majadito
-     *   Cuando agrego un Majadito de Bs 40
-     *   Entonces se aplica solo la de mayor beneficio (Bs 6)
+     * Escenario: Dos no acumulables en el mismo pedido (HU-50)
+     *   Dado 10 % a la categoría Platos y Bs 6 por unidad al Majadito, ninguna acumulable
+     *   Cuando el pedido tiene un Majadito y un Locro
+     *   Entonces se aplica solo la de mayor beneficio total: el 10 % (Bs 7,50) y no los Bs 6
      */
     public function testGanaLaDeMayorBeneficio(): void
     {
-        $r = PromocionService::aplicar(
+        $r = self::aplicar(
             [self::linea(self::MAJADITO, 1, 4000), self::linea(self::LOCRO, 1, 3500)],
             [self::promo(1, 'porcentaje', '10.00', null, 1), self::promo(2, 'monto', '6.00', 1)],
         );
 
-        $this->assertSame(600, $r[0]['descuento']);
-        $this->assertSame(2, $r[0]['promocion']['id']);
-        $this->assertSame(350, $r[1]['descuento']);   // el Locro solo tiene la de categoría
-        $this->assertSame(1, $r[1]['promocion']['id']);
+        $this->assertSame([400, 350], array_column($r, 'descuento'));
+        $this->assertSame([1, 1], [$r[0]['promocion']['id'], $r[1]['promocion']['id']]);
     }
 
     public function testAIgualBeneficioGanaLaMasAntigua(): void
     {
-        $r = PromocionService::aplicar([self::linea(self::MAJADITO, 1, 4000)], [self::promo(3, 'monto', '4.00', 1), self::promo(7, 'porcentaje', '10.00', 1)]);
+        $r = self::aplicar([self::linea(self::MAJADITO, 1, 4000)], [self::promo(3, 'monto', '4.00', 1), self::promo(7, 'porcentaje', '10.00', 1)]);
 
         $this->assertSame(3, $r[0]['promocion']['id']);
     }
 
     public function testSinPromocionesNoHayDescuento(): void
     {
-        $r = PromocionService::aplicar([self::linea(self::MAJADITO, 2, 4000)], []);
+        $r = self::aplicar([self::linea(self::MAJADITO, 2, 4000)], []);
 
         $this->assertSame([['descuento' => 0, 'promocion' => null]], $r);
     }
@@ -139,7 +156,7 @@ final class PromocionServiceTest extends TestCase
     private static function conRestricciones(array $restricciones, array $ctx, array $lineas = []): int
     {
         $p = $restricciones + self::promo(1, 'porcentaje', '10.00', 1);
-        return PromocionService::aplicar($lineas ?: [self::linea(self::MAJADITO, 2, 4000)], [$p], $ctx)[0]['descuento'];
+        return self::aplicar($lineas ?: [self::linea(self::MAJADITO, 2, 4000)], [$p], $ctx)[0]['descuento'];
     }
 
     /**
@@ -201,8 +218,8 @@ final class PromocionServiceTest extends TestCase
     {
         $platos = ['cantidad_minima' => 3] + self::promo(1, 'porcentaje', '10.00', null, 1);
 
-        $tres = PromocionService::aplicar([self::linea(self::MAJADITO, 2, 4000), self::linea(self::LOCRO, 1, 3500), self::linea(self::MOCOCHINCHI, 5, 1000)], [$platos], self::ctx());
-        $dos = PromocionService::aplicar([self::linea(self::MAJADITO, 1, 4000), self::linea(self::LOCRO, 1, 3500), self::linea(self::MOCOCHINCHI, 5, 1000)], [$platos], self::ctx());
+        $tres = self::aplicar([self::linea(self::MAJADITO, 2, 4000), self::linea(self::LOCRO, 1, 3500), self::linea(self::MOCOCHINCHI, 5, 1000)], [$platos], self::ctx());
+        $dos = self::aplicar([self::linea(self::MAJADITO, 1, 4000), self::linea(self::LOCRO, 1, 3500), self::linea(self::MOCOCHINCHI, 5, 1000)], [$platos], self::ctx());
 
         $this->assertSame([800, 350, 0], array_column($tres, 'descuento'));
         $this->assertSame([0, 0, 0], array_column($dos, 'descuento'));
@@ -254,7 +271,7 @@ final class PromocionServiceTest extends TestCase
 
     public function testSiLaMejorNoCumpleGanaLaQueSi(): void
     {
-        $r = PromocionService::aplicar(
+        $r = self::aplicar(
             [self::linea(self::MAJADITO, 1, 4000)],
             [self::promo(1, 'porcentaje', '10.00', null, 1), ['cantidad_minima' => 2] + self::promo(2, 'monto', '8.00', 1)],
             self::ctx(),
@@ -288,8 +305,8 @@ final class PromocionServiceTest extends TestCase
     {
         $picante = ['producto_id' => 3, 'categoria_id' => 1];
 
-        $uno = PromocionService::regalos([self::linea($picante, 1, 4500)], [self::regalo(1, 1, 58, 3)]);
-        $tres = PromocionService::regalos([self::linea($picante, 3, 4500)], [self::regalo(1, 1, 58, 3)]);
+        $uno = self::regalos([self::linea($picante, 1, 4500)], [self::regalo(1, 1, 58, 3)]);
+        $tres = self::regalos([self::linea($picante, 3, 4500)], [self::regalo(1, 1, 58, 3)]);
 
         $this->assertSame([['promocion' => self::regalo(1, 1, 58, 3), 'producto_id' => 58, 'cantidad' => 1]], $uno);
         $this->assertSame(3, $tres[0]['cantidad']);
@@ -298,22 +315,23 @@ final class PromocionServiceTest extends TestCase
     public function testRegaloPorCadaNUnidadesDeLaCategoria(): void
     {
         // Por cada 2 platos, un mocochinchi: 2 Majaditos y 1 Locro = 3 platos → 1 regalo
-        $r = PromocionService::regalos(
+        $r = self::regalos(
             [self::linea(self::MAJADITO, 2, 4000), self::linea(self::LOCRO, 1, 3500), self::linea(self::MOCOCHINCHI, 4, 1000)],
             [self::regalo(1, 2, 10, null, 1)],
         );
 
         $this->assertSame(1, $r[0]['cantidad']);
-        $this->assertSame([], PromocionService::regalos([self::linea(self::MAJADITO, 1, 4000)], [self::regalo(1, 2, 10, null, 1)]));
+        $this->assertSame([], self::regalos([self::linea(self::MAJADITO, 1, 4000)], [self::regalo(1, 2, 10, null, 1)]));
     }
 
     public function testElRegaloNoDescuentaYElDescuentoNoRegala(): void
     {
-        $promos = [self::regalo(1, 1, 58, 1), self::promo(2, 'porcentaje', '10.00', 10)];
+        // Acumulables, para que se apliquen las dos (HU-50)
+        $promos = [['acumulable' => true] + self::regalo(1, 1, 58, 1), ['acumulable' => true] + self::promo(2, 'porcentaje', '10.00', 10)];
         $lineas = [self::linea(self::MAJADITO, 1, 4000), self::linea(self::MOCOCHINCHI, 1, 1000)];
 
-        $this->assertSame([0, 100], array_column(PromocionService::aplicar($lineas, $promos), 'descuento'));
-        $this->assertCount(1, PromocionService::regalos($lineas, $promos));
+        $this->assertSame([0, 100], array_column(self::aplicar($lineas, $promos), 'descuento'));
+        $this->assertCount(1, self::regalos($lineas, $promos));
         $this->assertSame('1 Soda cola 500 ml gratis por cada uno', PromocionService::regla(['regalo' => 'Soda cola 500 ml'] + self::regalo(1, 1, 58, 3)));
         $this->assertSame('1 Mocochinchi gratis por cada 2', PromocionService::regla(['regalo' => 'Mocochinchi'] + self::regalo(1, 2, 10, 3)));
     }

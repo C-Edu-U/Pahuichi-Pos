@@ -113,19 +113,47 @@ final class CobroConPromocionTest extends CasoPrueba
         $this->assertSame(0, (int) DB::valor('SELECT COUNT(*) FROM ventas'));
     }
 
+    /**
+     * Escenario: Dos no acumulables en el mismo pedido (HU-50)
+     *   Dado «Platos 10 %» y «Majadito a 34» (Bs 6 menos), ninguna acumulable
+     *   Cuando cobro un Majadito y un Locro
+     *   Entonces se aplica solo la de mayor beneficio: el 10 % a los dos platos (Bs 7,50)
+     */
     public function testPorCategoriaGanaLaDeMayorBeneficio(): void
     {
-        $this->promo('Platos 10 %', 'porcentaje', '10.00', null, $this->platos);
-        $mejor = $this->promo('Majadito a 34', 'monto', '6.00', $this->majadito);
+        $platos = $this->promo('Platos 10 %', 'porcentaje', '10.00', null, $this->platos);
+        $this->promo('Majadito a 34', 'monto', '6.00', $this->majadito);
 
-        // Majadito: 6 (gana la de Bs 6 sobre el 10 % = 4); Locro: 3,50; total de promoción 9,50
-        $r = $this->cobrar([$this->majadito => 1, $this->locro => 1], '75.00', '9.50');
+        $this->assertSame(422, $this->cobrar([$this->majadito => 1, $this->locro => 1], '75.00', '9.50')->estado);
+        $r = $this->cobrar([$this->majadito => 1, $this->locro => 1], '75.00', '7.50');
 
         $this->assertSame(200, $r->estado, $r->cuerpo);
         $usos = DB::filas('SELECT promocion_id, monto FROM venta_promociones ORDER BY monto DESC');
-        $this->assertSame([$mejor, '6.00'], [(int) $usos[0]['promocion_id'], $usos[0]['monto']]);
-        $this->assertSame('3.50', $usos[1]['monto']);
-        $this->assertSame('65.50', (string) DB::valor('SELECT total FROM ventas'));
+        $this->assertSame([[$platos, '4.00'], [$platos, '3.50']], array_map(static fn (array $u): array => [(int) $u['promocion_id'], $u['monto']], $usos));
+        $this->assertSame('67.50', (string) DB::valor('SELECT total FROM ventas'));
+    }
+
+    /**
+     * Escenario: Acumulables en el mismo pedido (HU-50)
+     *   Dado «Platos 10 %» con prioridad 1 y «Majadito a 34» con prioridad 2, las dos acumulables
+     *   Cuando cobro un Majadito
+     *   Entonces se aplican las dos en ese orden: Bs 4 y luego Bs 6, y la línea guarda ambas
+     */
+    public function testLasAcumulablesSeSumanPorPrioridad(): void
+    {
+        $platos = $this->promo('Platos 10 %', 'porcentaje', '10.00', null, $this->platos, 1, ['acumulable' => 1, 'prioridad' => 1]);
+        $majadito = $this->promo('Majadito a 34', 'monto', '6.00', $this->majadito, null, 1, ['acumulable' => 1, 'prioridad' => 2]);
+
+        $r = $this->cobrar([$this->majadito => 1], '40.00', '10.00');
+
+        $this->assertSame(200, $r->estado, $r->cuerpo);
+        $f = Factura::buscar((int) json_decode($r->cuerpo, true)['id']);
+        $this->assertSame(['10.00', '30.00'], array_values(DB::fila('SELECT descuento, subtotal FROM detalle_venta WHERE venta_id = ?', [$f['venta_id']])));
+        $usos = DB::filas('SELECT promocion_id, monto FROM venta_promociones ORDER BY id');
+        $this->assertSame([[$platos, '4.00'], [$majadito, '6.00']], array_map(static fn (array $u): array => [(int) $u['promocion_id'], $u['monto']], $usos));
+        $html = $this->get('/facturas/' . $f['id'])->cuerpo;
+        $this->assertStringContainsString('<li class="ticket__promo"><span>Platos 10 %</span><span class="num">−4,00</span></li><li class="ticket__promo"><span>Majadito a 34</span><span class="num">−6,00</span></li>', $html);
+        $this->assertStringContainsString('1,00 × 40,00 − 10,00</span><span class="ticket__sub num">30,00</span>', $html);
     }
 
     /**
@@ -334,7 +362,7 @@ final class CobroConPromocionTest extends CasoPrueba
         $promos = json_decode(html_entity_decode($m[1]), true);
         $this->assertSame([['id' => $activa, 'nombre' => 'Martes de majadito', 'tipo' => 'descuento', 'valor_tipo' => 'porcentaje', 'valor' => 1250, 'producto_id' => $this->majadito, 'categoria_id' => null,
             'cantidad_compra' => null, 'regalo_producto_id' => null, 'fecha_desde' => null, 'fecha_hasta' => null, 'dias' => 127, 'hora_desde' => null, 'hora_hasta' => null,
-            'cantidad_minima' => null, 'monto_minimo' => null, 'tope_usos_dia' => null, 'usos' => 0]], $promos);
+            'cantidad_minima' => null, 'monto_minimo' => null, 'tope_usos_dia' => null, 'acumulable' => false, 'prioridad' => 10, 'usos' => 0]], $promos);
         $this->assertMatchesRegularExpression('/data-id="' . $this->majadito . '" data-promos="' . $activa . '" aria-label="Majadito de charque, 40,00 bolivianos">.*?<span class="insignia insignia--promo">Promo<\/span>/s', $html);
         $this->assertMatchesRegularExpression('/data-id="' . $this->locro . '" aria-label="Locro carretero, 35,00 bolivianos">/', $html);
         $this->assertStringContainsString('<script src="/assets/js/motor-promociones.js"></script>', $html);

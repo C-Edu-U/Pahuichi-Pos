@@ -158,11 +158,16 @@
     var iso = d.toISOString();
     return { fecha: iso.slice(0, 10), dia: d.getUTCDay() || 7, hora: iso.slice(11, 19), usos: usos };
   }
-  function aplicadas() { return Promos.aplicar(carrito.lineas, promociones, contexto()); }
-  function firma(aps) { return aps.map(function (a) { return a.promocion ? a.promocion.id + ':' + a.centavos : '-'; }).join(','); }
+  // HU-50: lo que se aplica al pedido (descuentos por línea y regalos) según las reglas de combinación
+  function evaluacion() { return Promos.evaluar(carrito.lineas, promociones, carrito.catalogo, contexto()); }
+  // Lo que vale, en una cadena: si cambia, una promoción empezó, terminó o cambió de ganadora
+  function firma(ev) {
+    return ev.lineas.map(function (a) { return a.partes.map(function (x) { return x.promocion.id + ':' + x.centavos; }).join('+') || '-'; }).join(',') +
+      '|' + ev.regalos.map(function (r) { return r.promocion.id + ':' + r.cantidad; }).join(',');
+  }
   var firmaPintada = '';
   function promoCentavos() {
-    return aplicadas().reduce(function (s, a) { return s + a.centavos; }, 0);
+    return evaluacion().lineas.reduce(function (s, a) { return s + a.centavos; }, 0);
   }
 
   // La marca «Promo» de cada producto se ve solo si alguna de sus promociones vale ahora
@@ -185,12 +190,8 @@
   function neto() { return (centavos(carrito.total()) - promoCentavos()) / 100; }
   function aCobrar() { return (centavos(neto()) - (descuento ? descuento.centavos : 0)) / 100; }
   // Regalo por compra: se agrega solo a Bs 0 mientras el pedido tenga lo que lo activa
-  function regalos() { return Promos.regalos(carrito.lineas, promociones, carrito.catalogo, contexto()); }
-  function regalosCentavos() { return regalos().reduce(function (s, r) { return s + r.centavos; }, 0); }
-  // Lo que vale ahora, para notar si cambió (descuentos por línea y regalos)
-  function firmaActual() {
-    return firma(aplicadas()) + '|' + regalos().map(function (r) { return r.promocion.id + ':' + r.cantidad; }).join(',');
-  }
+  function regalosCentavos() { return evaluacion().regalos.reduce(function (s, r) { return s + r.centavos; }, 0); }
+  function firmaActual() { return firma(evaluacion()); }
 
   function lineaRegalo(r) {
     var li = document.createElement('li');
@@ -216,10 +217,10 @@
     var ul = $('lineas');
     ul.innerHTML = '';
     carrito.lineas.forEach(function (l) { ul.appendChild(lineaHtml(l)); });
-    var aps = aplicadas();
-    firmaPintada = firmaActual();
-    regalos().forEach(function (r) { ul.appendChild(lineaRegalo(r)); });
-    var grupos = Promos.agrupar(aps);
+    var ev = evaluacion();
+    firmaPintada = firma(ev);
+    ev.regalos.forEach(function (r) { ul.appendChild(lineaRegalo(r)); });
+    var grupos = Promos.agrupar(ev.lineas);
     grupos.forEach(function (g) { ul.appendChild(lineaPromo(g)); });
     var promo = grupos.reduce(function (s, g) { return s + g.centavos; }, 0);
 
@@ -454,8 +455,9 @@
     if (!pendiente && (!exigirMesa() || !promocionesAlDia())) return;
     errorCobro('');
     if (!pendiente) {
-      usadasPendiente = Promos.agrupar(aplicadas()).map(function (g) { return g.promocion.id; })
-        .concat(regalos().map(function (r) { return r.promocion.id; }));
+      var ev = evaluacion();
+      usadasPendiente = Promos.agrupar(ev.lineas).map(function (g) { return g.promocion.id; })
+        .concat(ev.regalos.map(function (r) { return r.promocion.id; }));
       var cliente;
       try { cliente = window.PahuichiCliente.datos(); }
       catch (e) { errorCobro(e.message); return; }

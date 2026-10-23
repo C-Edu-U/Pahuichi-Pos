@@ -42,6 +42,8 @@ $promos = array_map(static fn (array $pr): array => [
     'cantidad_minima' => $entero($pr['cantidad_minima']),
     'monto_minimo' => $pr['monto_minimo'] === null ? null : PromocionService::centesimos((string) $pr['monto_minimo']),
     'tope_usos_dia' => $entero($pr['tope_usos_dia']),
+    'acumulable' => (bool) (int) $pr['acumulable'],
+    'prioridad' => (int) $pr['prioridad'],
     'usos' => (int) ($contextoPromos['usos'][(int) $pr['id']] ?? 0),
 ], $promociones);
 // Promociones que tocan cada producto; la marca «Promo» se ve si alguna vale ahora (pos.js la actualiza)

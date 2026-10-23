@@ -9,6 +9,7 @@ use App\Core\DB;
 /**
  * Promociones (HU-46): descuento por producto o por categoría, en % o en Bs por unidad.
  * HU-49: restricciones de fechas, días, horario, cantidad y monto mínimos y tope por día.
+ * HU-50: acumulable o no, y prioridad entre las acumulables.
  */
 final class Promocion
 {
@@ -34,14 +35,14 @@ final class Promocion
     {
         return DB::filas(
             'SELECT id, nombre, tipo, valor_tipo, valor, producto_id, categoria_id, cantidad_compra, regalo_producto_id, fecha_desde, fecha_hasta, dias,
-                    hora_desde, hora_hasta, cantidad_minima, monto_minimo, tope_usos_dia
+                    hora_desde, hora_hasta, cantidad_minima, monto_minimo, tope_usos_dia, acumulable, prioridad
              FROM promociones WHERE activo = 1 ORDER BY id'
         );
     }
 
     /** Columnas que guarda el formulario, en orden. */
     private const CAMPOS = ['nombre', 'tipo', 'valor_tipo', 'valor', 'producto_id', 'categoria_id', 'cantidad_compra', 'regalo_producto_id', 'activo', 'fecha_desde', 'fecha_hasta',
-        'dias', 'hora_desde', 'hora_hasta', 'cantidad_minima', 'monto_minimo', 'tope_usos_dia'];
+        'dias', 'hora_desde', 'hora_hasta', 'cantidad_minima', 'monto_minimo', 'tope_usos_dia', 'acumulable', 'prioridad'];
 
     public static function crear(array $d): int
     {
