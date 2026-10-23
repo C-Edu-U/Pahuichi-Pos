@@ -2207,3 +2207,18 @@
   font-size: var(--texto-sm);
   color: var(--color-texto-2);
 }
+
+/* HU-47: productos del combo, uno por fila con sus unidades */
+.combo-items {
+  display: grid;
+  gap: var(--esp-1);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.combo-items__fila {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 5rem;
+  gap: var(--esp-1);
+}

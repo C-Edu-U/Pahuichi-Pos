@@ -361,7 +361,7 @@ final class CobroConPromocionTest extends CasoPrueba
         preg_match('/data-promociones="([^"]+)"/', $html, $m);
         $promos = json_decode(html_entity_decode($m[1]), true);
         $this->assertSame([['id' => $activa, 'nombre' => 'Martes de majadito', 'tipo' => 'descuento', 'valor_tipo' => 'porcentaje', 'valor' => 1250, 'producto_id' => $this->majadito, 'categoria_id' => null,
-            'cantidad_compra' => null, 'regalo_producto_id' => null, 'fecha_desde' => null, 'fecha_hasta' => null, 'dias' => 127, 'hora_desde' => null, 'hora_hasta' => null,
+            'cantidad_compra' => null, 'regalo_producto_id' => null, 'precio_combo' => null, 'items' => [], 'fecha_desde' => null, 'fecha_hasta' => null, 'dias' => 127, 'hora_desde' => null, 'hora_hasta' => null,
             'cantidad_minima' => null, 'monto_minimo' => null, 'tope_usos_dia' => null, 'acumulable' => false, 'prioridad' => 10, 'usos' => 0]], $promos);
         $this->assertMatchesRegularExpression('/data-id="' . $this->majadito . '" data-promos="' . $activa . '" aria-label="Majadito de charque, 40,00 bolivianos">.*?<span class="insignia insignia--promo">Promo<\/span>/s', $html);
         $this->assertMatchesRegularExpression('/data-id="' . $this->locro . '" aria-label="Locro carretero, 35,00 bolivianos">/', $html);

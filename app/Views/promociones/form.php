@@ -9,7 +9,7 @@
 use App\Services\PromocionService;
 
 $accion = $promocion ? '/promociones/' . (int) $promocion['id'] : '/promociones/nueva';
-$etiquetas = ['nombre' => 'Nombre', 'aplica' => 'Producto o categoría', 'valor' => 'Descuento', 'cantidad_compra' => 'Por cada', 'regalo' => 'Regalo', 'fecha_desde' => 'Desde', 'fecha_hasta' => 'Hasta',
+$etiquetas = ['nombre' => 'Nombre', 'aplica' => 'Producto o categoría', 'valor' => 'Descuento', 'cantidad_compra' => 'Por cada', 'regalo' => 'Regalo', 'items' => 'Productos del combo', 'precio_combo' => 'Precio del combo', 'fecha_desde' => 'Desde', 'fecha_hasta' => 'Hasta',
     'dias' => 'Días', 'hora_hasta' => 'Horario', 'prioridad' => 'Prioridad', 'cantidad_minima' => 'Cantidad mínima', 'monto_minimo' => 'Monto mínimo', 'tope_usos_dia' => 'Tope por día'];
 ?>
     <main class="contenido" id="contenido">
@@ -45,8 +45,9 @@ $etiquetas = ['nombre' => 'Nombre', 'aplica' => 'Producto o categoría', 'valor'
             <legend class="campo__etiqueta">Tipo</legend>
             <label class="tipo-opcion"><input type="radio" name="tipo" value="descuento"<?= $v['tipo'] === 'descuento' ? ' checked' : '' ?>><span class="tipo-opcion__caja"><?= icono('promocion') ?><span class="tipo-opcion__titulo">Descuento</span><span class="tipo-opcion__ayuda">A un producto o categoría, en % o en Bs</span></span></label>
             <label class="tipo-opcion"><input type="radio" name="tipo" value="regalo"<?= $v['tipo'] === 'regalo' ? ' checked' : '' ?>><span class="tipo-opcion__caja"><?= icono('regalo') ?><span class="tipo-opcion__titulo">Regalo por compra</span><span class="tipo-opcion__ayuda">Compra X y se agrega Y gratis</span></span></label>
+            <label class="tipo-opcion"><input type="radio" name="tipo" value="combo"<?= $v['tipo'] === 'combo' ? ' checked' : '' ?>><span class="tipo-opcion__caja"><?= icono('combo') ?><span class="tipo-opcion__titulo">Combo</span><span class="tipo-opcion__ayuda">Varios productos a precio especial</span></span></label>
           </fieldset>
-          <div class="campo campo--ancho">
+          <div class="campo campo--ancho" data-tipo-campos="descuento regalo"<?= $v['tipo'] === 'combo' ? ' hidden' : '' ?>>
             <label class="campo__etiqueta" for="aplica">Producto o categoría</label>
             <select class="control" id="aplica" name="aplica"<?= campo_error($errores, 'aplica') ?>>
               <option value="">Elige un producto o una categoría</option>
@@ -84,6 +85,37 @@ $etiquetas = ['nombre' => 'Nombre', 'aplica' => 'Producto o categoría', 'valor'
             </select>
             <p class="campo__ayuda" id="regalo-ayuda">Se agrega solo al pedido a Bs 0. Si está agotado, no se agrega.</p>
             <?= mensaje_error($errores, 'regalo') ?>
+          </div>
+        </fieldset>
+
+        <!-- HU-47: combo a precio especial -->
+        <fieldset class="grupo-campos" data-tipo-campos="combo"<?= $v['tipo'] === 'combo' ? '' : ' hidden' ?>>
+          <legend class="grupo-campos__titulo">Combo</legend>
+          <fieldset class="campo--ancho combo-items" id="items"<?= isset($errores['items']) ? ' aria-describedby="items-error"' : '' ?>>
+            <legend class="campo__etiqueta">Productos del combo</legend>
+<?php for ($i = 0; $i < $filasCombo; $i++): $it = $v['items'][$i] ?? ['producto' => '', 'cantidad' => '1']; ?>
+            <div class="combo-items__fila">
+              <label class="visualmente-oculto" for="item-producto-<?= $i ?>">Producto <?= $i + 1 ?></label>
+              <select class="control" id="item-producto-<?= $i ?>" name="item_producto[]">
+                <option value=""><?= $i < 2 ? 'Elige un producto' : 'Otro producto (opcional)' ?></option>
+<?php foreach ($productos as $p): ?>
+                <option value="<?= (int) $p['id'] ?>"<?= $it['producto'] === (string) $p['id'] ? ' selected' : '' ?>><?= e($p['nombre']) ?> · Bs <?= bs($p['precio']) ?></option>
+<?php endforeach; ?>
+              </select>
+              <label class="visualmente-oculto" for="item-cantidad-<?= $i ?>">Unidades del producto <?= $i + 1 ?></label>
+              <input class="control control--numero" id="item-cantidad-<?= $i ?>" name="item_cantidad[]" type="text" inputmode="numeric" maxlength="2" value="<?= e($it['cantidad']) ?>">
+            </div>
+<?php endfor; ?>
+            <?= mensaje_error($errores, 'items') ?>
+          </fieldset>
+          <div class="campo">
+            <label class="campo__etiqueta" for="precio_combo">Precio del combo</label>
+            <div class="control-grupo">
+              <span class="control-grupo__prefijo" aria-hidden="true">Bs</span>
+              <input class="control control--numero" id="precio_combo" name="precio_combo" type="text" inputmode="decimal" maxlength="9" value="<?= e($v['precio_combo']) ?>"<?= campo_error($errores, 'precio_combo', 'precio-combo-ayuda') ?>>
+            </div>
+            <p class="campo__ayuda" id="precio-combo-ayuda">Menor que lo que cuestan por separado. El ahorro se ve en el pedido y se reparte entre sus productos en la factura.</p>
+            <?= mensaje_error($errores, 'precio_combo') ?>
           </div>
         </fieldset>
 
@@ -153,7 +185,7 @@ $etiquetas = ['nombre' => 'Nombre', 'aplica' => 'Producto o categoría', 'valor'
 
         <fieldset class="grupo-campos">
           <legend class="grupo-campos__titulo">Condiciones</legend>
-          <div class="campo">
+          <div class="campo" data-tipo-campos="descuento regalo"<?= $v['tipo'] === 'combo' ? ' hidden' : '' ?>>
             <label class="campo__etiqueta" for="cantidad_minima">Cantidad mínima <span class="campo__opcional">(opcional)</span></label>
             <input class="control control--numero" id="cantidad_minima" name="cantidad_minima" type="text" inputmode="numeric" maxlength="3" value="<?= e($v['cantidad_minima']) ?>"<?= campo_error($errores, 'cantidad_minima', 'cantidad-ayuda') ?>>
             <p class="campo__ayuda" id="cantidad-ayuda">Unidades del producto o de la categoría en el pedido.</p>

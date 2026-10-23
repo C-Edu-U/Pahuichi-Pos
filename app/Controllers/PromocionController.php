@@ -23,9 +23,14 @@ use DateTimeImmutable;
  * promoción se pausa y se vuelve a activar.
  * HU-49: restricciones combinables de fechas, días, horario, cantidad, monto y tope por día.
  * HU-50: si se acumula con otras y con qué prioridad.
+ * HU-47: combo de productos a precio especial.
  */
+
 final class PromocionController extends Controller
 {
+    /** Filas de productos que ofrece el formulario del combo (HU-47). */
+    private const FILAS_COMBO = 4;
+
     public function index(Peticion $peticion): Respuesta
     {
         return $this->vista('promociones/index', [
@@ -42,7 +47,7 @@ final class PromocionController extends Controller
     public function nueva(Peticion $peticion): Respuesta
     {
         return $this->formulario(null, ['nombre' => '', 'tipo' => 'descuento', 'aplica' => '', 'valor' => '', 'valor_tipo' => 'porcentaje',
-            'cantidad_compra' => '1', 'regalo' => '', 'activo' => 1,
+            'cantidad_compra' => '1', 'regalo' => '', 'items' => [], 'precio_combo' => '', 'activo' => 1,
             'fecha_desde' => '', 'fecha_hasta' => '', 'dias' => array_keys(PromocionService::DIAS), 'hora_desde' => '', 'hora_hasta' => '',
             'cantidad_minima' => '', 'monto_minimo' => '', 'tope_usos_dia' => '', 'acumulable' => 0, 'prioridad' => '10']);
     }
@@ -58,6 +63,8 @@ final class PromocionController extends Controller
             'valor_tipo' => $p['valor_tipo'] ?? 'porcentaje',
             'cantidad_compra' => (string) ($p['cantidad_compra'] ?? 1),
             'regalo' => (string) $p['regalo_producto_id'],
+            'items' => array_map(static fn (array $it): array => ['producto' => (string) $it['producto_id'], 'cantidad' => (string) $it['cantidad']], $p['items']),
+            'precio_combo' => $p['precio_combo'] === null ? '' : bs($p['precio_combo']),
             'activo' => (int) $p['activo'],
             'fecha_desde' => (string) $p['fecha_desde'],
             'fecha_hasta' => (string) $p['fecha_hasta'],
@@ -79,7 +86,11 @@ final class PromocionController extends Controller
         if ($errores) {
             return $this->formulario(null, $v, $errores, 422);
         }
-        $id = Promocion::crear($datos);
+        $id = DB::transaccion(static function () use ($datos): int {
+            $id = Promocion::crear($datos);
+            Promocion::guardarItems($id, $datos['items']);
+            return $id;
+        });
         Bitacora::registrar('promocion.alta', 'promociones', $id, $this->detalle($datos));
         return $this->redirigirConAviso('/promociones', "Promoción «{$datos['nombre']}» creada." . ($datos['activo'] ? ' Ya se aplica en el punto de venta.' : ''));
     }
@@ -91,7 +102,10 @@ final class PromocionController extends Controller
         if ($errores) {
             return $this->formulario($p, $v, $errores, 422);
         }
-        Promocion::actualizar((int) $p['id'], $datos);
+        DB::transaccion(static function () use ($p, $datos): void {
+            Promocion::actualizar((int) $p['id'], $datos);
+            Promocion::guardarItems((int) $p['id'], $datos['items']);
+        });
         Bitacora::registrar('promocion.edicion', 'promociones', (int) $p['id'], [
             'antes' => $this->detalle($p),
             'despues' => $this->detalle($datos),
@@ -118,22 +132,33 @@ final class PromocionController extends Controller
     {
         $v = [
             'nombre' => trim((string) preg_replace('/\s+/u', ' ', (string) $peticion->entrada('nombre'))),
-            'tipo' => $peticion->entrada('tipo') === 'regalo' ? 'regalo' : 'descuento',
+            'tipo' => in_array($peticion->entrada('tipo'), ['regalo', 'combo'], true) ? $peticion->entrada('tipo') : 'descuento',
             'aplica' => (string) $peticion->entrada('aplica'),
             'valor' => trim((string) $peticion->entrada('valor')),
             'valor_tipo' => (string) $peticion->entrada('valor_tipo'),
             'cantidad_compra' => trim((string) $peticion->entrada('cantidad_compra')),
             'regalo' => (string) $peticion->entrada('regalo'),
+            'items' => [],
+            'precio_combo' => trim((string) $peticion->entrada('precio_combo')),
             'activo' => $peticion->entrada('activo') === '1' ? 1 : 0,
         ];
         $errores = [];
         $datos = ['nombre' => $v['nombre'], 'tipo' => $v['tipo'], 'valor_tipo' => null, 'valor' => null, 'producto_id' => null, 'categoria_id' => null,
-            'cantidad_compra' => null, 'regalo_producto_id' => null, 'activo' => $v['activo']];
+            'cantidad_compra' => null, 'regalo_producto_id' => null, 'precio_combo' => null, 'items' => [], 'activo' => $v['activo']];
 
         if ($v['nombre'] === '') {
             $errores['nombre'] = 'Escribe el nombre: así se verá en el pedido y en el ticket.';
         } elseif (mb_strlen($v['nombre']) > 40) {
             $errores['nombre'] = 'Usa hasta 40 caracteres, para que quepa en el ticket.';
+        }
+
+        // HU-47: el combo no usa producto ni categoría: sus productos son los items
+        if ($v['tipo'] === 'combo') {
+            $this->validarCombo($peticion, $v, $datos, $errores);
+            $this->validarRestricciones($peticion, $v, $datos, $errores);
+            unset($errores['cantidad_minima']);
+            $datos['cantidad_minima'] = null;   // la cantidad la fijan los items
+            return [$v, $datos, $errores];
         }
 
         // A qué se aplica: un producto (p:ID) o una categoría (c:ID)
@@ -185,6 +210,50 @@ final class PromocionController extends Controller
         }
         $this->validarRestricciones($peticion, $v, $datos, $errores);
         return [$v, $datos, $errores];
+    }
+
+    /** HU-47: de 2 productos distintos en adelante, y el precio menor que por separado. */
+    private function validarCombo(Peticion $peticion, array &$v, array &$datos, array &$errores): void
+    {
+        $productos = (array) $peticion->entrada('item_producto', []);
+        $cantidades = (array) $peticion->entrada('item_cantidad', []);
+        $normal = 0.0;
+        for ($i = 0; $i < self::FILAS_COMBO; $i++) {
+            $id = trim((string) ($productos[$i] ?? ''));
+            $cantidad = trim((string) ($cantidades[$i] ?? '1'));
+            if ($id === '') {
+                continue;
+            }
+            $v['items'][] = ['producto' => $id, 'cantidad' => $cantidad];
+            $producto = preg_match('/^\d+$/D', $id) ? Producto::buscar((int) $id) : null;
+            if ($producto === null || !(int) $producto['activo']) {
+                $errores['items'] = 'Elige productos activos para el combo.';
+                continue;
+            }
+            if (!preg_match('/^\d{1,2}$/D', $cantidad) || (int) $cantidad < 1 || (int) $cantidad > 20) {
+                $errores['items'] = 'Cada producto lleva de 1 a 20 unidades.';
+                continue;
+            }
+            if (isset($datos['items'][(int) $producto['id']])) {
+                $errores['items'] = 'Cada producto va una sola vez; usa la cantidad para repetirlo.';
+                continue;
+            }
+            $datos['items'][(int) $producto['id']] = ['producto_id' => (int) $producto['id'], 'cantidad' => (int) $cantidad, 'nombre' => $producto['nombre']];
+            $normal += (float) $producto['precio'] * (int) $cantidad;
+        }
+        ksort($datos['items']);
+        $datos['items'] = array_values($datos['items']);
+        if (!isset($errores['items']) && count($datos['items']) < 2) {
+            $errores['items'] = 'Un combo lleva al menos 2 productos distintos.';
+        }
+        $precio = leer_monto($v['precio_combo']);
+        if ($precio === null || $precio <= 0) {
+            $errores['precio_combo'] = 'Escribe el precio del combo, mayor que cero.';
+        } elseif (!isset($errores['items']) && $precio >= $normal) {
+            $errores['precio_combo'] = 'Debe ser menor que el precio por separado (Bs ' . bs($normal) . ').';
+        } else {
+            $datos['precio_combo'] = number_format($precio, 2, '.', '');
+        }
     }
 
     /** HU-49: restricciones, todas opcionales salvo elegir al menos un día. */
@@ -290,9 +359,11 @@ final class PromocionController extends Controller
     /** Detalle legible para la bitácora. */
     private function detalle(array $d): array
     {
-        $aplica = $d['producto_id'] !== null
-            ? 'Producto ' . (Producto::buscar((int) $d['producto_id'])['nombre'] ?? '')
-            : 'Categoría ' . (Categoria::buscar((int) $d['categoria_id'])['nombre'] ?? '');
+        $aplica = match (true) {
+            $d['tipo'] === 'combo' => 'Combo',
+            $d['producto_id'] !== null => 'Producto ' . (Producto::buscar((int) $d['producto_id'])['nombre'] ?? ''),
+            default => 'Categoría ' . (Categoria::buscar((int) $d['categoria_id'])['nombre'] ?? ''),
+        };
         $regalo = $d['regalo_producto_id'] !== null ? (Producto::buscar((int) $d['regalo_producto_id'])['nombre'] ?? '') : null;
         return ['nombre' => $d['nombre'], 'aplica' => $aplica, 'descuento' => PromocionService::regla($d + ['regalo' => $regalo]),
             'cuando' => PromocionService::cuando($d), 'condiciones' => PromocionService::condiciones($d),
@@ -310,6 +381,7 @@ final class PromocionController extends Controller
             'promocion' => $promocion,
             'v' => $v,
             'errores' => $errores,
+            'filasCombo' => self::FILAS_COMBO,
             'productos' => DB::filas('SELECT p.id, p.nombre, p.precio, c.nombre AS categoria FROM productos p JOIN categorias c ON c.id = p.categoria_id WHERE p.activo = 1 ORDER BY c.orden, p.nombre'),
             'categorias' => Categoria::activas(),
         ], $estado);
