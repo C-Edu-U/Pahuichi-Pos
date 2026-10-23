@@ -119,7 +119,7 @@ final class TicketsPdfTest extends CasoPrueba
         $this->assertStringContainsString('attachment;', $r->cabeceras['Content-Disposition']);
         $this->assertStringContainsString('.pdf"', $r->cabeceras['Content-Disposition']);
         $html = $this->get('/facturas/' . $this->factura)->cuerpo;
-        $this->assertStringContainsString('descargar=1', $html);
+        $this->assertStringContainsString('name="descargar" value="1"', $html);
         $this->assertStringNotContainsString('window.print', $html);
         $this->assertStringNotContainsString('aviso-reimpresion', $html);
     }

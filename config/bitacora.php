@@ -44,6 +44,8 @@ return [
 
         'config.negocio' => ['Datos del negocio', 'configuracion', 'neutra'],
         'config.fiscal' => ['Parámetros fiscales', 'configuracion', 'aviso'],
+        'config.tickets_originales' => ['Permiso de cajeros para consultar documentos emitidos', 'configuracion', 'aviso'],
+        'factura.consulta_original' => ['Consulta de documentos emitidos', 'ventas', 'aviso'],
         'config.tickets' => ['Configuración de tickets en PDF', 'configuracion', 'neutra'],
         'config.turnos' => ['Horario de turnos', 'configuracion', 'neutra'],
         'config.turnos.agregar' => ['Turno agregado', 'configuracion', 'neutra'],

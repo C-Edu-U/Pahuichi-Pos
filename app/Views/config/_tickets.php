@@ -36,4 +36,12 @@
 <?php endforeach; ?>
             </div>
             <p class="config__nota">Después de cobrar, abre Ver tickets y elige PDF de caja o PDF de cocina. Puedes ver o descargar el archivo PDF directamente. El sistema no envía trabajos a impresoras. Los cambios se aplican al siguiente documento generado.</p>
+            <form method="post" action="/config/tickets-originales" class="impresora">
+              <?= csrf_campo() ?>
+              <h3 class="impresora__nombre">Consulta de documentos emitidos</h3>
+              <p>El administrador siempre puede consultar los documentos emitidos desde Reimpresión. Activa esta opción para permitirlo también a los cajeros en las ventas a las que tienen acceso.</p>
+              <label class="opcion"><input type="checkbox" name="originales_cajeros" value="1"<?= \App\Models\Configuracion::valor(\App\Models\Configuracion::ORIGINALES_CAJEROS, '0') === '1' ? ' checked' : '' ?>> <span>Permitir que los cajeros consulten los documentos emitidos</span></label>
+              <p class="campo__ayuda">Cada consulta de documentos emitidos desde Reimpresión queda registrado en bitácora. Desactivar esta opción también revoca los accesos abiertos por cajeros.</p>
+              <div class="impresora__acciones"><button class="boton boton--primario" type="submit">Guardar permiso</button></div>
+            </form>
           </section>

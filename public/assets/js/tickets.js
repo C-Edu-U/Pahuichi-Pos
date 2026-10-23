@@ -14,8 +14,4 @@
       document.querySelectorAll('[data-ancho]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
     });
   });
-  // HU-12: el servidor aplica ancho, columnas, selección y copias vigentes.
-  document.getElementById('descargar-pdf').addEventListener('click', function () {
-    window.location.assign('/facturas/' + tickets.dataset.factura + '/pdf?destino=caja&solo=factura');
-  });
 })();

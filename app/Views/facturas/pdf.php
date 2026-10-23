@@ -11,6 +11,7 @@ body { margin: 0; color: #000; font-family: "DejaVu Sans Mono", monospace; font-
 p, dl, dt, dd, ul { margin: 0; padding: 0; }
 ul { list-style: none; }
 [hidden] { display: none; }
+.ticket__reimpresion { margin-bottom: 2mm; padding: 1mm 0; border-top: 1pt solid #000; border-bottom: 1pt solid #000; text-align: center; font-weight: bold; font-size: 115%; }
 .ticket__centro, .ticket__datos--apilado { text-align: center; }
 .ticket__fuerte, dt, .ticket__codigo, .ticket__sub { font-weight: bold; }
 .ticket__chico { font-size: 90%; }

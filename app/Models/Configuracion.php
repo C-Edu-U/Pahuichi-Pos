@@ -9,6 +9,8 @@ use App\Core\DB;
 /** Configuración editable desde la pantalla de Configuración (HU-26). */
 final class Configuracion
 {
+    public const ORIGINALES_CAJEROS = 'tickets_originales_cajeros';
+
     /** Umbral de la observación obligatoria al cerrar la caja. */
     public const UMBRAL_OBSERVACION = 'umbral_observacion_caja';
 

@@ -29,6 +29,30 @@
   gap: var(--esp-1);
 }
 
+/* HU-56: recuperación individual, con los mismos colores y controles del proyecto. */
+.tickets-reimpresion {
+  margin-bottom: var(--esp-3);
+  padding: var(--esp-2);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  background: var(--color-superficie);
+}
+
+.tickets-reimpresion summary {
+  cursor: pointer;
+  font-weight: var(--peso-semi);
+}
+
+.tickets-reimpresion > p {
+  margin: var(--esp-2) 0;
+  color: var(--color-texto-2);
+}
+
+.tickets-reimpresion form {
+  display: grid;
+  gap: var(--esp-2);
+}
+
 .tickets-aviso {
   display: flex;
   align-items: center;
@@ -290,3 +314,11 @@
 .ticket__lineas--factura li > span {
   line-height: 1.35;
 }
+
+/* Entrega inicial: grupos estables, sin selector de tickets pendientes. */
+.entrega-perfil { padding: 1rem 0; border-bottom: 1px solid var(--borde, #dce3df); }
+.entrega-perfil h3 { margin: 0 0 .5rem; }
+.entrega-perfil .tickets-herramientas__acciones { flex-wrap: wrap; }
+.tickets-reimpresion > .boton { white-space: normal; max-width: 100%; text-align: center; }
+/* El nombre completo de la consulta debe caber también en teléfonos. */
+.acceso-originales .boton { white-space: normal; max-width: 100%; text-align: center; }

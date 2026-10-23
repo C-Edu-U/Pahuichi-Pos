@@ -55,6 +55,7 @@ $router->post('/config/negocio', [ConfigController::class, 'negocio'], $config);
 $router->post('/config/fiscal', [ConfigController::class, 'fiscal'], $config);
 $router->post('/config/caja-cobro', [ConfigController::class, 'cajaCobro'], $config);
 $router->post('/config/turnos', [ConfigController::class, 'turnos'], $config);
+$router->post('/config/tickets-originales', [ConfigController::class, 'originalesCajeros'], $config);
 $router->post('/config/tickets/{destino}', [ConfigController::class, 'tickets'], $config);
 // Leyendas de la Ley 453 (HU-10)
 $router->post('/config/leyendas', [ConfigController::class, 'agregarLeyenda'], $config);
@@ -101,6 +102,9 @@ $router->post('/pos/cobrar', [PosController::class, 'cobrar'], ['auth', 'permiso
 $router->post('/autorizaciones', [AutorizacionController::class, 'crear'], ['auth', 'permiso:modulo.pos']);
 $router->get('/ventas', [FacturaController::class, 'index'], ['auth', 'permiso:modulo.ventas']);
 $router->get('/facturas/{id}', [FacturaController::class, 'mostrar'], ['auth', 'permiso:modulo.ventas']);
+$router->get('/facturas/{id}/originales', [FacturaController::class, 'originales'], ['auth', 'permiso:modulo.ventas']);
+$router->post('/facturas/{id}/original', [FacturaController::class, 'original'], ['auth', 'permiso:modulo.ventas']);
+$router->post('/facturas/{id}/acceso-original', [FacturaController::class, 'accesoOriginal'], ['auth', 'permiso:modulo.ventas']);
 
 // Promociones (HU-46): solo el administrador; se pausan, no se borran
 $promociones = ['auth', 'permiso:modulo.promociones'];
