@@ -1,0 +1,166 @@
+{
+  "_descripcion": "Casos del motor de promociones que deben dar lo mismo en PHP (PromocionService::evaluar) y en JavaScript (motor-promociones.js). Montos en centavos; el valor de la promoción y el monto mínimo como los guarda la base (DECIMAL). esperado.lineas: por cada línea, [id de promoción, monto] en el orden en que se aplicaron. esperado.regalos: [id de promoción, producto, cantidad, monto]. Productos: 1 Majadito y 2 Locro (categoría 1), 10 Mocochinchi (categoría 2), 58 Soda (categoría 3).",
+  "casos": [
+    {
+      "nombre": "Descuento en porcentaje por producto (HU-46)",
+      "lineas": [{"producto_id": 1, "categoria_id": 1, "cantidad": 2, "precio": 4000}],
+      "promociones": [{"id": 1, "tipo": "descuento", "valor_tipo": "porcentaje", "valor": "10.00", "producto_id": 1}],
+      "esperado": {"lineas": [[[1, 800]]], "regalos": [], "beneficio": 800}
+    },
+    {
+      "nombre": "El porcentaje redondea al centavo",
+      "lineas": [{"producto_id": 2, "categoria_id": 1, "cantidad": 1, "precio": 3500}],
+      "promociones": [{"id": 1, "tipo": "descuento", "valor_tipo": "porcentaje", "valor": "12.50", "producto_id": 2}],
+      "esperado": {"lineas": [[[1, 438]]], "regalos": [], "beneficio": 438}
+    },
+    {
+      "nombre": "Un monto en Bs nunca deja la línea en negativo",
+      "lineas": [{"producto_id": 1, "categoria_id": 1, "cantidad": 1, "precio": 4000}],
+      "promociones": [{"id": 1, "tipo": "descuento", "valor_tipo": "monto", "valor": "50.00", "categoria_id": 1}],
+      "esperado": {"lineas": [[[1, 4000]]], "regalos": [], "beneficio": 4000}
+    },
+    {
+      "nombre": "Descuento por categoría: la bebida no descuenta",
+      "lineas": [{"producto_id": 1, "categoria_id": 1, "cantidad": 1, "precio": 4000}, {"producto_id": 2, "categoria_id": 1, "cantidad": 1, "precio": 3500}, {"producto_id": 10, "categoria_id": 2, "cantidad": 1, "precio": 1000}],
+      "promociones": [{"id": 1, "tipo": "descuento", "valor_tipo": "porcentaje", "valor": "20.00", "categoria_id": 1}],
+      "esperado": {"lineas": [[[1, 800]], [[1, 700]], []], "regalos": [], "beneficio": 1500}
+    },
+    {
+      "nombre": "HU-50 escenario 1: dos no acumulables en el mismo carrito, aunque toquen productos distintos, se aplica solo la de mayor beneficio",
+      "lineas": [{"producto_id": 1, "categoria_id": 1, "cantidad": 1, "precio": 4000}, {"producto_id": 10, "categoria_id": 2, "cantidad": 1, "precio": 1000}],
+      "promociones": [
+        {"id": 1, "tipo": "descuento", "valor_tipo": "porcentaje", "valor": "10.00", "producto_id": 1},
+        {"id": 2, "tipo": "descuento", "valor_tipo": "porcentaje", "valor": "50.00", "producto_id": 10}
+      ],
+      "esperado": {"lineas": [[], [[2, 500]]], "regalos": [], "beneficio": 500}
+    },
+    {
+      "nombre": "No acumulables sobre la misma línea: la de mayor beneficio",
+      "lineas": [{"producto_id": 1, "categoria_id": 1, "cantidad": 1, "precio": 4000}],
+      "promociones": [
+        {"id": 1, "tipo": "descuento", "valor_tipo": "porcentaje", "valor": "10.00", "categoria_id": 1},
+        {"id": 2, "tipo": "descuento", "valor_tipo": "monto", "valor": "6.00", "producto_id": 1}
+      ],
+      "esperado": {"lineas": [[[2, 600]]], "regalos": [], "beneficio": 600}
+    },
+    {
+      "nombre": "No acumulables con igual beneficio: la más antigua",
+      "lineas": [{"producto_id": 1, "categoria_id": 1, "cantidad": 1, "precio": 4000}],
+      "promociones": [
+        {"id": 3, "tipo": "descuento", "valor_tipo": "monto", "valor": "4.00", "producto_id": 1},
+        {"id": 7, "tipo": "descuento", "valor_tipo": "porcentaje", "valor": "10.00", "producto_id": 1}
+      ],
+      "esperado": {"lineas": [[[3, 400]]], "regalos": [], "beneficio": 400}
+    },
+    {
+      "nombre": "HU-50 escenario 2: las acumulables se aplican en orden de prioridad, cada una sobre lo que dejó la anterior",
+      "lineas": [{"producto_id": 1, "categoria_id": 1, "cantidad": 1, "precio": 4000}],
+      "promociones": [
+        {"id": 1, "tipo": "descuento", "valor_tipo": "porcentaje", "valor": "10.00", "producto_id": 1, "acumulable": true, "prioridad": 1},
+        {"id": 2, "tipo": "descuento", "valor_tipo": "monto", "valor": "5.00", "producto_id": 1, "acumulable": true, "prioridad": 2}
+      ],
+      "esperado": {"lineas": [[[1, 400], [2, 500]]], "regalos": [], "beneficio": 900}
+    },
+    {
+      "nombre": "La prioridad cambia el orden y el resultado",
+      "lineas": [{"producto_id": 1, "categoria_id": 1, "cantidad": 1, "precio": 4000}],
+      "promociones": [
+        {"id": 1, "tipo": "descuento", "valor_tipo": "porcentaje", "valor": "10.00", "producto_id": 1, "acumulable": true, "prioridad": 2},
+        {"id": 2, "tipo": "descuento", "valor_tipo": "monto", "valor": "5.00", "producto_id": 1, "acumulable": true, "prioridad": 1}
+      ],
+      "esperado": {"lineas": [[[2, 500], [1, 350]]], "regalos": [], "beneficio": 850}
+    },
+    {
+      "nombre": "Una no acumulable que da más que todas las acumulables juntas se aplica sola",
+      "lineas": [{"producto_id": 1, "categoria_id": 1, "cantidad": 1, "precio": 4000}],
+      "promociones": [
+        {"id": 1, "tipo": "descuento", "valor_tipo": "porcentaje", "valor": "10.00", "producto_id": 1, "acumulable": true},
+        {"id": 2, "tipo": "descuento", "valor_tipo": "monto", "valor": "5.00", "producto_id": 1, "acumulable": true},
+        {"id": 3, "tipo": "descuento", "valor_tipo": "monto", "valor": "12.00", "producto_id": 1}
+      ],
+      "esperado": {"lineas": [[[3, 1200]]], "regalos": [], "beneficio": 1200}
+    },
+    {
+      "nombre": "Las acumulables juntas ganan si suman más que la no acumulable",
+      "lineas": [{"producto_id": 1, "categoria_id": 1, "cantidad": 1, "precio": 4000}],
+      "promociones": [
+        {"id": 1, "tipo": "descuento", "valor_tipo": "porcentaje", "valor": "10.00", "producto_id": 1, "acumulable": true},
+        {"id": 2, "tipo": "descuento", "valor_tipo": "monto", "valor": "5.00", "producto_id": 1, "acumulable": true},
+        {"id": 3, "tipo": "descuento", "valor_tipo": "monto", "valor": "8.00", "producto_id": 1}
+      ],
+      "esperado": {"lineas": [[[1, 400], [2, 500]]], "regalos": [], "beneficio": 900}
+    },
+    {
+      "nombre": "A igual beneficio, ganan las acumulables",
+      "lineas": [{"producto_id": 1, "categoria_id": 1, "cantidad": 1, "precio": 4000}],
+      "promociones": [
+        {"id": 1, "tipo": "descuento", "valor_tipo": "porcentaje", "valor": "10.00", "producto_id": 1, "acumulable": true},
+        {"id": 2, "tipo": "descuento", "valor_tipo": "monto", "valor": "5.00", "producto_id": 1, "acumulable": true},
+        {"id": 3, "tipo": "descuento", "valor_tipo": "monto", "valor": "9.00", "producto_id": 1}
+      ],
+      "esperado": {"lineas": [[[1, 400], [2, 500]]], "regalos": [], "beneficio": 900}
+    },
+    {
+      "nombre": "Regalo contra descuento, no acumulables: gana el regalo si vale más (HU-48)",
+      "lineas": [{"producto_id": 1, "categoria_id": 1, "cantidad": 1, "precio": 4000}],
+      "promociones": [
+        {"id": 1, "tipo": "regalo", "categoria_id": 1, "cantidad_compra": 1, "regalo_producto_id": 58},
+        {"id": 2, "tipo": "descuento", "valor_tipo": "porcentaje", "valor": "10.00", "producto_id": 1}
+      ],
+      "regalables": {"58": 800},
+      "esperado": {"lineas": [[]], "regalos": [[1, 58, 1, 800]], "beneficio": 800}
+    },
+    {
+      "nombre": "Regalo y descuento acumulables: se aplican los dos",
+      "lineas": [{"producto_id": 1, "categoria_id": 1, "cantidad": 1, "precio": 4000}],
+      "promociones": [
+        {"id": 1, "tipo": "regalo", "categoria_id": 1, "cantidad_compra": 1, "regalo_producto_id": 58, "acumulable": true},
+        {"id": 2, "tipo": "descuento", "valor_tipo": "porcentaje", "valor": "10.00", "producto_id": 1, "acumulable": true}
+      ],
+      "regalables": {"58": 800},
+      "esperado": {"lineas": [[[2, 400]]], "regalos": [[1, 58, 1, 800]], "beneficio": 1200}
+    },
+    {
+      "nombre": "Un regalo agotado no compite",
+      "lineas": [{"producto_id": 1, "categoria_id": 1, "cantidad": 1, "precio": 4000}],
+      "promociones": [
+        {"id": 1, "tipo": "regalo", "categoria_id": 1, "cantidad_compra": 1, "regalo_producto_id": 58},
+        {"id": 2, "tipo": "descuento", "valor_tipo": "porcentaje", "valor": "10.00", "producto_id": 1}
+      ],
+      "regalables": {},
+      "esperado": {"lineas": [[[2, 400]]], "regalos": [], "beneficio": 400}
+    },
+    {
+      "nombre": "Compra 2 platos, 1 soda gratis: con 3 platos, 1 soda (HU-48)",
+      "lineas": [{"producto_id": 1, "categoria_id": 1, "cantidad": 2, "precio": 4000}, {"producto_id": 2, "categoria_id": 1, "cantidad": 1, "precio": 3500}],
+      "promociones": [{"id": 1, "tipo": "regalo", "categoria_id": 1, "cantidad_compra": 2, "regalo_producto_id": 58}],
+      "regalables": {"58": 800},
+      "esperado": {"lineas": [[], []], "regalos": [[1, 58, 1, 800]], "beneficio": 800}
+    },
+    {
+      "nombre": "Una promoción que no cumple la cantidad mínima no compite (HU-49)",
+      "lineas": [{"producto_id": 1, "categoria_id": 1, "cantidad": 1, "precio": 4000}],
+      "promociones": [
+        {"id": 1, "tipo": "descuento", "valor_tipo": "porcentaje", "valor": "10.00", "producto_id": 1, "cantidad_minima": 2},
+        {"id": 2, "tipo": "descuento", "valor_tipo": "monto", "valor": "1.00", "producto_id": 1}
+      ],
+      "esperado": {"lineas": [[[2, 100]]], "regalos": [], "beneficio": 100}
+    },
+    {
+      "nombre": "Fuera de horario no compite (HU-49)",
+      "lineas": [{"producto_id": 1, "categoria_id": 1, "cantidad": 1, "precio": 4000}],
+      "promociones": [
+        {"id": 1, "tipo": "descuento", "valor_tipo": "monto", "valor": "10.00", "producto_id": 1, "hora_desde": "18:00:00", "hora_hasta": "21:00:00"},
+        {"id": 2, "tipo": "descuento", "valor_tipo": "porcentaje", "valor": "5.00", "producto_id": 1}
+      ],
+      "contexto": {"fecha": "2026-10-23", "dia": 5, "hora": "12:00:00", "usos": {}},
+      "esperado": {"lineas": [[[2, 200]]], "regalos": [], "beneficio": 200}
+    },
+    {
+      "nombre": "Sin promociones que apliquen no hay beneficio",
+      "lineas": [{"producto_id": 10, "categoria_id": 2, "cantidad": 3, "precio": 1000}],
+      "promociones": [{"id": 1, "tipo": "descuento", "valor_tipo": "porcentaje", "valor": "10.00", "producto_id": 1}],
+      "esperado": {"lineas": [[]], "regalos": [], "beneficio": 0}
+    }
+  ]
+}

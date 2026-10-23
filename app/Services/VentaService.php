@@ -101,7 +101,7 @@ final class VentaService
                 $total += $sub;
                 $base[] = ['producto_id' => (int) $p['id'], 'categoria_id' => (int) $p['categoria_id'], 'cantidad' => $l['cantidad'], 'bruto' => $sub];
                 $lineas[] = ['producto_id' => (int) $p['id'], 'id' => $p['codigo'], 'nombre' => $p['nombre'], 'unidad' => Producto::UNIDADES[$p['unidad']],
-                    'cantidad' => $l['cantidad'], 'precio' => self::decimal($precio), 'bruto' => self::decimal($sub), 'descuento' => '0.00', 'promocion' => null,
+                    'cantidad' => $l['cantidad'], 'precio' => self::decimal($precio), 'bruto' => self::decimal($sub), 'descuento' => '0.00', 'promociones' => [],
                     'subtotal' => self::decimal($sub), 'nota' => $l['nota'], 'cocina' => (bool) $p['va_a_cocina']];
             }
             if ($total <= 0 || $total > 9999999999) throw new DomainException('El total está fuera del rango permitido. Revisa el pedido.');
@@ -111,26 +111,33 @@ final class VentaService
             $promo = 0;
             $promociones = Promocion::activas();
             $contexto = PromocionService::contexto(Reloj::ahora());
-            foreach (PromocionService::aplicar($base, $promociones, $contexto) as $i => $a) {
+            // Productos que se pueden regalar: activos, de una categoría activa y no agotados
+            $idsRegalo = array_values(array_unique(array_filter(array_map(static fn (array $pr): int => (int) ($pr['regalo_producto_id'] ?? 0), $promociones))));
+            $regalables = [];
+            foreach ($idsRegalo ? Venta::productosParaCobrar($idsRegalo) : [] as $pr) {
+                if ($pr['activo'] && $pr['categoria_activa'] && !$pr['agotado']) $regalables[(int) $pr['id']] = $pr;
+            }
+            // HU-50: no acumulables compiten, acumulables por prioridad; gana el mayor beneficio
+            $evaluacion = PromocionService::evaluar($base, $promociones, $contexto,
+                array_map(static fn (array $pr): int => self::centavos((string) $pr['precio']), $regalables));
+            foreach ($evaluacion['lineas'] as $i => $a) {
                 if ($a['descuento'] === 0) continue;
                 $promo += $a['descuento'];
                 $lineas[$i]['descuento'] = self::decimal($a['descuento']);
                 $lineas[$i]['subtotal'] = self::decimal($base[$i]['bruto'] - $a['descuento']);
-                $lineas[$i]['promocion'] = ['id' => (int) $a['promocion']['id'], 'etiqueta' => $a['promocion']['nombre']];
+                $lineas[$i]['promociones'] = array_map(static fn (array $x): array => ['id' => (int) $x['promocion']['id'], 'etiqueta' => $x['promocion']['nombre'],
+                    'monto' => self::decimal($x['monto'])], $a['partes']);
             }
-            // Regalo por compra: una línea más a Bs 0 (su descuento es su precio), si el regalo está disponible
+            // Regalo por compra: una línea más a Bs 0 (su descuento es su precio)
             $regalos = 0;
-            $porRegalar = PromocionService::regalos($base, $promociones, $contexto);
-            $disponibles = $porRegalar ? array_column(Venta::productosParaCobrar(array_values(array_unique(array_column($porRegalar, 'producto_id')))), null, 'id') : [];
-            foreach ($porRegalar as $r) {
-                $p = $disponibles[$r['producto_id']] ?? null;
-                if ($p === null || !$p['activo'] || !$p['categoria_activa'] || $p['agotado']) continue;
+            foreach ($evaluacion['regalos'] as $r) {
+                $p = $regalables[$r['producto_id']];
                 $precio = self::centavos((string) $p['precio']);
                 $bruto = $precio * $r['cantidad'];
                 $regalos += $bruto;
                 $lineas[] = ['producto_id' => (int) $p['id'], 'id' => $p['codigo'], 'nombre' => $p['nombre'], 'unidad' => Producto::UNIDADES[$p['unidad']],
                     'cantidad' => $r['cantidad'], 'precio' => self::decimal($precio), 'bruto' => self::decimal($bruto), 'descuento' => self::decimal($bruto),
-                    'promocion' => ['id' => (int) $r['promocion']['id'], 'etiqueta' => $r['promocion']['nombre']], 'regalo' => true,
+                    'promociones' => [['id' => (int) $r['promocion']['id'], 'etiqueta' => $r['promocion']['nombre'], 'monto' => self::decimal($bruto)]], 'regalo' => true,
                     'subtotal' => '0.00', 'nota' => '', 'cocina' => (bool) $p['va_a_cocina']];
             }
             if ($promo !== $promoEsperada || $regalos !== $regalosEsperados) throw new DomainException('Cambió una promoción. Recarga el punto de venta y revisa el total antes de cobrar.');
@@ -160,7 +167,7 @@ final class VentaService
                 'descuento_autorizado_por' => $permiso['admin_id'] ?? null, 'total' => self::decimal($total), 'creado_en' => $fecha]);
             foreach ($lineas as $l) {
                 $detalleId = Venta::detalle($ventaId, $l);
-                if ($l['promocion'] !== null) Venta::promocion($ventaId, $detalleId, $l['promocion'], $l['descuento']);
+                foreach ($l['promociones'] as $pr) Venta::promocion($ventaId, $detalleId, $pr, $pr['monto']);
             }
             Venta::pago($ventaId, self::decimal($total), self::decimal($rec), self::decimal($rec - $total));
             $s = ['pedido' => str_pad((string) $ventaId, 3, '0', STR_PAD_LEFT), 'factura' => $numero, 'tipo' => $tipo, 'mesa' => $mesa,

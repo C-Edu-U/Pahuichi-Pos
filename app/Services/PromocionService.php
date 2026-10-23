@@ -17,8 +17,9 @@ use DateTimeImmutable;
  *   o en un monto fijo por unidad.
  * - Se aplica solo, al agregar el producto: el cajero no elige nada.
  * - Ningún descuento deja una línea en negativo.
- * - Si varias promociones tocan la misma línea, se aplica la de mayor beneficio (a
- *   igual beneficio, la más antigua). Acumularlas por prioridad llega con HU-50.
+ * - HU-50: una promoción no acumulable no se combina con ninguna otra del pedido; si
+ *   compiten, gana la de mayor beneficio. Las acumulables se aplican juntas por
+ *   prioridad (menor primero), cada una sobre lo que dejó la anterior. Ver evaluar().
  * - HU-49: restricciones combinables, todas opcionales. Del momento: rango de fechas,
  *   días de la semana, franja horaria y tope de usos por día. Del pedido: cantidad
  *   mínima del producto o la categoría y monto mínimo del pedido.
@@ -49,59 +50,82 @@ final class PromocionService
     }
 
     /**
+     * Evalúa el pedido y devuelve lo que se aplica (HU-50, RF-53, RN-09):
+     * - Cada promoción no acumulable compite sola contra todas las demás opciones.
+     * - Las acumulables se aplican juntas, una tras otra, por prioridad (menor primero).
+     * - Gana la opción de mayor beneficio total para el cliente. A igual beneficio, las
+     *   acumulables; entre no acumulables, la más antigua.
+     *
      * @param list<array{producto_id: int, categoria_id: int, cantidad: int, bruto: int}> $lineas bruto en centavos
      * @param list<array> $promociones filas de Promocion::activas()
      * @param ?array $contexto de contexto(); sin él no se miran fecha, hora ni tope
-     * @return list<array{descuento: int, promocion: ?array}> una entrada por línea, en el mismo orden
+     * @param array<int, int> $regalables precio en centavos de cada producto que se puede regalar (disponible)
+     * @return array{lineas: list<array{descuento: int, partes: list<array{promocion: array, monto: int}>}>,
+     *               regalos: list<array{promocion: array, producto_id: int, cantidad: int, monto: int}>, beneficio: int}
      */
-    public static function aplicar(array $lineas, array $promociones, ?array $contexto = null): array
+    public static function evaluar(array $lineas, array $promociones, ?array $contexto = null, array $regalables = []): array
     {
         $validas = array_values(array_filter(
             $promociones,
             static fn (array $p): bool => ($contexto === null || self::vigente($p, $contexto)) && self::cumple($p, $lineas),
         ));
 
-        $resultado = [];
-        foreach ($lineas as $l) {
-            $mejor = ['descuento' => 0, 'promocion' => null];
-            foreach ($validas as $p) {
-                if (($p['tipo'] ?? 'descuento') !== 'descuento' || !self::alcanza($p, $l)) {
-                    continue;
-                }
-                $d = self::descuento($p, $l);
-                // Gana la de mayor beneficio; las promociones vienen ordenadas por id
-                if ($d > $mejor['descuento']) {
-                    $mejor = ['descuento' => $d, 'promocion' => $p];
+        $mejor = self::simular($lineas, [], $regalables);
+        foreach ($validas as $p) {
+            if (!(int) ($p['acumulable'] ?? 0)) {
+                $opcion = self::simular($lineas, [$p], $regalables);
+                if ($opcion['beneficio'] > $mejor['beneficio']) {
+                    $mejor = $opcion;
                 }
             }
-            $resultado[] = $mejor;
         }
-        return $resultado;
+        $acumulables = array_values(array_filter($validas, static fn (array $p): bool => (bool) (int) ($p['acumulable'] ?? 0)));
+        if ($acumulables) {
+            usort($acumulables, static fn (array $a, array $b): int => [(int) ($a['prioridad'] ?? 10), (int) $a['id']] <=> [(int) ($b['prioridad'] ?? 10), (int) $b['id']]);
+            $opcion = self::simular($lineas, $acumulables, $regalables);
+            if ($opcion['beneficio'] > 0 && $opcion['beneficio'] >= $mejor['beneficio']) {
+                $mejor = $opcion;
+            }
+        }
+        return $mejor;
     }
 
-    /**
-     * Regalos por compra: cuántas unidades de cada producto regalo corresponden al pedido.
-     * @param list<array{producto_id: int, categoria_id: int, cantidad: int, bruto: int}> $lineas
-     * @param ?array $contexto de contexto(); sin él no se miran fecha, hora ni tope
-     * @return list<array{promocion: array, producto_id: int, cantidad: int}>
-     */
-    public static function regalos(array $lineas, array $promociones, ?array $contexto = null): array
+    /** Aplica las promociones en orden: cada una descuenta sobre lo que dejó la anterior. */
+    private static function simular(array $lineas, array $promociones, array $regalables): array
     {
+        $restante = array_column($lineas, 'bruto');
+        $resultado = array_map(static fn (): array => ['descuento' => 0, 'partes' => []], $lineas);
         $regalos = [];
+        $beneficio = 0;
         foreach ($promociones as $p) {
-            if (($p['tipo'] ?? 'descuento') !== 'regalo' || ($contexto !== null && !self::vigente($p, $contexto)) || !self::cumple($p, $lineas)) {
-                continue;
-            }
-            $unidades = 0;
-            foreach ($lineas as $l) {
-                $unidades += self::alcanza($p, $l) ? $l['cantidad'] : 0;
-            }
-            $cantidad = intdiv($unidades, max(1, (int) $p['cantidad_compra']));
-            if ($cantidad > 0) {
-                $regalos[] = ['promocion' => $p, 'producto_id' => (int) $p['regalo_producto_id'], 'cantidad' => $cantidad];
+            $tipo = $p['tipo'] ?? 'descuento';
+            if ($tipo === 'descuento') {
+                foreach ($lineas as $i => $l) {
+                    if (!self::alcanza($p, $l)) {
+                        continue;
+                    }
+                    $d = min(self::descuento($p, $restante[$i], $l['cantidad']), $restante[$i]);
+                    if ($d > 0) {
+                        $restante[$i] -= $d;
+                        $resultado[$i]['descuento'] += $d;
+                        $resultado[$i]['partes'][] = ['promocion' => $p, 'monto' => $d];
+                        $beneficio += $d;
+                    }
+                }
+            } elseif ($tipo === 'regalo') {
+                $unidades = 0;
+                foreach ($lineas as $l) {
+                    $unidades += self::alcanza($p, $l) ? $l['cantidad'] : 0;
+                }
+                $cantidad = intdiv($unidades, max(1, (int) $p['cantidad_compra']));
+                $precio = $regalables[(int) $p['regalo_producto_id']] ?? null;
+                if ($cantidad > 0 && $precio !== null) {
+                    $regalos[] = ['promocion' => $p, 'producto_id' => (int) $p['regalo_producto_id'], 'cantidad' => $cantidad, 'monto' => $precio * $cantidad];
+                    $beneficio += $precio * $cantidad;
+                }
             }
         }
-        return $regalos;
+        return ['lineas' => $resultado, 'regalos' => $regalos, 'beneficio' => $beneficio];
     }
 
     /** ¿Vale en este momento? Fechas, día, franja horaria y tope de usos del día. */
@@ -158,14 +182,14 @@ final class PromocionService
             : (int) $p['categoria_id'] === $l['categoria_id'];
     }
 
-    /** Descuento en centavos, nunca mayor que la línea. */
-    public static function descuento(array $p, array $l): int
+    /** Descuento en centavos sobre lo que queda de la línea, nunca mayor que eso. */
+    public static function descuento(array $p, int $base, int $cantidad): int
     {
         $valor = self::centesimos((string) $p['valor']);
         $d = $p['valor_tipo'] === 'porcentaje'
-            ? intdiv($l['bruto'] * $valor + 5000, 10000)   // % con dos decimales, redondeo al centavo
-            : $valor * $l['cantidad'];                       // Bs por unidad
-        return min($d, $l['bruto']);
+            ? intdiv($base * $valor + 5000, 10000)   // % con dos decimales, redondeo al centavo
+            : $valor * $cantidad;                    // Bs por unidad
+        return min($d, $base);
     }
 
     /** «12.50» → 1250 */
@@ -217,6 +241,12 @@ final class PromocionService
             $partes[] = 'hasta el ' . $fecha($hasta);
         }
         return implode(' · ', $partes);
+    }
+
+    /** «Acumulable · prioridad 2» o «No acumulable». */
+    public static function combinacion(array $p): string
+    {
+        return (int) ($p['acumulable'] ?? 0) ? 'Acumulable · prioridad ' . (int) ($p['prioridad'] ?? 10) : 'No acumulable';
     }
 
     /** «Desde 2 unidades · pedido desde Bs 50,00 · tope 20 por día», o «Sin condiciones». */

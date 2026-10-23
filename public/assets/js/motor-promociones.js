@@ -1,9 +1,10 @@
-/* Motor de promociones (HU-46, HU-49): espejo de App\Services\PromocionService::aplicar().
+/* Motor de promociones (HU-46 a HU-50): espejo de App\Services\PromocionService::evaluar().
    Calcula en el navegador lo mismo que el servidor, para mostrar el pedido al
    instante; al cobrar, el servidor recalcula y rechaza si no coincide.
    - Descuento por producto o por categoría: % del subtotal de la línea, o Bs por unidad.
    - Nunca deja una línea en negativo.
-   - Si varias tocan la misma línea, gana la de mayor beneficio (a igual beneficio, la más antigua).
+   - HU-50: una no acumulable no se combina con ninguna otra; las acumulables se suman por
+     prioridad; se aplica la opción de mayor beneficio para el cliente.
    - HU-49: solo valen las que cumplen fechas, día, franja horaria y tope de usos de hoy
      (contexto), y la cantidad mínima y el monto mínimo del pedido.
    - Regalo por compra: por cada N del producto o la categoría, 1 del producto regalo a Bs 0,
@@ -47,51 +48,81 @@
     return true;
   }
 
-  /* lineas: [{ producto: {id, categoria, precio}, cantidad }]
-     Devuelve una entrada por línea: { centavos, promocion } (promocion es null si no hay). */
-  function aplicar(lineas, promociones, contexto) {
+  /* Aplica las promociones en orden: cada una descuenta sobre lo que dejó la anterior.
+     regalables: { id: centavos } con el precio de cada producto que se puede regalar. */
+  function simular(lineas, lista, regalables) {
+    var restante = lineas.map(function (l) { return centavos(l.producto.precio) * l.cantidad; });
+    var resultado = lineas.map(function () { return { centavos: 0, partes: [] }; });
+    var regalos = [];
+    var beneficio = 0;
+    lista.forEach(function (p) {
+      if (p.tipo === 'descuento') {
+        lineas.forEach(function (l, i) {
+          if (!alcanza(p, l.producto)) return;
+          var d = Math.min(descuento(p, restante[i], l.cantidad), restante[i]);
+          if (d > 0) {
+            restante[i] -= d;
+            resultado[i].centavos += d;
+            resultado[i].partes.push({ promocion: p, centavos: d });
+            beneficio += d;
+          }
+        });
+      } else if (p.tipo === 'regalo') {
+        var unidades = lineas.reduce(function (s, l) { return s + (alcanza(p, l.producto) ? l.cantidad : 0); }, 0);
+        var cantidad = Math.floor(unidades / Math.max(1, p.cantidad_compra));
+        var precio = regalables[String(p.regalo_producto_id)];
+        if (cantidad > 0 && precio !== undefined) {
+          regalos.push({ promocion: p, producto_id: p.regalo_producto_id, cantidad: cantidad, centavos: precio * cantidad });
+          beneficio += precio * cantidad;
+        }
+      }
+    });
+    return { lineas: resultado, regalos: regalos, beneficio: beneficio };
+  }
+
+  /* HU-50 (espejo de PromocionService::evaluar): cada no acumulable compite sola; las
+     acumulables se aplican juntas por prioridad (menor primero); gana el mayor beneficio.
+     A igual beneficio, las acumulables; entre no acumulables, la más antigua.
+     lineas: [{ producto: {id, categoria, precio}, cantidad }]
+     catalogo: { id: producto } con los productos que se pueden vender (para los regalos).
+     Devuelve { lineas: [{ centavos, partes: [{ promocion, centavos }] }],
+                regalos: [{ promocion, producto, cantidad, centavos }], beneficio }. */
+  function evaluar(lineas, promociones, catalogo, contexto) {
+    var regalables = {};
+    Object.keys(catalogo || {}).forEach(function (id) {
+      if (!catalogo[id].agotado) regalables[id] = centavos(catalogo[id].precio);
+    });
     var validas = promociones.filter(function (p) {
       return (!contexto || fueraDeVigencia(p, contexto) === null) && cumple(p, lineas);
     });
-    return lineas.map(function (l) {
-      var bruto = centavos(l.producto.precio) * l.cantidad;
-      var mejor = { centavos: 0, promocion: null };
-      validas.forEach(function (p) {   // vienen ordenadas por id
-        if (p.tipo !== 'descuento' || !alcanza(p, l.producto)) return;
-        var d = descuento(p, bruto, l.cantidad);
-        if (d > mejor.centavos) mejor = { centavos: d, promocion: p };
-      });
-      return mejor;
+    var mejor = simular(lineas, [], regalables);
+    validas.forEach(function (p) {   // vienen ordenadas por id
+      if (p.acumulable) return;
+      var opcion = simular(lineas, [p], regalables);
+      if (opcion.beneficio > mejor.beneficio) mejor = opcion;
     });
+    var acumulables = validas.filter(function (p) { return p.acumulable; })
+      .sort(function (a, b) { return (a.prioridad - b.prioridad) || (a.id - b.id); });
+    if (acumulables.length) {
+      var juntas = simular(lineas, acumulables, regalables);
+      if (juntas.beneficio > 0 && juntas.beneficio >= mejor.beneficio) mejor = juntas;
+    }
+    mejor.regalos.forEach(function (r) { r.producto = catalogo[String(r.producto_id)]; });
+    return mejor;
   }
 
   /* Agrupa por promoción para mostrarlas como líneas de descuento: [{ promocion, centavos }] */
-  function agrupar(aplicadas) {
+  function agrupar(lineasEvaluadas) {
     var porId = {};
     var orden = [];
-    aplicadas.forEach(function (a) {
-      if (!a.promocion) return;
-      if (!porId[a.promocion.id]) { porId[a.promocion.id] = { promocion: a.promocion, centavos: 0 }; orden.push(a.promocion.id); }
-      porId[a.promocion.id].centavos += a.centavos;
+    lineasEvaluadas.forEach(function (l) {
+      l.partes.forEach(function (x) {
+        if (!porId[x.promocion.id]) { porId[x.promocion.id] = { promocion: x.promocion, centavos: 0 }; orden.push(x.promocion.id); }
+        porId[x.promocion.id].centavos += x.centavos;
+      });
     });
     return orden.map(function (id) { return porId[id]; });
   }
 
-  /* catalogo: { id: producto } con los productos que se pueden vender.
-     Devuelve [{ promocion, producto, cantidad, centavos }] (centavos = precio del regalo). */
-  function regalos(lineas, promociones, catalogo, contexto) {
-    var lista = [];
-    promociones.forEach(function (p) {
-      if (p.tipo !== 'regalo' || (contexto && fueraDeVigencia(p, contexto) !== null) || !cumple(p, lineas)) return;
-      var unidades = lineas.reduce(function (s, l) { return s + (alcanza(p, l.producto) ? l.cantidad : 0); }, 0);
-      var cantidad = Math.floor(unidades / Math.max(1, p.cantidad_compra));
-      var producto = catalogo[String(p.regalo_producto_id)];
-      if (cantidad > 0 && producto && !producto.agotado) {
-        lista.push({ promocion: p, producto: producto, cantidad: cantidad, centavos: centavos(producto.precio) * cantidad });
-      }
-    });
-    return lista;
-  }
-
-  window.PahuichiPromociones = { aplicar: aplicar, agrupar: agrupar, regalos: regalos, fueraDeVigencia: fueraDeVigencia };
+  window.PahuichiPromociones = { evaluar: evaluar, agrupar: agrupar, fueraDeVigencia: fueraDeVigencia };
 })();

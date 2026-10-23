@@ -10,7 +10,7 @@ use App\Services\PromocionService;
 
 $accion = $promocion ? '/promociones/' . (int) $promocion['id'] : '/promociones/nueva';
 $etiquetas = ['nombre' => 'Nombre', 'aplica' => 'Producto o categoría', 'valor' => 'Descuento', 'cantidad_compra' => 'Por cada', 'regalo' => 'Regalo', 'fecha_desde' => 'Desde', 'fecha_hasta' => 'Hasta',
-    'dias' => 'Días', 'hora_hasta' => 'Horario', 'cantidad_minima' => 'Cantidad mínima', 'monto_minimo' => 'Monto mínimo', 'tope_usos_dia' => 'Tope por día'];
+    'dias' => 'Días', 'hora_hasta' => 'Horario', 'prioridad' => 'Prioridad', 'cantidad_minima' => 'Cantidad mínima', 'monto_minimo' => 'Monto mínimo', 'tope_usos_dia' => 'Tope por día'];
 ?>
     <main class="contenido" id="contenido">
       <a class="volver" href="/promociones">
@@ -100,6 +100,17 @@ $etiquetas = ['nombre' => 'Nombre', 'aplica' => 'Producto o categoría', 'valor'
             </div>
             <p class="campo__ayuda" id="valor-ayuda">En %, sobre el subtotal de la línea. En Bs, por cada unidad. Nunca deja un producto gratis ni en negativo.</p>
             <?= mensaje_error($errores, 'valor') ?>
+          </div>
+        </fieldset>
+
+        <fieldset class="grupo-campos">
+          <legend class="grupo-campos__titulo">Combinación con otras promociones</legend>
+          <label class="casilla campo--ancho"><input type="checkbox" id="acumulable" name="acumulable" value="1"<?= (int) $v['acumulable'] ? ' checked' : '' ?>><span class="casilla__texto"><span class="casilla__titulo">Acumulable</span><span class="casilla__ayuda">Se suma a las otras acumulables del pedido. Si no lo es, no se combina con ninguna: se aplica sola, solo si da el mayor beneficio.</span></span></label>
+          <div class="campo">
+            <label class="campo__etiqueta" for="prioridad">Prioridad</label>
+            <input class="control control--numero" id="prioridad" name="prioridad" type="text" inputmode="numeric" maxlength="2" value="<?= e($v['prioridad']) ?>"<?= campo_error($errores, 'prioridad', 'prioridad-ayuda') ?>>
+            <p class="campo__ayuda" id="prioridad-ayuda">Las acumulables se aplican de menor a mayor: 1 va primero.</p>
+            <?= mensaje_error($errores, 'prioridad') ?>
           </div>
         </fieldset>
 

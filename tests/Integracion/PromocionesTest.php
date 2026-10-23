@@ -273,6 +273,38 @@ final class PromocionesTest extends CasoPrueba
         $this->assertSame(0, (int) DB::valor('SELECT COUNT(*) FROM promociones'));
     }
 
+    /**
+     * Escenario: Definir si se acumula (HU-50)
+     *   Dado soy administrador
+     *   Cuando creo una promoción acumulable con prioridad 2, y otra sin marcarla
+     *   Entonces la primera queda acumulable con su prioridad y la segunda no acumulable
+     */
+    public function testDefineSiSeAcumulaYSuPrioridad(): void
+    {
+        $this->crear(['nombre' => 'Se suma', 'acumulable' => '1', 'prioridad' => '2']);
+        $this->crear(['nombre' => 'Sola']);
+
+        $this->assertSame([1, 2], array_map('intval', array_values(DB::fila("SELECT acumulable, prioridad FROM promociones WHERE nombre = 'Se suma'"))));
+        $this->assertSame([0, 10], array_map('intval', array_values(DB::fila("SELECT acumulable, prioridad FROM promociones WHERE nombre = 'Sola'"))));
+        $lista = $this->get('/promociones')->cuerpo;
+        $this->assertStringContainsString('Descuento · Acumulable · prioridad 2', $lista);
+        $this->assertStringContainsString('Descuento · No acumulable', $lista);
+        $this->assertStringContainsString('"combinacion":"Acumulable · prioridad 2"', (string) Bitacora::ultimos('promocion.alta')[1]['detalle']);
+
+        $form = $this->get('/promociones/' . DB::valor("SELECT id FROM promociones WHERE nombre = 'Se suma'") . '/editar')->cuerpo;
+        $this->assertStringContainsString('id="acumulable" name="acumulable" value="1" checked', $form);
+        $this->assertStringContainsString('id="prioridad" name="prioridad" type="text" inputmode="numeric" maxlength="2" value="2"', $form);
+    }
+
+    public function testLaPrioridadVaDe1A99(): void
+    {
+        $r = $this->crear(['acumulable' => '1', 'prioridad' => '0']);
+
+        $this->assertSame(422, $r->estado);
+        $this->assertStringContainsString('La prioridad va de 1 a 99.', $r->cuerpo);
+        $this->assertSame(0, (int) DB::valor('SELECT COUNT(*) FROM promociones'));
+    }
+
     public function testSinPromocionesMuestraElEstadoVacio(): void
     {
         $this->assertStringContainsString('Todavía no hay promociones', $this->get('/promociones')->cuerpo);

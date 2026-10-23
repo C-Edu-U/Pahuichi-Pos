@@ -22,6 +22,7 @@ use DateTimeImmutable;
  * categoría, o regalo por compra (por cada N, 1 producto gratis). Nada se borra: una
  * promoción se pausa y se vuelve a activar.
  * HU-49: restricciones combinables de fechas, días, horario, cantidad, monto y tope por día.
+ * HU-50: si se acumula con otras y con qué prioridad.
  */
 final class PromocionController extends Controller
 {
@@ -43,7 +44,7 @@ final class PromocionController extends Controller
         return $this->formulario(null, ['nombre' => '', 'tipo' => 'descuento', 'aplica' => '', 'valor' => '', 'valor_tipo' => 'porcentaje',
             'cantidad_compra' => '1', 'regalo' => '', 'activo' => 1,
             'fecha_desde' => '', 'fecha_hasta' => '', 'dias' => array_keys(PromocionService::DIAS), 'hora_desde' => '', 'hora_hasta' => '',
-            'cantidad_minima' => '', 'monto_minimo' => '', 'tope_usos_dia' => '']);
+            'cantidad_minima' => '', 'monto_minimo' => '', 'tope_usos_dia' => '', 'acumulable' => 0, 'prioridad' => '10']);
     }
 
     public function editar(Peticion $peticion): Respuesta
@@ -67,6 +68,8 @@ final class PromocionController extends Controller
             'cantidad_minima' => (string) $p['cantidad_minima'],
             'monto_minimo' => $p['monto_minimo'] === null ? '' : bs($p['monto_minimo']),
             'tope_usos_dia' => (string) $p['tope_usos_dia'],
+            'acumulable' => (int) $p['acumulable'],
+            'prioridad' => (string) $p['prioridad'],
         ]);
     }
 
@@ -250,6 +253,17 @@ final class PromocionController extends Controller
                 $datos['monto_minimo'] = number_format($monto, 2, '.', '');
             }
         }
+        // HU-50: acumulable con otras promociones, en orden de prioridad (1 primero)
+        $v['acumulable'] = $peticion->entrada('acumulable') === '1' ? 1 : 0;
+        $v['prioridad'] = trim((string) $peticion->entrada('prioridad', '10'));
+        $datos['acumulable'] = $v['acumulable'];
+        $datos['prioridad'] = 10;
+        if (!preg_match('/^\d{1,2}$/D', $v['prioridad']) || (int) $v['prioridad'] < 1) {
+            $errores['prioridad'] = 'La prioridad va de 1 a 99.';
+        } else {
+            $datos['prioridad'] = (int) $v['prioridad'];
+        }
+
         $datos['tope_usos_dia'] = null;
         if ($v['tope_usos_dia'] !== '') {
             if (!preg_match('/^\d{1,4}$/D', $v['tope_usos_dia']) || (int) $v['tope_usos_dia'] < 1) {
@@ -281,7 +295,8 @@ final class PromocionController extends Controller
             : 'Categoría ' . (Categoria::buscar((int) $d['categoria_id'])['nombre'] ?? '');
         $regalo = $d['regalo_producto_id'] !== null ? (Producto::buscar((int) $d['regalo_producto_id'])['nombre'] ?? '') : null;
         return ['nombre' => $d['nombre'], 'aplica' => $aplica, 'descuento' => PromocionService::regla($d + ['regalo' => $regalo]),
-            'cuando' => PromocionService::cuando($d), 'condiciones' => PromocionService::condiciones($d), 'activo' => (bool) (int) $d['activo']];
+            'cuando' => PromocionService::cuando($d), 'condiciones' => PromocionService::condiciones($d),
+            'combinacion' => PromocionService::combinacion($d), 'activo' => (bool) (int) $d['activo']];
     }
 
     private function formulario(?array $promocion, array $v, array $errores = [], int $estado = 200): Respuesta
