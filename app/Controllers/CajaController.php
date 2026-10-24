@@ -240,21 +240,19 @@ final class CajaController extends Controller
 
         $esperado = ArqueoService::esperado($abierta);
         $diferencia = ArqueoService::diferencia((float) $conteo['total_contado'], $esperado);
-        $resumen = ArqueoService::resumen((int) $abierta['id']);
         $observacion = trim((string) $peticion->entrada('observacion'));
 
         // HU-26: una diferencia igual o mayor al umbral obliga a explicar.
         if ($observacion === '' && ArqueoService::exigeObservacion($diferencia)) {
-            $faltante = $diferencia < 0;
-            $errores['observacion'] = 'La diferencia es de Bs ' . number_format(abs($diferencia), 2, ',', '.')
-                . '. Escribe una observación para explicar el ' . ($faltante ? 'faltante' : 'sobrante') . '.';
+            $errores['observacion'] = ArqueoService::pedidoObservacion($diferencia);
             return $this->pantallaArqueo($abierta, $conteo, $esperado, $diferencia, false, $errores, $observacion, 422);
         }
 
+        // El servicio vuelve a calcular todo con la caja bloqueada: lo guardado es lo del cierre.
         try {
-            (new ArqueoService())->confirmarCierre((int) $abierta['id'], $esperado, $diferencia, $resumen, $observacion);
+            (new ArqueoService())->confirmarCierre((int) $abierta['id'], $observacion);
         } catch (DomainException $e) {
-            return $this->redirigirConAviso('/caja/cierre', $e->getMessage());
+            return $this->redirigirConAviso('/caja/arqueo', $e->getMessage());
         }
 
         return $this->redirigirConAviso('/caja/arqueo', 'Caja cerrada y arqueada.');
