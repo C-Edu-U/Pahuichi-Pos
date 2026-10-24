@@ -53,6 +53,50 @@ final class SinCajaNoSeVendeTest extends CasoPrueba
         $this->assertStringContainsString('No hay una caja abierta', $r->cuerpo);
     }
 
+    /**
+     * Escenario: Al cerrar, el POS vuelve a pedir abrir caja
+     *   Dado que la caja del turno se cerró con su conteo y arqueo
+     *   Cuando el cajero entra al punto de venta
+     *   Entonces ve directamente el botón "Abrir caja"
+     */
+    public function testAlCerrarElPosVuelveAPedirAbrirCaja(): void
+    {
+        Reloj::fijar('2026-10-24 12:00:00');
+        $this->entrarComo('mariela', 'pin');
+        $this->post('/caja/abrir', ['turno_id' => (int) DB::valor("SELECT id FROM turnos WHERE clave = 'mediodia'"), 'fondo' => '300']);
+        $this->post('/caja/conteo', ['conteo' => ['200' => '1', '100' => '1']]);
+        $this->assertRedirige('/caja/arqueo', $this->post('/caja/arqueo', ['observacion' => '']));
+
+        $r = $this->get('/pos');
+
+        $this->assertStringContainsString('No hay una caja abierta', $r->cuerpo);
+        $this->assertStringContainsString('Abrir caja', $r->cuerpo);
+    }
+
+    /**
+     * Escenario: La caja abierta es de otro cajero (HU-20)
+     *   Dado que Mariela tiene la caja abierta
+     *   Cuando Jorge entra al punto de venta
+     *   Entonces ve de quién es la caja y no puede armar ni cobrar pedidos; el administrador sí vende
+     */
+    public function testEnLaCajaDeOtroCajeroNoSeVende(): void
+    {
+        Reloj::fijar('2026-10-24 12:00:00');
+        $this->entrarComo('mariela', 'pin');
+        $this->post('/caja/abrir', ['turno_id' => (int) DB::valor("SELECT id FROM turnos WHERE clave = 'mediodia'"), 'fondo' => '300']);
+
+        $this->entrarComo('jorge', 'pin');
+        $r = $this->get('/pos');
+        $this->assertStringContainsString('La caja abierta es de Mariela Suárez Añez', $r->cuerpo);
+        $this->assertStringNotContainsString('id="grilla"', $r->cuerpo);
+        $json = App::crear()->manejar(new Peticion('GET', '/pos', [], [], [], '10.0.0.1', ['accept' => 'application/json']));
+        $this->assertSame(409, $json->estado);
+        $this->assertStringContainsString('solo esa persona vende en ella', $json->cuerpo);
+
+        $this->entrarComo('admin');
+        $this->assertStringContainsString('id="grilla"', $this->get('/pos')->cuerpo);
+    }
+
     public function testElMeseroNoEntraAlPuntoDeVentaAunqueHayaCaja(): void
     {
         $this->entrarComo('luis');
