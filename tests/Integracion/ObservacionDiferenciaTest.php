@@ -6,6 +6,7 @@ namespace Tests\Integracion;
 
 use App\Core\DB;
 use App\Core\Reloj;
+use App\Models\Bitacora;
 use App\Models\Configuracion;
 use Tests\CasoPrueba;
 
@@ -112,6 +113,62 @@ final class ObservacionDiferenciaTest extends CasoPrueba
 
         $this->assertRedirige('/caja/arqueo', $r);
         $this->assertSame('cerrada', DB::valor('SELECT estado FROM cajas WHERE id = ?', [$this->cajaId]));
+    }
+
+    public function testElCampoSeMarcaObligatorioCuandoHaceFalta(): void
+    {
+        $this->contar(5, 1, 1, 4, 0); // diferencia de 10
+
+        $html = $this->get('/caja/arqueo')->cuerpo;
+
+        $this->assertStringContainsString('Observación (obligatoria)</label>', $html);
+        $this->assertMatchesRegularExpression('/<input[^>]*id="observacion"[^>]* required/', $html);
+    }
+
+    public function testLaObservacionEnBlancoNoCuenta(): void
+    {
+        $this->contar(5, 1, 1, 4, 0);
+
+        $this->assertSame(422, $this->post('/caja/arqueo', ['observacion' => "   \t "])->estado);
+        $this->assertSame('abierta', DB::valor('SELECT estado FROM cajas WHERE id = ?', [$this->cajaId]));
+    }
+
+    public function testUnaObservacionDemasiadoLargaSeRechaza(): void
+    {
+        $this->contar(5, 1, 1, 4, 0);
+
+        $r = $this->post('/caja/arqueo', ['observacion' => str_repeat('ñ', 256)]);
+
+        $this->assertSame(422, $r->estado);
+        $this->assertStringContainsString('La observación admite hasta 255 caracteres.', $r->cuerpo);
+        $this->assertSame('abierta', DB::valor('SELECT estado FROM cajas WHERE id = ?', [$this->cajaId]));
+        $this->assertRedirige('/caja/arqueo', $this->post('/caja/arqueo', ['observacion' => str_repeat('ñ', 255)]));
+    }
+
+    /**
+     * Escenario: Umbral en cero
+     *   Dado el administrador puso el umbral en 0 Bs
+     *   Cuando la caja cuadra al centavo
+     *   Entonces no se pide observación; con 10 centavos de diferencia, sí
+     */
+    public function testConUmbralCeroSoloLaCajaQueCuadraCierraSinObservacion(): void
+    {
+        Configuracion::guardar(Configuracion::UMBRAL_OBSERVACION, '0.00');
+        $this->post('/caja/conteo', ['conteo' => ['200' => '6', '0.10' => '1']]); // 1.200,10
+
+        $this->assertSame(422, $this->post('/caja/arqueo', ['observacion' => ''])->estado);
+
+        $this->contar(6, 0, 0, 0, 0); // 1.200: cuadra
+        $this->assertRedirige('/caja/arqueo', $this->post('/caja/arqueo', ['observacion' => '']));
+        $this->assertSame('cerrada', DB::valor('SELECT estado FROM cajas WHERE id = ?', [$this->cajaId]));
+    }
+
+    public function testLaObservacionQuedaEnLaBitacora(): void
+    {
+        $this->contar(5, 1, 1, 4, 0);
+        $this->post('/caja/arqueo', ['observacion' => 'Vuelto mal dado']);
+
+        $this->assertStringContainsString('"observacion":"Vuelto mal dado"', (string) Bitacora::ultimos('caja.arqueo')[0]['detalle']);
     }
 
     public function testElCajeroNoCambiaElUmbral(): void

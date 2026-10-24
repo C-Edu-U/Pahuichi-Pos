@@ -47,10 +47,16 @@ final class ArqueoService
         return Configuracion::umbralObservacion();
     }
 
-    /** La diferencia es igual o mayor al umbral: el cajero tiene que explicar. */
+    /** Largo máximo de la observación (la columna es VARCHAR(255)). */
+    public const OBSERVACION_MAXIMA = 255;
+
+    /**
+     * La diferencia es igual o mayor al umbral: el cajero tiene que explicar. Con umbral 0,
+     * cualquier diferencia; una caja que cuadra nunca la exige.
+     */
     public static function exigeObservacion(float $diferencia): bool
     {
-        return abs($diferencia) >= self::umbralObservacion();
+        return $diferencia != 0.0 && abs($diferencia) >= self::umbralObservacion();
     }
 
     /** Lo que se le pide al cajero cuando falta la observación. */
@@ -88,6 +94,9 @@ final class ArqueoService
             if ($conteo === null) {
                 throw new DomainException('Cuenta el efectivo antes de cerrar la caja.');
             }
+            if (mb_strlen($observacion) > self::OBSERVACION_MAXIMA) {
+                throw new DomainException('La observación admite hasta ' . self::OBSERVACION_MAXIMA . ' caracteres.');
+            }
 
             $esperado = self::esperado($caja);
             $diferencia = self::diferencia((float) $conteo['total_contado'], $esperado);
@@ -106,6 +115,7 @@ final class ArqueoService
                 'total_contado' => number_format((float) $conteo['total_contado'], 2, '.', ''),
                 'diferencia' => number_format($diferencia, 2, '.', ''),
                 'ventas' => $resumen['ventas'] ?? 0,
+                'observacion' => $observacion !== '' ? $observacion : null,
             ]);
 
             return ['esperado' => $esperado, 'diferencia' => $diferencia];
