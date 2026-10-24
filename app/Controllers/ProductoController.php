@@ -49,7 +49,7 @@ final class ProductoController extends Controller
     public function editar(Peticion $peticion): Respuesta
     {
         $p = $this->producto($peticion);
-        return $this->formulario($p, ['precio' => bs($p['precio'])] + $p);
+        return $this->formulario($p, ['precio' => bs($p['precio'])] + $p, [], max(1, (int) $peticion->consulta('historial')));
     }
 
     public function crear(Peticion $peticion): Respuesta
@@ -89,14 +89,6 @@ final class ProductoController extends Controller
         } catch (DomainException $e) {
             return $this->formulario($p, ['codigo' => $p['codigo']] + $d, ['foto' => $e->getMessage()]);
         }
-        if (bs($p['precio']) !== bs($d['precio'])) {
-            Bitacora::registrar('producto.precio', 'productos', (int) $p['id'], [
-                'codigo' => $p['codigo'],
-                'antes' => $p['precio'],
-                'despues' => number_format($d['precio'], 2, '.', ''),
-            ]);
-        }
-        Bitacora::registrar('producto.edicion', 'productos', (int) $p['id'], ['codigo' => $p['codigo']]);
         return $this->guardado($d);
     }
 
@@ -121,9 +113,19 @@ final class ProductoController extends Controller
             $id = DB::transaccion(function () use ($actual, $codigo, $d, $cambia, $nuevo, &$anterior): int {
                 if ($actual) {
                     $id = (int) $actual['id'];
-                    $p = DB::fila('SELECT foto FROM productos WHERE id = ? FOR UPDATE', [$id]);
+                    $p = DB::fila('SELECT foto, precio FROM productos WHERE id = ? FOR UPDATE', [$id]);
+                    if ($p === null) throw ErrorHttp::noEncontrado('Ese producto no existe.');
                     $anterior = $p['foto'] ?? null;
                     Producto::actualizar($id, $d);
+                    // HU-19: precio y auditoría se confirman juntos. Se usa el precio
+                    // bloqueado de la BD, incluso si otro administrador lo acaba de editar.
+                    $precioNuevo = number_format((float) $d['precio'], 2, '.', '');
+                    if ($p['precio'] !== $precioNuevo) {
+                        Bitacora::registrar('producto.precio', 'productos', $id, [
+                            'codigo' => $codigo, 'antes' => $p['precio'], 'despues' => $precioNuevo,
+                        ]);
+                    }
+                    Bitacora::registrar('producto.edicion', 'productos', $id, ['codigo' => $codigo]);
                 } else { $id = Producto::crear($codigo, $d); }
                 if ($cambia) {
                     Producto::guardarFoto($id, $nuevo);
@@ -226,7 +228,7 @@ final class ProductoController extends Controller
         );
     }
 
-    private function formulario(?array $producto, array $valores, array $errores = []): Respuesta
+    private function formulario(?array $producto, array $valores, array $errores = [], int $pagina = 1): Respuesta
     {
         $titulo = $producto ? 'Editar producto' : 'Nuevo producto';
         $categorias = array_values(array_filter(
@@ -243,11 +245,7 @@ final class ProductoController extends Controller
             'v' => $valores,
             'errores' => $errores,
             'categorias' => $categorias,
-            'precios' => $producto ? DB::filas(
-                "SELECT b.creado_en, u.nombre, b.detalle FROM bitacora b LEFT JOIN usuarios u ON u.id = b.usuario_id
-                 WHERE b.accion = 'producto.precio' AND b.entidad_id = ? ORDER BY b.id DESC LIMIT 10",
-                [(string) $producto['id']],
-            ) : [],
+            'historial' => $producto ? Producto::historialPrecios((int) $producto['id'], $pagina) : null,
         ], $errores ? 422 : 200);
     }
 

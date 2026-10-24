@@ -89,6 +89,21 @@ final class Producto
         DB::consulta("UPDATE productos SET {$campo} = ? WHERE id = ?", [$valor ? 1 : 0, $id]);
     }
 
+    /** HU-19: reutiliza la bitácora existente, sin perder cambios antiguos. */
+    public static function historialPrecios(int $id, int $pagina = 1): array
+    {
+        $total = (int) DB::valor("SELECT COUNT(*) FROM bitacora
+            WHERE accion = 'producto.precio' AND entidad = 'productos' AND entidad_id = ?", [(string) $id]);
+        $paginas = max(1, (int) ceil($total / 10));
+        $pagina = max(1, min($pagina, $paginas));
+        $desde = ($pagina - 1) * 10;
+        $filas = DB::filas("SELECT b.creado_en, u.nombre, b.detalle
+            FROM bitacora b LEFT JOIN usuarios u ON u.id = b.usuario_id
+            WHERE b.accion = 'producto.precio' AND b.entidad = 'productos' AND b.entidad_id = ?
+            ORDER BY b.id DESC LIMIT 10 OFFSET {$desde}", [(string) $id]);
+        return compact('filas', 'total', 'pagina', 'paginas');
+    }
+
     private static function valores(array $d): array
     {
         return [

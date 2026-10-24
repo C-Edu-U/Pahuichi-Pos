@@ -1,7 +1,7 @@
 <?php
 /**
  * Alta y edición de producto. Variables: $producto (null en el alta), $v (valores del
- * formulario), $errores, $categorias, $precios (cambios de precio desde la bitácora).
+ * formulario), $errores, $categorias, $historial (cambios de precio paginados desde la bitácora).
  */
 use App\Models\Producto;
 
@@ -106,18 +106,32 @@ $casillas = [
 <?php if ($producto): ?>
           <section class="grupo-campos historial-precios" aria-labelledby="t-historial-precio">
             <h2 class="grupo-campos__titulo" id="t-historial-precio">Cambios de precio</h2>
-<?php if ($precios === []): ?>
-            <p class="grupo-campos__ayuda campo--ancho">El precio no cambió desde que se cargó el producto.</p>
+<?php if ($historial['filas'] === []): ?>
+            <p class="grupo-campos__ayuda campo--ancho">Todavía no hay cambios de precio registrados.</p>
 <?php else: ?>
-            <table class="tabla tabla--compacta campo--ancho">
+            <div class="historial-precios__tabla campo--ancho" tabindex="0" role="region" aria-label="Historial de cambios de precio">
+            <table class="tabla tabla--compacta">
               <caption class="visualmente-oculto">Cambios de precio</caption>
               <thead><tr><th scope="col">Fecha</th><th scope="col">Usuario</th><th scope="col" class="col-num">Antes</th><th scope="col" class="col-num">Después</th></tr></thead>
               <tbody>
-<?php foreach ($precios as $cambio): $d = json_decode((string) $cambio['detalle'], true) ?: []; ?>
-                <tr><td class="num"><?= e((new DateTimeImmutable($cambio['creado_en']))->format('d/m/Y H:i')) ?></td><td><?= e($cambio['nombre'] ?? '') ?></td><td class="col-num num"><?= bs($d['antes'] ?? 0) ?></td><td class="col-num num"><?= bs($d['despues'] ?? 0) ?></td></tr>
+<?php foreach ($historial['filas'] as $cambio): $d = json_decode((string) $cambio['detalle'], true) ?: []; ?>
+                <tr><td class="num"><?= e((new DateTimeImmutable($cambio['creado_en']))->format('d/m/Y H:i')) ?></td><td><?= e($cambio['nombre'] ?? 'Usuario no disponible') ?></td><td class="col-num num"><?= bs($d['antes'] ?? 0) ?></td><td class="col-num num"><?= bs($d['despues'] ?? 0) ?></td></tr>
 <?php endforeach; ?>
               </tbody>
             </table>
+            </div>
+            <p class="grupo-campos__ayuda campo--ancho"><?= (int) $historial['total'] ?> cambios registrados. Precios en bolivianos (Bs).</p>
+<?php if ($historial['paginas'] > 1): ?>
+            <nav class="paginacion campo--ancho" aria-label="Páginas de cambios de precio">
+<?php if ($historial['pagina'] > 1): ?>
+              <a class="boton boton--sm" href="<?= e($accion . '/editar?historial=' . ($historial['pagina'] - 1) . '#t-historial-precio') ?>">Anterior</a>
+<?php else: ?><span></span><?php endif; ?>
+              <span class="paginacion__estado num">Página <?= (int) $historial['pagina'] ?> de <?= (int) $historial['paginas'] ?></span>
+<?php if ($historial['pagina'] < $historial['paginas']): ?>
+              <a class="boton boton--sm" href="<?= e($accion . '/editar?historial=' . ($historial['pagina'] + 1) . '#t-historial-precio') ?>">Siguiente</a>
+<?php else: ?><span></span><?php endif; ?>
+            </nav>
+<?php endif; ?>
 <?php endif; ?>
           </section>
 <?php endif; ?>
