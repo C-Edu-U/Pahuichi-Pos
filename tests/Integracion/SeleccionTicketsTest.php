@@ -55,6 +55,7 @@ final class SeleccionTicketsTest extends CasoPrueba
         $b=Bitacora::ultimos('factura.reimpresion');$this->assertCount($modo==='1'?count($tipos):0,$b);
         foreach ($b as $fila) {
             $d=json_decode($fila['detalle'],true);$this->assertContains($d['tipo'],$tipos);
+            $this->assertSame('ver',$d['operacion']);
             $this->assertSame($d['tipo']==='comanda'?'cocina':'caja',$d['destino']);
         }
         $this->assertSame($antes,Factura::buscar($this->id));
@@ -70,7 +71,7 @@ final class SeleccionTicketsTest extends CasoPrueba
         $this->assertSame(7,preg_match_all('~/Type /Page\b~',$r->cuerpo));
         $this->assertStringContainsString('attachment;',$r->cabeceras['Content-Disposition']);
         $this->assertCount(3,Bitacora::ultimos('factura.reimpresion'));
-        foreach(Bitacora::ultimos('factura.reimpresion') as $b){$d=json_decode($b['detalle'],true);$this->assertSame($d['tipo']==='comanda'?3:2,$d['copias']);}
+        foreach(Bitacora::ultimos('factura.reimpresion') as $b){$d=json_decode($b['detalle'],true);$this->assertSame($d['tipo']==='comanda'?3:2,$d['copias']);$this->assertSame('descargar',$d['operacion']);}
     }
     public function testRechazaSeleccionManipuladaSinGenerarRegistros(): void
     {

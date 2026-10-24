@@ -50,7 +50,7 @@ final class EntregaInicialTicketsTest extends CasoPrueba
         $this->assertStringContainsString('>Ver tickets</a>', $this->get('/ventas')->cuerpo);
     }
 
-    public function testReimpresionCambiaSoloLaMarcaYAuditaTresTicketsSinModificarVenta(): void
+    public function testReimpresionCambiaSoloLaMarcaSinRegistrarPdfNiModificarVenta(): void
     {
         $antes = Factura::buscar($this->id); $correlativos = DB::filas('SELECT * FROM correlativos');
         $normal = $this->get($this->url)->cuerpo;
@@ -66,12 +66,7 @@ final class EntregaInicialTicketsTest extends CasoPrueba
             $this->assertSame($n->saveHTML($n->getElementById('ticket-' . $tipo)),
                 str_replace('class="ticket__reimpresion"', 'class="ticket__reimpresion" hidden', $re->saveHTML($re->getElementById('ticket-' . $tipo))));
         }
-        $b = Bitacora::ultimos('factura.reimpresion'); $this->assertCount(3, $b);
-        foreach ($b as $fila) {
-            $this->assertSame($this->cajero, (int) $fila['usuario_id']);
-            $this->assertSame($this->id, (int) $fila['entidad_id']);
-            $this->assertSame('vista', json_decode($fila['detalle'], true)['medio']);
-        }
+        $this->assertCount(0, Bitacora::ultimos('factura.reimpresion'));
         $this->assertSame($antes, Factura::buscar($this->id));
         $this->assertSame($correlativos, DB::filas('SELECT * FROM correlativos'));
         $this->assertSame(1, (int) DB::valor('SELECT COUNT(*) FROM ventas'));

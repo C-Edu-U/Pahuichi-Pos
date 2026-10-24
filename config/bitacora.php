@@ -87,6 +87,7 @@ return [
         // Llegan con sus historias (Sprint 3 a 5)
         'venta.cobro' => ['Venta cobrada', 'ventas', 'ok'],
         'factura.reimpresion' => ['Reimpresión de tickets', 'ventas', 'aviso'],
+        'factura.entrada_reimpresion' => ['Entró a Reimpresión', 'ventas', 'neutra'],
         'venta.anulacion' => ['Anulación de venta', 'ventas', 'peligro'],
         'venta.descuento_manual' => ['Descuento manual', 'ventas', 'aviso'],
         'impresion.reimpresion' => ['Reimpresión', 'ventas', 'aviso'],

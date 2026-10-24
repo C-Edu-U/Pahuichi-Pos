@@ -41,10 +41,12 @@ final class FacturaController extends Controller
         if (!in_array($modo, ['0', '1'], true)) throw new ErrorHttp(422, 'Modo de tickets no válido.');
         $reimpresion = $modo === '1';
         if ($reimpresion) {
-            try { ReimpresionService::registrarVista($f); }
+            try { ReimpresionService::validar($f); }
             catch (DomainException $e) { throw new ErrorHttp(422, $e->getMessage()); }
         }
-        return $this->pantallaTickets($f, $reimpresion);
+        $respuesta = $this->pantallaTickets($f, $reimpresion);
+        ReimpresionService::cambiarVista($f, $reimpresion);
+        return $respuesta;
     }
 
     /** Compatibilidad con enlaces de la revisión anterior. */
@@ -90,6 +92,7 @@ final class FacturaController extends Controller
             if (array_key_exists('seleccion', $peticion->query) && $seleccion === '') throw new DomainException('Elige una opción de la lista de documentos.');
             if (!in_array($peticion->consulta('descargar', '0'), ['0', '1'], true)) throw new DomainException('Elige Ver PDF o Descargar PDF.');
             $salida = $seleccion !== '' ? TicketsPdf::prepararSeleccion($seleccion) : TicketsPdf::preparar($destino, $soloFactura);
+            $salida['descargar'] = $peticion->consulta('descargar') === '1';
             $pdf = $modo === '1' ? ReimpresionService::generarLote($f, $salida)
                 : EntregaInicialService::generarDocumento($f, $salida);
         } catch (DomainException $e) {
@@ -102,7 +105,7 @@ final class FacturaController extends Controller
     {
         $f = $this->permitida((int) $peticion->parametro('id'));
         try {
-            $pdf = ReimpresionService::generar($f, $peticion->entrada('tipo', 'copia'));
+            $pdf = ReimpresionService::generar($f, $peticion->entrada('tipo', 'copia'), $peticion->entrada('descargar') === '1');
         } catch (DomainException $e) {
             throw new ErrorHttp(422, $e->getMessage());
         }

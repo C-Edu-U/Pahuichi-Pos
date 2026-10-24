@@ -87,6 +87,68 @@ final class ReimpresionTicketsTest extends CasoPrueba
         $this->assertSame(1, (int) DB::valor('SELECT COUNT(*) FROM pagos'));
     }
 
+    public function testEntradaSeRegistraUnaVezYSeRepiteSoloAlVolverDesdeVerTickets(): void
+    {
+        $url = '/facturas/' . $this->factura;
+        $this->get($url);
+        $this->assertCount(0, Bitacora::ultimos('factura.entrada_reimpresion'));
+        for ($i = 0; $i < 10; $i++) {
+            $this->assertSame(200, $this->get($url, ['reimpresion' => '1'])->estado);
+        }
+        $entradas = Bitacora::ultimos('factura.entrada_reimpresion');
+        $this->assertCount(1, $entradas);
+        $this->assertSame($this->cajero, (int) $entradas[0]['usuario_id']);
+        $this->assertSame($this->factura, (int) $entradas[0]['entidad_id']);
+        $this->assertSame('entrada', json_decode($entradas[0]['detalle'], true)['accion']);
+        $this->assertCount(0, Bitacora::ultimos('factura.reimpresion'));
+        $this->get($url);
+        $this->get($url);
+        $this->assertCount(1, Bitacora::ultimos('factura.entrada_reimpresion'));
+        $this->get($url, ['reimpresion' => '1']);
+        $this->assertCount(2, Bitacora::ultimos('factura.entrada_reimpresion'));
+        $this->get($url . '/pdf', ['seleccion' => 'copia', 'reimpresion' => '1', 'descargar' => '1']);
+        $this->assertCount(1, Bitacora::ultimos('factura.reimpresion'));
+        $this->get($url, ['reimpresion' => '1']);
+        $this->assertCount(2, Bitacora::ultimos('factura.entrada_reimpresion'));
+        $admin = $this->entrarComo('admin');
+        $this->get($url, ['reimpresion' => '1']);
+        $this->get($url, ['reimpresion' => '1']);
+        $entradas = Bitacora::ultimos('factura.entrada_reimpresion');
+        $this->assertCount(3, $entradas);
+        $this->assertSame((int) $admin['id'], (int) $entradas[0]['usuario_id']);
+        $html = $this->get('/bitacora', ['accion' => 'factura.entrada_reimpresion'])->cuerpo;
+        $this->assertStringContainsString('Entró a Reimpresión', $html);
+    }
+
+    public function testEntrarCambiarDeModoYRecargarNoRegistraPeroPedirPdfSi(): void
+    {
+        $url = '/facturas/' . $this->factura;
+        // Reproduce los clics repetidos que antes añadían tres filas por petición.
+        foreach (['mariela', 'admin'] as $usuario) {
+            $this->entrarComo($usuario, $usuario === 'admin' ? 'clave' : 'pin');
+            for ($i = 0; $i < 10; $i++) {
+                $this->assertSame(200, $this->get($url, ['reimpresion' => '1'])->estado);
+                $this->assertSame(200, $this->get($url)->estado);
+            }
+        }
+        $this->assertCount(0, Bitacora::ultimos('factura.reimpresion'));
+        $r = $this->get($url . '/pdf', ['reimpresion' => '1', 'seleccion' => 'copia']);
+        $this->assertSame(200, $r->estado);
+        $this->assertCount(1, Bitacora::ultimos('factura.reimpresion'));
+        $this->assertSame('ver', json_decode(Bitacora::ultimos('factura.reimpresion')[0]['detalle'], true)['operacion']);
+        for ($i = 0; $i < 10; $i++) $this->get($url, ['reimpresion' => '1']);
+        $this->assertCount(1, Bitacora::ultimos('factura.reimpresion'));
+        $r = $this->get($url . '/pdf', ['reimpresion' => '1', 'seleccion' => 'caja', 'descargar' => '1']);
+        $this->assertSame(200, $r->estado);
+        $registros = Bitacora::ultimos('factura.reimpresion');
+        $this->assertCount(3, $registros);
+        foreach (array_slice($registros, 0, 2) as $fila) {
+            $detalle = json_decode($fila['detalle'], true);
+            $this->assertSame('descargar', $detalle['operacion']);
+            $this->assertContains($detalle['tipo'], ['copia', 'factura']);
+        }
+    }
+
     public function testDescargaRepetidaConservaSnapshotAunqueCambieElCatalogo(): void
     {
         $antes = Factura::buscar($this->factura);
