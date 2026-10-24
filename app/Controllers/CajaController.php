@@ -14,12 +14,12 @@ use App\Models\Bitacora;
 use App\Models\Arqueo;
 use App\Models\Caja;
 use App\Models\MovimientoCaja;
-use App\Models\Negocio;
 use App\Models\Turno;
 use App\Services\ArqueoService;
 use App\Services\CajaService;
 use App\Services\ConteoService;
 use App\Services\MovimientoCajaService;
+use App\Services\ReporteCierre;
 use DomainException;
 
 /**
@@ -286,7 +286,10 @@ final class CajaController extends Controller
         ], $estado);
     }
 
-    /** Reporte de cierre: se imprime y se guarda en PDF (HU-25). */
+    /**
+     * Reporte de cierre en PDF (HU-25), con lo guardado al confirmar el arqueo. Se abre en
+     * el visor del navegador, desde donde se imprime; con ?descargar=1 se descarga.
+     */
     public function reporte(Peticion $peticion): Respuesta
     {
         $id = (int) $peticion->parametro('id');
@@ -295,31 +298,20 @@ final class CajaController extends Controller
             throw ErrorHttp::noEncontrado();
         }
         $this->exigirPropia($caja);
-        $conteo = Arqueo::porCaja($id);
-        if ($conteo === null) {
-            return $this->redirigirConAviso('/caja', 'Esa caja todavía no tiene arqueo.');
+        $arqueo = Arqueo::porCaja($id);
+        if ($arqueo === null || $arqueo['cerrado_en'] === null) {
+            return $this->redirigirConAviso('/caja', 'El reporte de cierre sale cuando la caja se cierra con su arqueo.');
         }
 
-        $esperado = $conteo['efectivo_esperado'] !== null
-            ? (float) $conteo['efectivo_esperado']
-            : ArqueoService::esperado($caja);
-        $diferencia = $conteo['diferencia'] !== null
-            ? (float) $conteo['diferencia']
-            : ArqueoService::diferencia((float) $conteo['total_contado'], $esperado);
-        $resumen = $conteo['resumen'] ?: ArqueoService::resumen($id);
-
-        return $this->vista('caja/reporte', [
-            'titulo' => 'Reporte de cierre',
-            'css' => ['reporte-cierre.css'],
-            'js' => ['reporte.js'],
-            'caja' => $caja,
-            'conteo' => $conteo,
-            'esperado' => $esperado,
-            'diferencia' => $diferencia,
-            'resumen' => $resumen,
-            'movimientos' => MovimientoCaja::porCaja($id),
-            'negocio' => Negocio::obtener(),
-        ], 200, 'layouts/simple');
+        $bytes = ReporteCierre::pdf(ReporteCierre::datos($caja, $arqueo));
+        $disposicion = $peticion->consulta('descargar') === '1' ? 'attachment' : 'inline';
+        return new Respuesta($bytes, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => $disposicion . '; filename="' . ReporteCierre::nombreArchivo($caja) . '"',
+            'Content-Length' => (string) strlen($bytes),
+            'Cache-Control' => 'private, no-store',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     /** Reabre una caja cerrada para repetir el turno (solo administrador). */
