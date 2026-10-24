@@ -100,6 +100,60 @@ final class MovimientosCajaTest extends CasoPrueba
         $this->assertCount(1, Bitacora::ultimos('caja.ingreso'));
     }
 
+    private function egreso(string $monto)
+    {
+        return $this->post('/caja/movimientos', ['tipo' => 'egreso', 'monto' => $monto, 'motivo' => 'retiro de prueba']);
+    }
+
+    /**
+     * Escenario: Un egreso no supera el efectivo de la caja
+     *   Dado una caja con Bs 300 de fondo y sin ventas
+     *   Cuando registro un egreso de Bs 300, y después otro de Bs 0,01
+     *   Entonces el primero se guarda y el segundo se rechaza sin decirle al cajero cuánto hay
+     */
+    public function testUnEgresoNoSuperaElEfectivoDeLaCaja(): void
+    {
+        $this->assertRedirige('/caja', $this->egreso('300'));
+        $r = $this->egreso('0,01');
+
+        $this->assertSame(422, $r->estado);
+        $this->assertStringContainsString('El egreso supera el efectivo que debería haber en caja. Revisa el monto.', $r->cuerpo);
+        $this->assertStringNotContainsString('debería haber en caja: Bs', $r->cuerpo);
+        $this->assertSame(1, (int) DB::valor('SELECT COUNT(*) FROM movimientos_caja'));
+    }
+
+    /**
+     * Escenario: Las ventas en efectivo suman al disponible; los QR pendientes, no
+     *   Dado Bs 300 de fondo, una venta en efectivo de Bs 100 y una por QR pendiente de Bs 500
+     *   Cuando registro un egreso de Bs 400
+     *   Entonces se guarda; uno de Bs 400,01 se rechaza
+     */
+    public function testElDisponibleCuentaVentasEnEfectivoYNoQrPendientes(): void
+    {
+        $mariela = (int) DB::valor("SELECT id FROM usuarios WHERE usuario = 'mariela'");
+        $this->ventaDirecta($this->idCaja(), $mariela, 'efectivo', 'confirmado', 100.00);
+        $this->ventaDirecta($this->idCaja(), $mariela, 'qr', 'pendiente', 500.00);
+
+        $this->assertSame(422, $this->egreso('400,01')->estado);
+        $this->assertRedirige('/caja', $this->egreso('400'));
+    }
+
+    public function testAlAdministradorSeLeDiceCuantoHay(): void
+    {
+        $this->entrarComo('admin');
+
+        $r = $this->egreso('350');
+
+        $this->assertSame(422, $r->estado);
+        $this->assertStringContainsString('El egreso supera el efectivo que debería haber en caja: Bs 300,00.', $r->cuerpo);
+    }
+
+    public function testElTopeNoAfectaALosIngresos(): void
+    {
+        $this->assertRedirige('/caja', $this->post('/caja/movimientos', ['tipo' => 'ingreso', 'monto' => '5000', 'motivo' => 'cambio del banco']));
+        $this->assertRedirige('/caja', $this->egreso('5300'));
+    }
+
     public function testNoHayMovimientosSinCajaAbierta(): void
     {
         DB::consulta("UPDATE cajas SET estado = 'cerrada'");
