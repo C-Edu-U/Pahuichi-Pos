@@ -101,7 +101,7 @@ $fecha = static fn (string $momento): string => (new DateTimeImmutable($momento)
             </dl>
             <p class="caja__ciego">
               <?= icono('ocultar', 'icono--sm') ?>
-              Cierre ciego: el efectivo esperado se muestra recién en el resumen, después de contar. Llega con HU-23 a HU-26.
+              Cierre ciego: el efectivo esperado se muestra recién en el arqueo, después de contar.
             </p>
             <div class="panel-bloque__pie">
               <a class="boton boton--primario" href="/caja/cierre"><?= icono('billete') ?> Contar y cerrar caja</a>

@@ -16,6 +16,9 @@ use DomainException;
  */
 final class ConteoService
 {
+    /** Unidades por denominación: más que esto es un error de tipeo. */
+    private const MAXIMO = 9999;
+
     /**
      * @param array<string, mixed> $conteo cantidad escrita por cada clave de denominación
      * @return float total contado
@@ -35,6 +38,9 @@ final class ConteoService
             }
             if (filter_var($escrito, FILTER_VALIDATE_INT) === false || (int) $escrito < 0) {
                 throw new DomainException('Las cantidades deben ser números enteros, sin decimales ni negativos.');
+            }
+            if ((int) $escrito > self::MAXIMO) {
+                throw new DomainException('Revisa las cantidades: cada una va de 0 a ' . self::MAXIMO . '.');
             }
             $limpio[$clave] = (int) $escrito;
         }
