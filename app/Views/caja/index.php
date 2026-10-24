@@ -218,10 +218,7 @@ $fecha = static fn (string $momento): string => (new DateTimeImmutable($momento)
                     <a class="boton boton--fantasma" href="/caja/reporte/<?= (int) $c['id'] ?>" target="_blank" rel="noopener"><?= icono('pdf') ?> Reporte PDF</a>
 <?php endif; ?>
 <?php if ($c['estado'] === 'cerrada' && puede('caja.reabrir')): ?>
-                    <form class="form-inline" method="post" action="/caja/reabrir/<?= (int) $c['id'] ?>" data-confirmar="¿Reabrir esta caja? Se borra su conteo y su arqueo para poder cerrar el turno otra vez.">
-                      <?= csrf_campo() ?>
-                      <button class="boton boton--fantasma" type="submit"><?= icono('reintentar') ?> Reabrir</button>
-                    </form>
+                    <a class="boton boton--fantasma" href="/caja/reabrir/<?= (int) $c['id'] ?>"><?= icono('reintentar') ?> Reabrir</a>
 <?php endif; ?>
                   </td>
                 </tr>

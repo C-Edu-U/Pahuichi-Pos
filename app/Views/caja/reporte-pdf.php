@@ -2,7 +2,8 @@
 /**
  * Reporte de cierre de caja en PDF (HU-25). HTML interno para Dompdf, nunca se entrega
  * al navegador: por eso lleva sus estilos aquí y usa tablas (Dompdf no maneja grid ni flex).
- * Variables: $caja, $arqueo (con lo guardado al cerrar), $resumen, $movimientos, $negocio, $generado.
+ * Variables: $caja, $arqueo (con lo guardado al cerrar), $resumen, $movimientos, $negocio, $generado,
+ * $reemplazados (HU-27: arqueos anteriores, si la caja se reabrió).
  */
 use App\Models\Arqueo;
 use App\Models\Turno;
@@ -126,6 +127,18 @@ thead { display: table-header-group; }
   <tbody>
 <?php foreach ($movimientos as $m): ?>
     <tr><td><?= e(substr((string) $m['creado_en'], 11, 5)) ?></td><td><?= $m['tipo'] === 'ingreso' ? 'Ingreso' : 'Egreso' ?></td><td class="num">Bs <?= bs($m['monto']) ?></td><td><?= e($m['motivo']) ?></td><td><?= e($m['usuario']) ?></td></tr>
+<?php endforeach; ?>
+  </tbody>
+</table>
+<?php endif; ?>
+
+<?php if (!empty($reemplazados)): ?>
+<h2>Arqueos anteriores (caja reabierta)</h2>
+<table class="lista">
+  <thead><tr><th scope="col">Cerrada</th><th scope="col" class="num">Esperado</th><th scope="col" class="num">Contado</th><th scope="col" class="num">Diferencia</th><th scope="col">Reabierta</th><th scope="col">Motivo</th></tr></thead>
+  <tbody>
+<?php foreach ($reemplazados as $r): ?>
+    <tr><td><?= e($fecha($r['cerrado_en'], 'd/m/Y H:i')) ?></td><td class="num"><?= $r['efectivo_esperado'] !== null ? 'Bs ' . bs($r['efectivo_esperado']) : '—' ?></td><td class="num">Bs <?= bs($r['total_contado']) ?></td><td class="num"><?= $r['diferencia'] !== null ? bs($r['diferencia']) : '—' ?></td><td><?= e($fecha($r['reemplazado_en'], 'd/m/Y H:i')) ?> · <?= e($r['reabierta_por_nombre'] ?? '') ?></td><td><?= e($r['motivo_reapertura'] ?? '') ?></td></tr>
 <?php endforeach; ?>
   </tbody>
 </table>

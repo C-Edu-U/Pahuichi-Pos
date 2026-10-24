@@ -315,15 +315,60 @@ final class CajaController extends Controller
     }
 
     /** Reabre una caja cerrada para repetir el turno (solo administrador). */
+    /** Pantalla para reabrir una caja cerrada: muestra su arqueo y pide el motivo (HU-27). */
+    public function confirmarReapertura(Peticion $peticion): Respuesta
+    {
+        $caja = $this->cajaParaReabrir((int) $peticion->parametro('id'));
+        return $caja instanceof Respuesta ? $caja : $this->pantallaReapertura($caja);
+    }
+
     public function reabrir(Peticion $peticion): Respuesta
     {
+        $caja = $this->cajaParaReabrir((int) $peticion->parametro('id'));
+        if ($caja instanceof Respuesta) {
+            return $caja;
+        }
+        $motivo = trim((string) $peticion->entrada('motivo'));
         try {
-            (new CajaService())->reabrir((int) $peticion->parametro('id'));
+            (new CajaService())->reabrir((int) $caja['id'], $motivo, Auth::usuario());
         } catch (DomainException $e) {
-            Sesion::flash('bloqueo', $e->getMessage());
-            return $this->redirigir('/caja');
+            return $this->pantallaReapertura($caja, ['motivo' => $e->getMessage()], $motivo, 422);
         }
         return $this->redirigirConAviso('/caja', 'Caja reabierta: el turno vuelve a estar disponible.');
+    }
+
+    /** La caja cerrada a reabrir, o la redirección con el motivo por el que no se puede. */
+    private function cajaParaReabrir(int $id): array|Respuesta
+    {
+        $caja = Caja::buscar($id);
+        if ($caja === null) {
+            throw ErrorHttp::noEncontrado();
+        }
+        $bloqueo = match (true) {
+            $caja['estado'] !== 'cerrada' => 'Solo se puede reabrir una caja cerrada.',
+            CajaService::abierta() !== null => 'Ya hay una caja abierta: ciérrala antes de reabrir otra.',
+            default => null,
+        };
+        if ($bloqueo !== null) {
+            Sesion::flash('bloqueo', $bloqueo);
+            return $this->redirigir('/caja');
+        }
+        return $caja;
+    }
+
+    private function pantallaReapertura(array $caja, array $errores = [], string $motivo = '', int $estado = 200): Respuesta
+    {
+        return $this->vista('caja/reabrir', [
+            'titulo' => 'Reabrir caja',
+            'modulo' => 'caja',
+            'h1' => 'Reabrir caja',
+            'css' => ['modulos.css'],
+            'js' => [],
+            'caja' => $caja,
+            'arqueo' => Arqueo::porCaja((int) $caja['id']),
+            'motivo' => $motivo,
+            'errores' => $errores,
+        ], $estado);
     }
 
     public function limpiarHistorial(): Respuesta

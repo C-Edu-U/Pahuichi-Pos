@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Core\Reloj;
 use App\Core\Vista;
+use App\Models\Arqueo;
 use App\Models\MovimientoCaja;
 use App\Models\Negocio;
 use Dompdf\Dompdf;
@@ -27,6 +28,7 @@ final class ReporteCierre
             'arqueo' => $arqueo,
             'resumen' => $arqueo['resumen'],
             'movimientos' => MovimientoCaja::porCaja((int) $caja['id']),
+            'reemplazados' => Arqueo::reemplazados((int) $caja['id']),
             'negocio' => Negocio::obtener(),
             'generado' => Reloj::ahora(),
         ];
