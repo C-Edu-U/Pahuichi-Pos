@@ -4,261 +4,152 @@ declare(strict_types=1);
 namespace Tests\Integracion;
 
 use App\Core\DB;
-use App\Core\Migrador;
 use App\Core\Reloj;
-use App\Core\Sesion;
 use App\Models\Bitacora;
 use App\Models\Factura;
-use App\Services\EntregaInicialService;
 use Tests\CasoPrueba;
 
-/** El servidor distingue la entrega inicial de todas las recuperaciones posteriores. */
+/** HU-56 revisada: misma pantalla compacta, modo explícito y perfiles del administrador. */
 final class EntregaInicialTicketsTest extends CasoPrueba
 {
     private int $id;
-    private string $token;
+    private int $cajero;
     private string $url;
-    private array $pedido;
 
     protected function setUp(): void
     {
         parent::setUp();
         Reloj::fijar('2026-10-23 12:00:00');
-        $this->entrarComo('mariela', 'pin');
+        $this->cajero = (int) $this->entrarComo('mariela', 'pin')['id'];
         $this->post('/caja/abrir', ['turno_id' => (int) DB::valor("SELECT id FROM turnos WHERE clave='mediodia'"), 'fondo' => '100']);
         $p = DB::fila("SELECT * FROM productos WHERE codigo='PR-01'");
-        $this->pedido = [
+        $r = $this->post('/pos/cobrar', [
             'uuid' => '12345678-1234-4123-a123-' . bin2hex(random_bytes(6)),
             'caja_id' => (string) DB::valor("SELECT id FROM cajas WHERE estado='abierta'"),
             'tipo' => 'mesa', 'mesa' => '1', 'exacto' => '1', 'total_esperado' => (string) $p['precio'],
             'lineas' => json_encode([['id' => (int) $p['id'], 'cantidad' => 1, 'nota' => 'Sin ají']]),
-        ];
-        $r = $this->post('/pos/cobrar', $this->pedido);
+        ]);
         $this->assertSame(200, $r->estado, $r->cuerpo);
-        $d = json_decode($r->cuerpo, true);
-        $this->id = $d['id']; $this->url = $d['tickets'];
-        parse_str((string) parse_url($this->url, PHP_URL_QUERY), $q);
-        $this->token = $q['entrega'];
+        $d = json_decode($r->cuerpo, true); $this->id = $d['id']; $this->url = '/facturas/' . $this->id;
+        $this->assertSame($this->url, $d['tickets']);
     }
 
-    private function original(string $tipo, array $extra = []): \App\Core\Respuesta
+    public function testVerTicketsAbreLosTresDocumentosConBotonesArribaSinFormularioLargo(): void
     {
-        return $this->post('/facturas/' . $this->id . '/original', $extra + ['destino' => $tipo, 'entrega' => $this->token]);
-    }
-
-    public function testCobroAbreEntregaInicialYConservaPermisoAlReintentar(): void
-    {
-        $r = $this->post('/pos/cobrar', $this->pedido);
-        $this->assertSame($this->url, json_decode($r->cuerpo, true)['tickets']);
-        $html = $this->get('/facturas/' . $this->id . '/originales', ['entrega' => $this->token])->cuerpo;
-        $this->assertStringContainsString('Entrega inicial de tickets', $html);
-        $this->assertStringContainsString('Ver PDF de caja', $html);
-        $this->assertStringNotContainsString('Ver reimpresión en PDF', $html);
-        $this->assertStringContainsString('<p class="ticket__reimpresion" hidden>REIMPRESIÓN</p>', $html);
-        $this->assertCount(0, Bitacora::ultimos('factura.reimpresion'));
-    }
-
-    public function testVerYDescargarConservanElMismoPdfDeCadaPerfil(): void
-    {
-        $f = Factura::buscar($this->id);
-        $contador = DB::filas('SELECT * FROM correlativos');
-        foreach (['caja', 'cocina'] as $destino) {
-            $ver = $this->original($destino);
-            $descargar = $this->original($destino, ['descargar' => '1']);
-            $this->assertSame(200, $ver->estado);
-            $this->assertSame(200, $descargar->estado);
-            $this->assertStringStartsWith('%PDF-', $ver->cuerpo);
-            $this->assertSame($ver->cuerpo, $descargar->cuerpo);
-            $this->assertStringContainsString('inline;', $ver->cabeceras['Content-Disposition']);
-            $this->assertStringContainsString('attachment;', $descargar->cabeceras['Content-Disposition']);
-            $this->assertStringContainsString('Original-' . $destino, $descargar->cabeceras['Content-Disposition']);
+        $html = $this->get($this->url)->cuerpo;
+        $this->assertSame(3, substr_count($html, '<article class="ticket '));
+        $this->assertSame(3, substr_count($html, '<p class="ticket__reimpresion" hidden>REIMPRESIÓN</p>'));
+        foreach (['PDF de tickets', 'Documentos que deseas incluir', 'Qué deseas hacer', '>Reimpresión</a>'] as $boton) {
+            $this->assertStringContainsString($boton, $html);
+            $this->assertLessThan(strpos($html, 'id="tickets"'), strpos($html, $boton));
         }
-        $this->assertSame(['comanda', 'copia', 'factura'], EntregaInicialService::entregados($this->id));
-        $this->assertSame($f, Factura::buscar($this->id));
-        $this->assertSame($contador, DB::filas('SELECT * FROM correlativos'));
-        $this->assertSame(1, (int) DB::valor('SELECT COUNT(*) FROM ventas'));
+        $this->assertStringNotContainsString('Entrega inicial de tickets', $html);
+        $this->assertStringNotContainsString('class="entrega-perfil"', $html);
+        $this->assertStringNotContainsString('data-ancho=', $html);
         $this->assertCount(0, Bitacora::ultimos('factura.reimpresion'));
+        $this->assertStringContainsString('>Ver tickets</a>', $this->get('/ventas')->cuerpo);
     }
 
-    public function testCambiarConfiguracionNoCambiaElArchivoYaAbierto(): void
+    public function testReimpresionCambiaSoloLaMarcaYAuditaTresTicketsSinModificarVenta(): void
     {
-        $caja = $this->original('caja');
-        DB::consulta("UPDATE configuracion_tickets SET factura=0, columnas=32, ancho=58 WHERE destino='caja'");
-        $this->assertSame($caja->cuerpo, $this->original('caja', ['descargar' => '1'])->cuerpo);
-        $this->assertSame(['copia', 'factura'], EntregaInicialService::tipos($this->id, 'caja'));
-        $this->assertSame(422, $this->original('invalido')->estado);
-    }
-
-    public function testEntrarAlHistorialCierraLaEntregaInclusoConLaUrlAnterior(): void
-    {
-        $html = $this->get('/facturas/' . $this->id)->cuerpo;
-        $this->assertStringContainsString('Ver reimpresión en PDF', $html);
-        $this->assertStringNotContainsString('Ver PDF de caja', $html);
-        $this->assertStringNotContainsString('Ver PDF de caja', $html);
-        $this->assertSame(422, $this->original('caja')->estado);
-        $this->assertRedirige('/facturas/' . $this->id, $this->get('/facturas/' . $this->id . '/originales', ['entrega' => $this->token]));
-        $retry = json_decode($this->post('/pos/cobrar', $this->pedido)->cuerpo, true);
-        $this->assertSame('/facturas/' . $this->id, $retry['tickets']);
-        $this->assertSame(200, $this->post('/facturas/' . $this->id . '/reimpresion', ['tipo' => 'copia'])->estado);
-        $this->assertCount(1, Bitacora::ultimos('factura.reimpresion'));
-    }
-
-    public function testAbrirListaDeVentasTambienCierraLaEntrega(): void
-    {
-        $this->assertSame(200, $this->get('/ventas')->estado);
-        $this->assertSame(422, $this->original('caja')->estado);
-    }
-
-    public function testElServidorConvierteLasUrlPdfAntiguasEnReimpresionesAuditadas(): void
-    {
-        $r = $this->get('/facturas/' . $this->id . '/pdf', ['solo' => 'factura', 'original' => '1', 'entrega' => $this->token]);
-        $this->assertSame(200, $r->estado);
-        $this->assertStringContainsString('Reimpresion-', $r->cabeceras['Content-Disposition']);
-        $b = Bitacora::ultimos('factura.reimpresion');
-        $this->assertCount(1, $b);
-        $this->assertSame('factura', json_decode($b[0]['detalle'], true)['tipo']);
-        $this->assertSame(422, $this->original('caja')->estado);
-    }
-
-    public function testNoHayCaducidadArbitrariaDeTreintaMinutos(): void
-    {
-        Reloj::fijar('2026-10-23 12:31:00');
-        $this->assertSame(200, $this->original('caja')->estado);
-        $html = $this->get('/facturas/' . $this->id . '/originales', ['entrega' => $this->token])->cuerpo;
-        $this->assertStringNotContainsString('30 minutos', $html);
-        $this->assertStringContainsString('Descargar PDF de cocina', $html);
-        $this->assertStringNotContainsString('original-tipo', $html);
-    }
-
-    public function testExigeCsrfPermisoDeSesionYAccesoALaVenta(): void
-    {
-        $this->assertSame(403, $this->original('caja', ['_csrf' => 'incorrecto'])->estado);
-        $this->assertSame(422, $this->original('caja', ['entrega' => 'falso'])->estado);
-        $this->entrarComo('jorge', 'pin');
-        $this->assertSame(403, $this->original('caja')->estado);
-        $this->entrarComo('admin');
-        $this->assertSame(422, $this->original('caja')->estado);
-        $this->assertSame([], EntregaInicialService::entregados($this->id));
-    }
-
-    public function testCerrarSesionNoPermiteCrearOtraEntregaInicial(): void
-    {
-        Sesion::enMemoria(); $this->entrarComo('mariela', 'pin');
-        $this->assertSame(422, $this->original('caja')->estado);
-        $retry = json_decode($this->post('/pos/cobrar', $this->pedido)->cuerpo, true);
-        $this->assertSame('/facturas/' . $this->id, $retry['tickets']);
-    }
-
-    public function testLasFacturasPreviasALaMigracionSonHistoricas(): void
-    {
-        DB::consulta('DELETE FROM entregas_tickets WHERE factura_id=?', [$this->id]);
-        $sql = file_get_contents(dirname(__DIR__, 2) . '/database/migraciones/065_hu56_entregas_tickets.sql');
-        $sentencias = Migrador::sentencias($sql);
-        DB::consulta($sentencias[count($sentencias) - 1]);
-        $this->assertNull(EntregaInicialService::abrir(Factura::buscar($this->id)));
-        $this->assertSame(422, $this->original('caja')->estado);
-    }
-    public function testConsultaAdministrativaDeLaMismaFacturaSinReabrirEntregaNiCambiarDatos(): void
-    {
-        $this->get('/facturas/' . $this->id);
-        $antes = Factura::buscar($this->id);
-        $correlativos = DB::filas('SELECT * FROM correlativos');
-        $pagos = DB::filas('SELECT * FROM pagos');
-        $this->entrarComo('admin');
-        $html = $this->get('/facturas/' . $this->id)->cuerpo;
-        $this->assertStringContainsString('Consultar documentos emitidos', $html);
-        $this->assertStringNotContainsString('trucoticket', $html);
-        $r = $this->post('/facturas/' . $this->id . '/acceso-original');
-        $this->assertSame(303, $r->estado, $r->cuerpo);
-        $url = $r->cabeceras['Location'];
-        $this->assertStringStartsWith('/facturas/' . $this->id . '/originales?', $url);
-        parse_str((string) parse_url($url, PHP_URL_QUERY), $q);
-        $this->token = $q['entrega'];
-        $this->assertSame(1, (int) DB::valor('SELECT cerrada FROM entregas_tickets WHERE factura_id=?', [$this->id]));
-        $this->assertSame(200, $this->original('caja')->estado);
-        $this->assertStringContainsString('Documentos emitidos de esta venta',
-            $this->get('/facturas/' . $this->id . '/originales', $q)->cuerpo);
+        $antes = Factura::buscar($this->id); $correlativos = DB::filas('SELECT * FROM correlativos');
+        $normal = $this->get($this->url)->cuerpo;
+        $r = $this->get($this->url, ['reimpresion' => '1']);
+        $this->assertSame(200, $r->estado, $r->cuerpo);
+        $this->assertSame(3, substr_count($r->cuerpo, '<p class="ticket__reimpresion">REIMPRESIÓN</p>'));
+        foreach (['caja', 'cocina'] as $destino) {
+            $this->assertStringContainsString('name="reimpresion" value="1"', $r->cuerpo);
+            $this->assertStringContainsString('name="reimpresion" value="0"', $normal);
+        }
+        $n = new \DOMDocument(); @$n->loadHTML($normal); $re = new \DOMDocument(); @$re->loadHTML($r->cuerpo);
+        foreach (['comanda', 'copia', 'factura'] as $tipo) {
+            $this->assertSame($n->saveHTML($n->getElementById('ticket-' . $tipo)),
+                str_replace('class="ticket__reimpresion"', 'class="ticket__reimpresion" hidden', $re->saveHTML($re->getElementById('ticket-' . $tipo))));
+        }
+        $b = Bitacora::ultimos('factura.reimpresion'); $this->assertCount(3, $b);
+        foreach ($b as $fila) {
+            $this->assertSame($this->cajero, (int) $fila['usuario_id']);
+            $this->assertSame($this->id, (int) $fila['entidad_id']);
+            $this->assertSame('vista', json_decode($fila['detalle'], true)['medio']);
+        }
         $this->assertSame($antes, Factura::buscar($this->id));
         $this->assertSame($correlativos, DB::filas('SELECT * FROM correlativos'));
-        $this->assertSame($pagos, DB::filas('SELECT * FROM pagos'));
-        $b = Bitacora::ultimos('factura.consulta_original');
-        $this->assertCount(1, $b);
-        $this->assertSame($this->id, (int) $b[0]['entidad_id']);
-        $this->assertCount(0, Bitacora::ultimos('factura.reimpresion'));
-        $this->get('/facturas/' . $this->id);
-        $this->assertSame(422, $this->original('caja')->estado);
+        $this->assertSame(1, (int) DB::valor('SELECT COUNT(*) FROM ventas'));
+        $this->assertSame(1, (int) DB::valor('SELECT COUNT(*) FROM pagos'));
     }
 
-    public function testConsultaOriginalExigeAdministradorYCsrf(): void
+    public function testCadaVistaUsaSuAnchoConfiguradoSinAceptarCambiosDelCajero(): void
     {
-        $this->assertStringNotContainsString('Consultar documentos emitidos',
-            $this->get('/facturas/' . $this->id)->cuerpo);
-        $this->assertSame(403, $this->post('/facturas/' . $this->id . '/acceso-original')->estado);
-        $this->entrarComo('admin');
-        $this->assertSame(403, $this->post('/facturas/' . $this->id . '/acceso-original', ['_csrf'=>'falso'])->estado);
-        $this->assertSame(404, $this->post('/facturas/999999999/acceso-original')->estado);
-        $this->assertCount(0, Bitacora::ultimos('factura.consulta_original'));
+        DB::consulta("UPDATE configuracion_tickets SET ancho=58, columnas=32 WHERE destino='caja'");
+        DB::consulta("UPDATE configuracion_tickets SET ancho=76, columnas=42 WHERE destino='cocina'");
+        foreach (['0', '1'] as $modo) {
+            $html = $this->get($this->url, ['reimpresion' => $modo, 'ancho' => '76'])->cuerpo;
+            $this->assertStringContainsString('ticket-col--58" data-ticket="copia"', $html);
+            $this->assertStringContainsString('ticket-col--58" data-ticket="factura"', $html);
+            $this->assertStringContainsString('ticket-col--76" data-ticket="comanda"', $html);
+            $this->assertStringNotContainsString('data-ancho=', $html);
+            $caja = $this->get($this->url . '/pdf', ['destino' => 'caja', 'reimpresion' => $modo]);
+            $this->assertSame(200, $caja->estado);
+            $this->assertMatchesRegularExpression('~/MediaBox\s*\[0\.000 0\.000 164\.409~', $caja->cuerpo);
+            $cocina = $this->get($this->url . '/pdf', ['destino' => 'cocina', 'reimpresion' => $modo]);
+            $this->assertSame(200, $cocina->estado);
+            $this->assertMatchesRegularExpression('~/MediaBox\s*\[0\.000 0\.000 215\.433~', $cocina->cuerpo);
+        }
     }
 
-    public function testConsultaOriginalRechazaFacturaAnulada(): void
+    public function testCajeroYAdministradorConsultanSinActivarPermisoYSinCaducidadDeEntrega(): void
     {
+        \App\Models\Configuracion::guardar('tickets_originales_cajeros', '0');
+        $this->get('/ventas'); Reloj::fijar('2026-10-23 12:40:00');
+        $this->assertSame(200, $this->get($this->url . '/pdf')->estado);
         $this->entrarComo('admin');
-        DB::consulta("UPDATE facturas SET estado='anulada' WHERE id=?", [$this->id]);
-        $this->assertSame(422, $this->post('/facturas/' . $this->id . '/acceso-original')->estado);
-        $this->assertCount(0, Bitacora::ultimos('factura.consulta_original'));
-    }
-
-    public function testConsultaOriginalNoSeTransfiereAOtraSesion(): void
-    {
-        $this->get('/facturas/' . $this->id);
-        $this->entrarComo('admin');
-        $r=$this->post('/facturas/' . $this->id . '/acceso-original');
-        parse_str((string) parse_url($r->cabeceras['Location'], PHP_URL_QUERY), $q);
-        Sesion::enMemoria(); $this->entrarComo('admin');
-        $this->token=$q['entrega'];
-        $this->assertSame(422, $this->original('caja')->estado);
-    }
-
-    public function testCajeroPuedeConsultarAlActivarYSeRevocaInclusoElPdfCacheado(): void
-    {
-        $this->get('/facturas/' . $this->id);
-        $this->entrarComo('admin');
-        $this->assertSame(303, $this->post('/config/tickets-originales', ['originales_cajeros' => '1'])->estado);
+        $this->assertSame(200, $this->get($this->url . '/pdf')->estado);
         $html = $this->get('/config')->cuerpo;
-        $this->assertStringContainsString('name="originales_cajeros" value="1" checked', $html);
-        $this->entrarComo('mariela', 'pin');
-        $this->assertStringContainsString('Consultar documentos emitidos', $this->get('/facturas/' . $this->id)->cuerpo);
-        $r = $this->post('/facturas/' . $this->id . '/acceso-original');
-        $this->assertSame(303, $r->estado, $r->cuerpo);
-        parse_str((string) parse_url($r->cabeceras['Location'], PHP_URL_QUERY), $q);
-        $this->token = $q['entrega'];
-        $ver = $this->original('caja');
-        $this->assertSame(200, $ver->estado);
-        $this->assertSame($ver->cuerpo, $this->original('caja', ['descargar' => '1'])->cuerpo);
-        $b = Bitacora::ultimos('factura.consulta_original');
-        $this->assertCount(1, $b);
-        $this->assertSame('cajero', json_decode($b[0]['detalle'], true)['usuario_rol']);
-        // Revocación por otra sesión: conserva la sesión del cajero y su PDF ya generado.
-        \App\Models\Configuracion::guardar(\App\Models\Configuracion::ORIGINALES_CAJEROS, '0');
-        $this->assertSame(422, $this->original('caja')->estado);
-        $this->assertRedirige('/facturas/' . $this->id,
-            $this->get('/facturas/' . $this->id . '/originales', $q));
-        $this->assertSame(403, $this->post('/facturas/' . $this->id . '/acceso-original')->estado);
+        $this->assertStringNotContainsString('originales_cajeros', $html);
+        $this->assertSame(404, $this->post('/config/tickets-originales')->estado);
+        $this->assertStringContainsString('id="i-caja-ancho"', $html);
     }
 
-    public function testSoloAdministradorPuedeCambiarPermisoYCajeroNoAccedeAVentaAjena(): void
+    public function testPdfNormalYReimpresoSeDistinguenYRespetanDescargaYSoloFactura(): void
     {
-        $this->assertSame(403, $this->post('/config/tickets-originales', ['originales_cajeros' => '1'])->estado);
-        $this->entrarComo('admin');
-        $this->assertSame(403, $this->post('/config/tickets-originales', ['_csrf' => 'falso', 'originales_cajeros' => '1'])->estado);
-        $this->assertSame(303, $this->post('/config/tickets-originales', ['originales_cajeros' => '1'])->estado);
-        $this->entrarComo('jorge', 'pin');
-        $this->assertSame(403, $this->post('/facturas/' . $this->id . '/acceso-original')->estado);
-        $this->entrarComo('admin');
-        $this->assertSame(303, $this->post('/config/tickets-originales')->estado);
-        $this->assertSame('0', \App\Models\Configuracion::valor(\App\Models\Configuracion::ORIGINALES_CAJEROS));
-        $this->assertStringContainsString('Consultar documentos emitidos', $this->get('/facturas/' . $this->id)->cuerpo);
-        $this->assertCount(2, Bitacora::ultimos('config.tickets_originales'));
+        $normal = $this->get($this->url . '/pdf', ['solo' => 'factura']);
+        $this->assertSame(200, $normal->estado);
+        $this->assertStringContainsString('Tickets-caja-', $normal->cabeceras['Content-Disposition']);
+        $this->assertCount(0, Bitacora::ultimos('factura.reimpresion'));
+        $re = $this->get($this->url . '/pdf', ['solo' => 'factura', 'reimpresion' => '1', 'descargar' => '1']);
+        $this->assertSame(200, $re->estado);
+        $this->assertStringContainsString('attachment;', $re->cabeceras['Content-Disposition']);
+        $this->assertStringContainsString('Reimpresion-caja-', $re->cabeceras['Content-Disposition']);
+        $b = Bitacora::ultimos('factura.reimpresion'); $this->assertCount(1, $b);
+        $this->assertSame('factura', json_decode($b[0]['detalle'], true)['tipo']);
+        $this->assertSame(422, $this->get($this->url . '/pdf', ['destino' => 'cocina', 'solo' => 'factura'])->estado);
+        $this->assertSame(422, $this->get($this->url, ['reimpresion' => 'invalido'])->estado);
     }
 
+    public function testSeConservanPermisosDeVentaYCajeroNoPuedeEditarPerfiles(): void
+    {
+        $this->assertSame(403, $this->post('/config/tickets/caja', ['ancho' => '58'])->estado);
+        $this->entrarComo('jorge', 'pin');
+        $this->assertSame(403, $this->get($this->url)->estado);
+        $this->assertSame(403, $this->get($this->url, ['reimpresion' => '1'])->estado);
+        $this->assertSame(403, $this->get($this->url . '/pdf')->estado);
+        $this->entrarComo('luis');
+        $this->assertSame(403, $this->get($this->url)->estado);
+    }
+
+    public function testEnlacesAnterioresLlevanALaVistaCompacta(): void
+    {
+        $this->assertRedirige($this->url, $this->get($this->url . '/originales', ['entrega' => 'viejo']));
+        $this->assertRedirige($this->url, $this->post($this->url . '/acceso-original'));
+        $this->assertSame(200, $this->post($this->url . '/original', ['destino' => 'caja'])->estado);
+        $this->assertSame(403, $this->post($this->url . '/original', ['destino' => 'caja', '_csrf' => 'falso'])->estado);
+    }
+
+    public function testVentaAnuladaNoPermiteRegenerarNiReimprimir(): void
+    {
+        DB::consulta("UPDATE facturas SET estado='anulada' WHERE id=?", [$this->id]);
+        $this->assertSame(422, $this->get($this->url . '/pdf')->estado);
+        $this->assertSame(422, $this->get($this->url, ['reimpresion' => '1'])->estado);
+        $this->assertCount(0, Bitacora::ultimos('factura.reimpresion'));
+    }
 }

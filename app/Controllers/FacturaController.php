@@ -30,7 +30,6 @@ final class FacturaController extends Controller
 
     public function index(Peticion $peticion): Respuesta
     {
-        EntregaInicialService::cerrarTodas();
         return $this->vista('facturas/index', ['titulo' => 'Ventas y facturas', 'h1' => 'Ventas y facturas', 'modulo' => 'ventas', 'css' => ['modulos.css'],
             'facturas' => Factura::ultimas(puede('ventas.todas') ? null : Auth::id())]);
     }
@@ -38,66 +37,61 @@ final class FacturaController extends Controller
     public function mostrar(Peticion $peticion): Respuesta
     {
         $f = $this->permitida((int) $peticion->parametro('id'));
-        EntregaInicialService::cerrar((int) $f['id']);
-        return $this->pantallaTickets($f);
+        $modo = $peticion->consulta('reimpresion', '0');
+        if (!in_array($modo, ['0', '1'], true)) throw new ErrorHttp(422, 'Modo de tickets no válido.');
+        $reimpresion = $modo === '1';
+        if ($reimpresion) {
+            try { ReimpresionService::registrarVista($f); }
+            catch (DomainException $e) { throw new ErrorHttp(422, $e->getMessage()); }
+        }
+        return $this->pantallaTickets($f, $reimpresion);
     }
 
+    /** Compatibilidad con enlaces de la revisión anterior. */
     public function originales(Peticion $peticion): Respuesta
     {
         $f = $this->permitida((int) $peticion->parametro('id'));
-        $token = $peticion->consulta('entrega');
-        if (!EntregaInicialService::vigente((int) $f['id'], $token)) return Respuesta::redirigir('/facturas/' . $f['id']);
-        return $this->pantallaTickets($f, true, $token);
+        return Respuesta::redirigir('/facturas/' . $f['id']);
     }
 
     public function accesoOriginal(Peticion $peticion): Respuesta
     {
-        $f = $this->permitida((int) $peticion->parametro('id'));
-        if (!EntregaInicialService::puedeConsultarOriginal()) throw new ErrorHttp(403);
-        try {
-            $token = EntregaInicialService::consultarOriginal($f);
-        } catch (DomainException $e) {
-            throw new ErrorHttp(422, $e->getMessage());
-        }
-        return Respuesta::redirigir('/facturas/' . $f['id'] . '/originales?entrega=' . rawurlencode($token));
+        return $this->originales($peticion);
     }
 
-    private function pantallaTickets(array $f, bool $inicial = false, string $token = ''): Respuesta
+    private function pantallaTickets(array $f, bool $reimpresion = false): Respuesta
     {
         $s = $f['snapshot'];
         return $this->vista('facturas/tickets', ['titulo' => 'Factura N° ' . $f['numero'], 'h1' => 'Pedido ' . $s['pedido'] . ' · factura N° ' . $f['numero'],
             'modulo' => 'ventas', 'claseBody' => 'panel--tickets', 'css' => ['modulos.css', 'tickets.css', 'tickets-hu10.css'],
-            'js' => ['qrcode.js', 'tickets.js', 'anular.js'], 'f' => $f, 's' => $s, 'perfilesTickets' => ConfiguracionTickets::todas(),
-            'consultaOriginal' => $inicial && !empty(\App\Core\Sesion::get('entregas_iniciales', [])[(int) $f['id']]['consulta_original']),
-            'puedeConsultarOriginal' => EntregaInicialService::puedeConsultarOriginal() && $f['estado'] === 'emitida',
-            'entregaInicial' => $inicial, 'tokenEntrega' => $token, 'reimpresion' => !$inicial,
-            'entregados' => EntregaInicialService::entregados((int) $f['id'])]);
+            'js' => ['qrcode.js', 'tickets.js', 'anular.js'], 'f' => $f, 's' => $s,
+            'perfilesTickets' => ConfiguracionTickets::todas(), 'reimpresion' => $reimpresion]);
     }
 
+    /** Las antiguas solicitudes de originales usan el mismo perfil que la barra superior. */
     public function original(Peticion $peticion): Respuesta
     {
         $f = $this->permitida((int) $peticion->parametro('id'));
-        $token = $peticion->entrada('entrega');
-        try {
-            if (!is_string($token)) throw new DomainException('El permiso de entrega no es válido.');
-            $pdf = EntregaInicialService::generar($f, $peticion->entrada('destino'), $token);
-        } catch (DomainException $e) {
-            throw new ErrorHttp(422, $e->getMessage());
-        }
+        try { $pdf = EntregaInicialService::generar($f, $peticion->entrada('destino')); }
+        catch (DomainException $e) { throw new ErrorHttp(422, $e->getMessage()); }
         return $this->entregarPdf($pdf, $peticion->entrada('descargar') === '1');
     }
 
-    /** Compatibilidad: las URL antiguas también regeneran con marca y bitácora, nunca otro original. */
     public function pdf(Peticion $peticion): Respuesta
     {
         $f = $this->permitida((int) $peticion->parametro('id'));
         $destino = $peticion->consulta('destino', 'caja');
         $soloFactura = $peticion->consulta('solo') === 'factura';
+        $modo = $peticion->consulta('reimpresion', '0');
+        if (!in_array($modo, ['0', '1'], true)) throw new ErrorHttp(422, 'Modo de tickets no válido.');
         if ($soloFactura && $destino !== 'caja') throw new ErrorHttp(422, 'La factura individual utiliza el perfil de caja.');
         try {
-            $salida = TicketsPdf::preparar($destino, $soloFactura);
-            EntregaInicialService::cerrar((int) $f['id']);
-            $pdf = ReimpresionService::generarLote($f, $salida);
+            $seleccion = $peticion->consulta('seleccion');
+            if (array_key_exists('seleccion', $peticion->query) && $seleccion === '') throw new DomainException('Elige una opción de la lista de documentos.');
+            if (!in_array($peticion->consulta('descargar', '0'), ['0', '1'], true)) throw new DomainException('Elige Ver PDF o Descargar PDF.');
+            $salida = $seleccion !== '' ? TicketsPdf::prepararSeleccion($seleccion) : TicketsPdf::preparar($destino, $soloFactura);
+            $pdf = $modo === '1' ? ReimpresionService::generarLote($f, $salida)
+                : EntregaInicialService::generarDocumento($f, $salida);
         } catch (DomainException $e) {
             throw new ErrorHttp(422, $e->getMessage());
         }
@@ -108,7 +102,6 @@ final class FacturaController extends Controller
     {
         $f = $this->permitida((int) $peticion->parametro('id'));
         try {
-            EntregaInicialService::cerrar((int) $f['id']);
             $pdf = ReimpresionService::generar($f, $peticion->entrada('tipo', 'copia'));
         } catch (DomainException $e) {
             throw new ErrorHttp(422, $e->getMessage());

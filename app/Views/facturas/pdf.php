@@ -40,8 +40,11 @@ a { color: #000; }
 .comanda__cantidad { margin-right: 1mm; }
 .comanda__nota { display: block; }
 </style></head><body>
-<?php foreach ($tipos as $tipoTicket): for ($pdfCopia = 1; $pdfCopia <= (int) $perfil['copias']; $pdfCopia++): ?>
-<section class="pdf-hoja">
+<?php foreach ($tipos as $tipoTicket):
+    $perfilTicket = isset($perfiles) ? $perfiles[$tipoTicket === 'comanda' ? 'cocina' : 'caja'] : $perfil;
+    $fuenteTicket = ((int) $perfilTicket['ancho'] - 6) * 72 / 25.4 / (int) $perfilTicket['columnas'] / 0.602;
+    for ($pdfCopia = 1; $pdfCopia <= (int) $perfilTicket['copias']; $pdfCopia++): ?>
+<section class="pdf-hoja"<?php if (isset($perfiles)): ?> style="width: <?= (int) $perfilTicket['ancho'] - 6 ?>mm; font-size: <?= $fuenteTicket ?>pt;"<?php endif; ?>>
 <?php require __DIR__ . '/_ticket.php'; ?>
 </section>
 <?php endfor; endforeach; ?>

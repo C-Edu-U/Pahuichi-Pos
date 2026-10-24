@@ -127,10 +127,10 @@ final class ReimpresionTicketsTest extends CasoPrueba
         $this->assertSame(403, $this->post($this->ruta(), ['tipo' => 'copia', '_csrf' => 'incorrecto'])->estado);
         $this->assertSame(405, $this->get($this->ruta())->estado);
         $html = $this->get('/facturas/' . $this->factura)->cuerpo;
-        $this->assertStringContainsString('Reimprimir un ticket', $html);
+        $this->assertStringContainsString('>Reimpresión</a>', $html);
         $this->assertStringContainsString('name="_csrf"', $html);
-        $this->assertStringContainsString('<p class="ticket__reimpresion">REIMPRESIÓN</p>', $html);
-        $this->assertStringNotContainsString('Ver PDF de caja', $html);
+        $this->assertStringContainsString('<p class="ticket__reimpresion" hidden>REIMPRESIÓN</p>', $html);
+        $this->assertStringContainsString('PDF de tickets', $html);
         $this->assertCount(0, Bitacora::ultimos('factura.reimpresion'));
     }
 

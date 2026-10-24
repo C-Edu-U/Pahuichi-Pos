@@ -55,7 +55,6 @@ $router->post('/config/negocio', [ConfigController::class, 'negocio'], $config);
 $router->post('/config/fiscal', [ConfigController::class, 'fiscal'], $config);
 $router->post('/config/caja-cobro', [ConfigController::class, 'cajaCobro'], $config);
 $router->post('/config/turnos', [ConfigController::class, 'turnos'], $config);
-$router->post('/config/tickets-originales', [ConfigController::class, 'originalesCajeros'], $config);
 $router->post('/config/tickets/{destino}', [ConfigController::class, 'tickets'], $config);
 // Leyendas de la Ley 453 (HU-10)
 $router->post('/config/leyendas', [ConfigController::class, 'agregarLeyenda'], $config);

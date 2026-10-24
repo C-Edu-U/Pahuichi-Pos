@@ -15,7 +15,6 @@ use App\Services\AutorizacionInvalida;
 use App\Services\CajaService;
 use App\Services\PromocionService;
 use App\Services\VentaService;
-use App\Services\EntregaInicialService;
 use DomainException;
 use JsonException;
 
@@ -64,8 +63,7 @@ final class PosController extends Controller
             $d['lineas'] = json_decode($d['lineas'], true, 32, JSON_THROW_ON_ERROR);
             $f = VentaService::cobrar($d);
             $s = isset($f['snapshot']) ? $f['snapshot'] : json_decode($f['snapshot_json'], true, 512, JSON_THROW_ON_ERROR);
-            $token = EntregaInicialService::abrir($f);
-            $tickets = '/facturas/' . $f['id'] . ($token !== null ? '/originales?entrega=' . rawurlencode($token) : '');
+            $tickets = '/facturas/' . $f['id'];
             return Respuesta::json(['id' => (int) $f['id'], 'numero' => (int) $f['numero'], 'pedido' => $s['pedido'], 'cambio' => $s['cambio'], 'tickets' => $tickets]);
         } catch (AutorizacionInvalida $e) {
             // El POS quita el descuento para pedir el PIN otra vez

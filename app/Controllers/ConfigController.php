@@ -421,18 +421,6 @@ final class ConfigController extends Controller
         return $this->redirigirConAviso('/config#impresoras', 'Configuración de tickets en PDF guardada.');
     }
 
-    public function originalesCajeros(Peticion $peticion): Respuesta
-    {
-        $activo = $peticion->marcado('originales_cajeros') ? '1' : '0';
-        DB::transaccion(static function () use ($activo): void {
-            $antes = Configuracion::valor(Configuracion::ORIGINALES_CAJEROS, '0');
-            Configuracion::guardar(Configuracion::ORIGINALES_CAJEROS, $activo);
-            Bitacora::registrar('config.tickets_originales', 'configuracion', null,
-                ['antes' => $antes, 'despues' => $activo]);
-        });
-        return $this->redirigirConAviso('/config#impresoras', 'Permiso de consulta de documentos emitidos guardado.');
-    }
-
     private function pantalla(array $datos = [], int $estado = 200): Respuesta
     {
         return $this->vista('config/index', $datos + [

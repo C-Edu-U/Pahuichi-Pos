@@ -29,30 +29,6 @@
   gap: var(--esp-1);
 }
 
-/* HU-56: recuperación individual, con los mismos colores y controles del proyecto. */
-.tickets-reimpresion {
-  margin-bottom: var(--esp-3);
-  padding: var(--esp-2);
-  border: 1px solid var(--color-borde);
-  border-radius: var(--radio);
-  background: var(--color-superficie);
-}
-
-.tickets-reimpresion summary {
-  cursor: pointer;
-  font-weight: var(--peso-semi);
-}
-
-.tickets-reimpresion > p {
-  margin: var(--esp-2) 0;
-  color: var(--color-texto-2);
-}
-
-.tickets-reimpresion form {
-  display: grid;
-  gap: var(--esp-2);
-}
-
 .tickets-aviso {
   display: flex;
   align-items: center;
@@ -71,9 +47,8 @@
   gap: var(--esp-4);
 }
 
-.tickets--58 {
-  --papel: 58mm;
-}
+.ticket-col--58 { --papel: 58mm; }
+.ticket-col--76 { --papel: 76mm; }
 
 .ticket-col {
   display: grid;
@@ -102,7 +77,7 @@
   line-height: 1.35;
 }
 
-.tickets--58 .ticket {
+.ticket-col--58 .ticket {
   font-size: 9.5px;
 }
 
@@ -315,10 +290,20 @@
   line-height: 1.35;
 }
 
-/* Entrega inicial: grupos estables, sin selector de tickets pendientes. */
-.entrega-perfil { padding: 1rem 0; border-bottom: 1px solid var(--borde, #dce3df); }
-.entrega-perfil h3 { margin: 0 0 .5rem; }
-.entrega-perfil .tickets-herramientas__acciones { flex-wrap: wrap; }
-.tickets-reimpresion > .boton { white-space: normal; max-width: 100%; text-align: center; }
-/* El nombre completo de la consulta debe caber también en teléfonos. */
-.acceso-originales .boton { white-space: normal; max-width: 100%; text-align: center; }
+/* HU-56: las acciones permanecen arriba y cada documento respeta su perfil. */
+.tickets-herramientas__acciones { align-items: center; }
+.tickets-herramientas__acciones .boton { white-space: normal; max-width: 100%; text-align: center; }
+.ticket-medida { display: inline-block; margin-left: .35rem; padding: .1rem .3rem; border: 1px solid var(--color-borde); border-radius: var(--radio); font-size: .85em; white-space: nowrap; }
+@media print { .tickets-herramientas { display: none !important; } }
+
+/* Menú compacto: la elección no desplaza los tres documentos hacia abajo. */
+.tickets-menu { position: relative; }
+.tickets-menu > summary { list-style: none; cursor: pointer; gap: .5rem; }
+.tickets-menu > summary::-webkit-details-marker { display: none; }
+.tickets-menu__panel { position: absolute; z-index: 30; top: calc(100% + .5rem); left: 0; width: min(310px, calc(100vw - 2rem)); display: grid; gap: 1rem; padding: 1rem; background: var(--color-superficie, #fff); border: 1px solid var(--color-borde, #dce3df); border-radius: var(--radio); box-shadow: var(--sombra-2); }
+.tickets-menu__panel .control { width: 100%; }
+@media (max-width: 600px) {
+  .tickets-herramientas__acciones { position: relative; }
+  .tickets-menu { position: static; }
+  .tickets-menu__panel { left: 0; right: auto; }
+}
