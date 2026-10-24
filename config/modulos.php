@@ -8,7 +8,6 @@ declare(strict_types=1);
 return [
     'tablero' => [
         'grupo' => 1, 'ruta' => '/tablero', 'icono' => 'escritorio', 'texto' => 'Tablero',
-        'pendiente' => ['historias' => 'HU-64', 'texto' => 'Ventas acumuladas del día, ticket promedio, más vendidos y QR por confirmar.'],
     ],
     'pos' => [
         'grupo' => 1, 'ruta' => '/pos', 'icono' => 'pos', 'texto' => 'Punto de venta',

@@ -19,6 +19,7 @@ use App\Controllers\InicioController;
 use App\Controllers\ModuloController;
 use App\Controllers\PosController;
 use App\Controllers\PromocionController;
+use App\Controllers\TableroController;
 use App\Controllers\FacturaController;
 use App\Controllers\ProductoController;
 use App\Controllers\SaludController;
@@ -101,6 +102,9 @@ $router->post('/pos/cobrar', [PosController::class, 'cobrar'], ['auth', 'permiso
 $router->post('/autorizaciones', [AutorizacionController::class, 'crear'], ['auth', 'permiso:modulo.pos']);
 $router->get('/ventas', [FacturaController::class, 'index'], ['auth', 'permiso:modulo.ventas']);
 $router->get('/facturas/{id}', [FacturaController::class, 'mostrar'], ['auth', 'permiso:modulo.ventas']);
+
+// Tablero del día (HU-64): cifras para el administrador; su turno, sin montos, para el cajero
+$router->get('/tablero', [TableroController::class, 'index'], ['auth', 'permiso:modulo.tablero']);
 
 // Promociones (HU-46): solo el administrador; se pausan, no se borran
 $promociones = ['auth', 'permiso:modulo.promociones'];

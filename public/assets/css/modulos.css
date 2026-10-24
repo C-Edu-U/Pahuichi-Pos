@@ -2222,3 +2222,34 @@
   grid-template-columns: minmax(0, 1fr) 5rem;
   gap: var(--esp-1);
 }
+
+/* ==========================================================================
+   Tablero del día (HU-64)
+   ========================================================================== */
+.tablero-dia__variacion--sube {
+  color: var(--verde-800);
+}
+
+.tablero-dia__variacion--baja {
+  color: var(--color-peligro, #a33a1e);
+}
+
+.tablero-dia__sin-dato {
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-normal, 400);
+  color: var(--color-texto-2);
+}
+
+.tablero-dia__en-orden {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-1);
+  color: var(--verde-800);
+}
+
+/* En el celular, la cifra del día no desborda */
+@media (max-width: 480px) {
+  .tablero-dia .hoy__valor {
+    font-size: 2.25rem;
+  }
+}
