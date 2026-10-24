@@ -98,11 +98,6 @@ $casillas = [
             </div>
           </fieldset>
 
-          <section class="grupo-campos" aria-labelledby="t-modificadores">
-            <h2 class="grupo-campos__titulo" id="t-modificadores">Modificadores <span class="insignia insignia--aviso">Próximamente · HU-18</span></h2>
-            <p class="grupo-campos__ayuda">Opciones que el cajero agrega al pedido, sin costo (sin cebolla) o con costo (porción extra de arroz, +Bs 5).</p>
-          </section>
-
 <?php if ($producto): ?>
           <section class="grupo-campos historial-precios" aria-labelledby="t-historial-precio">
             <h2 class="grupo-campos__titulo" id="t-historial-precio">Cambios de precio</h2>
