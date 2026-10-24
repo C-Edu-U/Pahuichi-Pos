@@ -25,15 +25,22 @@ final class Caja
         return DB::fila(self::SELECT . ' WHERE c.fecha = ? AND c.turno_id = ?', [$fecha, $turnoId]);
     }
 
-    public static function ultimas(int $cantidad = 10): array
+    /** Cajas recientes; con $cajeroId, solo las de ese cajero (HU-20: el cajero ve las suyas). */
+    public static function ultimas(int $cantidad = 10, ?int $cajeroId = null): array
     {
-        return DB::filas(self::SELECT . ' WHERE c.archivada = 0 ORDER BY c.abierta_en DESC LIMIT ' . max(1, $cantidad));
+        return DB::filas(
+            self::SELECT . ' WHERE c.archivada = 0' . ($cajeroId !== null ? ' AND c.cajero_id = ?' : '') . ' ORDER BY c.abierta_en DESC LIMIT ' . max(1, $cantidad),
+            $cajeroId !== null ? [$cajeroId] : [],
+        );
     }
 
-    /** Última caja cerrada, para mostrar su arqueo. */
-    public static function ultimaCerrada(): ?array
+    /** Última caja cerrada, para mostrar su arqueo; con $cajeroId, la última de ese cajero. */
+    public static function ultimaCerrada(?int $cajeroId = null): ?array
     {
-        return DB::fila(self::SELECT . " WHERE c.estado = 'cerrada' ORDER BY c.cerrada_en DESC, c.id DESC LIMIT 1");
+        return DB::fila(
+            self::SELECT . " WHERE c.estado = 'cerrada'" . ($cajeroId !== null ? ' AND c.cajero_id = ?' : '') . ' ORDER BY c.cerrada_en DESC, c.id DESC LIMIT 1',
+            $cajeroId !== null ? [$cajeroId] : [],
+        );
     }
 
     public static function buscar(int $id): ?array
