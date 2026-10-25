@@ -169,12 +169,14 @@ final class VentaService
                 if ($descuento >= $subtotal) throw new AutorizacionInvalida('El descuento debe ser menor que el subtotal del pedido.');
                 $total = $subtotal - $descuento;
             }
+            $ahora = Reloj::ahora();
             if ($qr !== null) {
                 $vigente = QrDiarioService::estado(true);
                 if (!$vigente['vigente'] || $vigente['id'] !== $qr['id']) throw new DomainException('El QR venció o fue reemplazado. Consulta el QR de hoy antes de cobrar.');
                 $fijo = self::centavos($vigente['monto']);
                 if ($total <= 0 || $qr['monto'] !== $total || ($fijo > 0 && $fijo !== $total)) throw new DomainException('El monto pagado por QR debe cubrir el total del pedido y respetar el importe fijo del QR, si tiene uno.');
             }
+            if ($qr !== null) ComprobanteQrService::reservar($qr['comprobante'], $ahora->format('Y-m-d'));
             $rec = $exacto ? $total : $recibido;
             if ($rec < $total) throw new DomainException('El efectivo recibido no cubre el total.');
             // La configuración queda estable hasta confirmar la emisión.
@@ -184,7 +186,6 @@ final class VentaService
             $leyenda = Leyenda::alAzar();
             $cliente = ClienteService::resolver($clientePedido);
             $numero = Factura::siguientes((int) $fiscal['codigo_sucursal'], (int) $fiscal['codigo_punto_venta'], (int) $fiscal['numero_inicial']);
-            $ahora = Reloj::ahora();
             $fecha = Reloj::sql($ahora);
             $ventaId = Venta::crear(['uuid' => $uuid, 'solicitud_hash' => $hash, 'caja_id' => $cajaId, 'usuario_id' => Auth::id(), 'tipo_pedido' => $tipo, 'mesa' => $mesa,
                 'subtotal' => self::decimal($subtotal), 'descuento' => self::decimal($descuento), 'descuento_motivo' => $permiso['motivo'] ?? null,
@@ -197,6 +198,7 @@ final class VentaService
                 Venta::pago($ventaId, self::decimal($total), self::decimal($rec), self::decimal($rec - $total));
             } else {
                 $pagoId = DB::insertar("INSERT INTO pagos (venta_id, metodo, monto, recibido, cambio, estado) VALUES (?, 'qr', ?, ?, 0, 'pendiente')", [$ventaId, self::decimal($total), self::decimal($total)]);
+                ComprobanteQrService::asignar($qr['comprobante'], $ahora->format('Y-m-d'), $pagoId);
                 DB::insertar('INSERT INTO qr_pagos (pago_id, qr_diario_id, comprobante, pagador, foto, foto_tipo) VALUES (?, ?, ?, ?, ?, ?)', [$pagoId, $qr['id'], $qr['comprobante'], $qr['pagador'] ?: null, $qr['foto'], $qr['foto_tipo']]);
             }
             $s = ['pedido' => str_pad((string) $ventaId, 3, '0', STR_PAD_LEFT), 'factura' => $numero, 'tipo' => $tipo, 'mesa' => $mesa,

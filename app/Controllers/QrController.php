@@ -20,7 +20,7 @@ final class QrController extends Controller
     }
     private function pantalla(array $datos = [], int $estado = 200): Respuesta
     {
-        return $this->vista('qr/index', $datos + ['titulo' => 'QR del día', 'h1' => 'QR del día', 'modulo' => 'qr', 'css' => ['modulos.css', 'qr-dia.css'], 'js' => ['qr-dia.js'], 'erroresQr' => [], 'valoresQr' => []], $estado);
+        return $this->vista('qr/index', $datos + ['titulo' => 'QR del día', 'h1' => 'QR del día', 'modulo' => 'qr', 'css' => ['modulos.css', 'qr-dia.css'], 'js' => ['qr-dia.js', 'qr-comprobantes-demo.js'], 'erroresQr' => [], 'valoresQr' => []], $estado);
     }
     public function estado(Peticion $p): Respuesta
     {
@@ -42,6 +42,16 @@ final class QrController extends Controller
             return Respuesta::json(QrDiarioService::simular($accion, (int) $id))->cabecera('Cache-Control', 'no-store');
         } catch (DomainException $e) {
             return Respuesta::json(['error' => $e->getMessage()], 422)->cabecera('Cache-Control', 'no-store');
+        }
+    }
+    public function demostrarComprobante(Peticion $p): Respuesta
+    {
+        try {
+            $ref=$p->entrada('comprobante');$accion=$p->entrada('accion');
+            if (!is_string($ref) || !is_string($accion)) throw new DomainException('Escribe el comprobante de una venta QR de hoy.');
+            return Respuesta::json(\App\Services\ComprobanteQrService::demostrar($ref, $accion))->cabecera('Cache-Control', 'no-store');
+        } catch (DomainException $e) {
+            return Respuesta::json(['error'=>$e->getMessage()], 422)->cabecera('Cache-Control', 'no-store');
         }
     }
     public function subir(Peticion $p): Respuesta

@@ -10,4 +10,5 @@
       </div>
 <?php endif; ?>
       <?php require __DIR__ . '/_contenido.php'; ?>
+      <?php if (puede('qr.subir')) require __DIR__ . '/_comprobantes_demo.php'; ?>
     </main>

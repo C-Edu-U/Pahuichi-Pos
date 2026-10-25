@@ -56,6 +56,7 @@ $router->get('/config', [ConfigController::class, 'index'], $config);
 $router->get('/qr', [QrController::class, 'index'], ['auth', 'permiso:modulo.qr']);
 $router->post('/qr/subir', [QrController::class, 'subir'], ['auth', 'permiso:qr.subir']);
 $router->post('/qr/simular', [QrController::class, 'simular'], ['auth', 'permiso:qr.subir']);
+$router->post('/qr/comprobantes/demostrar', [QrController::class, 'demostrarComprobante'], ['auth', 'permiso:qr.subir']);
 $router->get('/qr/estado', [QrController::class, 'estado'], ['auth', 'permiso:modulo.caja']);
 $router->get('/qr/{id}/imagen', [QrController::class, 'imagen'], ['auth', 'permiso:modulo.caja']);
 $router->post('/config/negocio', [ConfigController::class, 'negocio'], $config);

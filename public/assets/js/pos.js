@@ -486,6 +486,7 @@
       if (!respuesta.ok) {
         if (respuesta.status === 422) {
           sessionStorage.removeItem(claveCobro); pendiente = null;
+          if (window.PahuichiQr) window.PahuichiQr.duplicado(datos.comprobante_duplicado || null);
           // Permiso vencido o ya usado: se quita el descuento para pedir el PIN otra vez
           if (datos.descuento === 'invalido') { descuento = null; pintar(); }
         }

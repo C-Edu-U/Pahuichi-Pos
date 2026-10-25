@@ -30,7 +30,18 @@
   r.onload=function(){if(id!==lectura)return;foto=String(r.result).split(',')[1]||'';leyendo=false;};
   r.onerror=function(){if(id!==lectura)return;leyendo=false;fallo='No se pudo leer la foto. Selecciónala otra vez.';};r.readAsDataURL(f);
  });
+ var alerta=document.createElement('div');alerta.className='alerta alerta--peligro';alerta.id='qr-comprobante-duplicado';alerta.setAttribute('role','alert');alerta.tabIndex=-1;alerta.hidden=true;
+ $('qr-comprobante').closest('.campo').after(alerta);
+ function duplicado(original) {
+  alerta.replaceChildren();alerta.hidden=!original;
+  if(!original)return;
+  var mensaje=document.createElement('p');mensaje.textContent='Comprobante ya utilizado. Venta original: pedido '+original.venta_id+' · factura N° '+original.numero+' · Bs '+original.monto+' · '+original.fecha;alerta.append(mensaje);
+  if(original.tickets){var enlace=document.createElement('a');enlace.className='boton';enlace.href=original.tickets;enlace.target='_blank';enlace.rel='noopener';enlace.textContent='Ver venta original';alerta.append(enlace);}
+  alerta.scrollIntoView({block:'nearest'});alerta.focus();
+ }
+ $('qr-comprobante').addEventListener('input',function(){duplicado(null);});
  window.PahuichiQr = {
+  duplicado:duplicado,
   actualizar:function(q){qr=q;pintar();},
   abrir:function(t){total=t;seleccionar('efectivo');window.PahuichiQrDia.cargar();},
   bloquear:function(v){bloqueado=v;pintar();},
@@ -44,6 +55,6 @@
    if(fallo)throw new Error(fallo);
    return {metodo:'qr',qr_id:String(qr.id),qr_monto:Number(qr.monto)===0 ? total.toFixed(2) : qr.monto,comprobante:$('qr-comprobante').value.trim(),pagador:$('qr-pagador').value.trim(),foto_qr:foto};
   },
-  reset:function(){lectura++;foto='';fallo='';leyendo=false;$('qr-comprobante').value='';$('qr-pagador').value='';$('qr-foto').value='';bloqueado=false;seleccionar('efectivo');}
+  reset:function(){duplicado(null);lectura++;foto='';fallo='';leyendo=false;$('qr-comprobante').value='';$('qr-pagador').value='';$('qr-foto').value='';bloqueado=false;seleccionar('efectivo');}
  };
 })();
