@@ -48,4 +48,5 @@ return [
     'cuentas.tomar' => ['administrador', 'mesero'],
     'cuentas.cobrar' => ['administrador', 'cajero', 'mesero'],
     'cuentas.descuento' => $caja,
+    'catalogo.fotos' => ['administrador', 'cajero', 'mesero'],
 ];

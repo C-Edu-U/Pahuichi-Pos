@@ -910,6 +910,16 @@
 .modal--cobro {
   width: min(32rem, calc(100vw - var(--esp-2)));
   max-height: calc(100dvh - var(--esp-2));
+  /* En el celular el cobro puede ser más alto que la pantalla: se desplaza y el botón
+     de confirmar queda siempre a la vista, abajo */
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.modal--cobro .modal__acciones {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
 }
 
 .cobro {

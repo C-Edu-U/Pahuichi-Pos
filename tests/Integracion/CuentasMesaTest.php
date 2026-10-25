@@ -315,6 +315,14 @@ final class CuentasMesaTest extends CasoPrueba
         $this->assertSame(403, $this->ronda('3', [$this->majadito => 1], '40.00')->estado);
     }
 
+    public function testElMeseroVeLasFotosDelCatalogo(): void
+    {
+        // Sin permiso sería 403; el Majadito de prueba no tiene foto: 404
+        $this->assertSame(404, $this->get('/catalogo/productos/' . $this->majadito . '/foto')->estado);
+        $this->assertStringContainsString('/assets/js/producto-fotos-pos.js', $this->get('/mesero')->cuerpo);
+        $this->assertSame(403, $this->get('/catalogo')->estado);   // el catálogo en sí, no
+    }
+
     public function testLaMesaSeEligeDel1Al12UOtra(): void
     {
         $html = $this->get('/mesero')->cuerpo;
