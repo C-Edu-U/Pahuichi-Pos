@@ -52,6 +52,8 @@ $router->post('/usuarios/mi-pin', [UsuarioController::class, 'miPin'], $usuarios
 // Configuración (HU-08, HU-09, HU-10, HU-11)
 $config = ['auth', 'permiso:modulo.config'];
 $router->get('/config', [ConfigController::class, 'index'], $config);
+$router->get('/config/respaldos/estado', [ConfigController::class, 'estadoRespaldos'], $config);
+$router->post('/config/respaldos/simular', [ConfigController::class, 'simularRespaldo'], $config);
 $router->post('/config/negocio', [ConfigController::class, 'negocio'], $config);
 $router->post('/config/fiscal', [ConfigController::class, 'fiscal'], $config);
 $router->post('/config/caja-cobro', [ConfigController::class, 'cajaCobro'], $config);

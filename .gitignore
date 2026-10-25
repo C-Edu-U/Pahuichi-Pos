@@ -27,3 +27,9 @@ node_modules/
 # Documentos internos de planificación
 HANDOFF.md
 docs/ERS_POS.pdf
+
+# HU-07: copias locales con datos; nunca se suben a GitHub.
+/respaldos/
+
+# HU-07: estado y solicitudes internos, separados de las copias SQL.
+/var/respaldos/

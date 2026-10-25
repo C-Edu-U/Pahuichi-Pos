@@ -1,0 +1,17 @@
+.respaldo-reloj, .respaldo-fila { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 16px; border: 1px solid var(--color-borde); border-radius: var(--radio); }
+.respaldo-reloj { display: grid; grid-template-columns: minmax(0, 1fr) auto; margin: 16px 0; }
+.respaldo-reloj button { grid-column: 2; grid-row: 1 / span 2; }
+.respaldo-reloj strong { font-size: 1.25rem; white-space: nowrap; }
+.respaldos-lista { display: grid; gap: 12px; }
+.respaldo-info { flex: 1 1 240px; min-width: 0; }
+.respaldo-info strong, .respaldo-info span { display: block; }
+.respaldo-info span { margin-top: 4px; }
+.respaldo-reloj button, .respaldo-fila button { white-space: normal; }
+@media (max-width: 639px) { .respaldo-reloj { grid-template-columns: minmax(0, 1fr); } .respaldo-reloj button { grid-column: 1; grid-row: auto; } .respaldo-reloj button, .respaldo-fila button { width: 100%; } }
+
+.respaldo-acciones { display: flex; flex-wrap: wrap; gap: 8px; }
+.restauracion-resultado { margin-top: 20px; padding: 16px; border: 1px solid var(--color-borde); border-radius: var(--radio); }
+.restauracion-datos { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; margin: 16px 0; }
+.restauracion-datos dd { margin: 4px 0 0; font-weight: 700; font-size: 1.25rem; }
+@media (max-width: 639px) { .respaldo-acciones { width: 100%; } }
+.restauracion-resultado .grupo-campos__ayuda { margin-top: 12px; }

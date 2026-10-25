@@ -266,7 +266,7 @@ $cufdVigente = !isset($errores['f-vigencia']) && ParametrosFiscales::cufdVigente
             </dl>
           </section>
 
-<?php $pendiente('respaldos', 'Copias de seguridad', 'HU-07', 'Copia diaria de la base con 30 días de retención y restauración probada.'); ?>
+<?php require __DIR__ . '/_respaldos.php'; ?>
         </div>
       </div>
     </main>
