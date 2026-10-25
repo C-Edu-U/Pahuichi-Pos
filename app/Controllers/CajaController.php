@@ -61,7 +61,7 @@ final class CajaController extends Controller
         }
 
         // El cajero sigue directo al punto de venta; el administrador ve la caja abierta
-        return $this->redirigirConAviso($usuario['rol'] === 'cajero' ? '/pos' : '/caja', 'Caja abierta.');
+        return $this->redirigirConAviso($usuario['rol'] === 'cajero' ? '/pos' : '/caja', 'Caja abierta.' . (\App\Services\QrDiarioService::estado()['vigente'] ? '' : ' No hay QR vigente; solicita al administrador el QR de hoy.'));
     }
 
     /** Ingreso o egreso de efectivo durante el turno (HU-22). */

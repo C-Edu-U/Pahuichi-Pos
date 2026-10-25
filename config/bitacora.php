@@ -89,6 +89,8 @@ return [
         'venta.descuento_manual' => ['Descuento manual', 'ventas', 'aviso'],
         'impresion.reimpresion' => ['Reimpresión', 'ventas', 'aviso'],
         'qr.subir' => ['QR del día subido', 'qr', 'neutra'],
+        'qr.simular_vencimiento' => ['Simulación de vencimiento del QR en 5 segundos', 'qr', 'aviso'],
+        'qr.restablecer_vigencia' => ['Vigencia habitual del QR restablecida', 'qr', 'neutra'],
         'qr.confirmar' => ['Pago QR confirmado', 'qr', 'ok'],
         'qr.rechazar' => ['Pago QR rechazado', 'qr', 'peligro'],
     ],

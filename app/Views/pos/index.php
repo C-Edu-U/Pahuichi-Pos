@@ -60,6 +60,7 @@ foreach ($productos as $p) {
 }
 ?>
     <main class="contenido contenido--pos" id="contenido">
+      <p class="qr-dia-aviso" id="qr-dia-aviso" role="alert">Consultando el QR del día…</p>
       <div class="pos" data-caja="<?= (int) $caja['id'] ?>" id="pos" data-productos="<?= e(json_encode($datos, JSON_UNESCAPED_UNICODE)) ?>" data-promociones="<?= e(json_encode($promos, JSON_UNESCAPED_UNICODE)) ?>" data-ahora="<?= e($ahora->format('Y-m-d\TH:i:s')) ?>">
         <section class="pos__catalogo" aria-labelledby="t-catalogo">
           <h2 class="visualmente-oculto" id="t-catalogo">Productos</h2>

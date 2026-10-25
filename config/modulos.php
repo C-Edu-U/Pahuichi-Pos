@@ -29,7 +29,6 @@ return [
     ],
     'qr' => [
         'grupo' => 2, 'ruta' => '/qr', 'icono' => 'qr', 'texto' => 'QR del día',
-        'pendiente' => ['historias' => 'HU-38', 'texto' => 'Subir el QR de cobro del día, vigente hasta las 23:59:59.'],
     ],
     'clientes' => [
         'grupo' => 3, 'ruta' => '/clientes', 'icono' => 'clientes', 'texto' => 'Clientes',
