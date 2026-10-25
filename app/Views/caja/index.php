@@ -1,6 +1,7 @@
 <?php
 /**
- * Caja. Variables: $abierta (caja abierta o null), $turnos, $cajeros, $usuario, $historial,
+ * Caja. Variables: $abierta (caja abierta o null), $propia (HU-20: el usuario puede operarla),
+ * $turnos, $cajeros, $usuario, $historial (del cajero, o todas para el administrador),
  * $errores, $bloqueo (motivo por el que no se pudo abrir), $viejo (turno_id, cajero_id, fondo,
  * tipo, monto, motivo), $movimientos, $totales.
  */
@@ -72,6 +73,14 @@ $fecha = static fn (string $momento): string => (new DateTimeImmutable($momento)
           </div>
         </form>
       </section>
+<?php elseif (!$propia): ?>
+      <!-- HU-20: la caja abierta es de otro cajero; solo él o un administrador la operan -->
+      <section class="panel-bloque" id="caja-ajena" aria-labelledby="t-caja-ajena">
+        <div class="panel-bloque__cuerpo">
+          <h2 class="panel-bloque__titulo" id="t-caja-ajena">La caja abierta es de <?= e($abierta['cajero']) ?></h2>
+          <p class="cabeza-pagina__texto">Turno <?= e(mb_strtolower($abierta['turno'])) ?>, abierta <?= e(fecha_corta($abierta['abierta_en'])) ?>. Solo <?= e($abierta['cajero']) ?> o un administrador pueden registrar movimientos, contar y cerrarla. Hay una sola caja abierta a la vez: podrás abrir la tuya cuando se cierre.</p>
+        </div>
+      </section>
 <?php else: ?>
       <!-- Caja abierta -->
       <div class="caja" id="vista-abierta">
@@ -92,7 +101,7 @@ $fecha = static fn (string $momento): string => (new DateTimeImmutable($momento)
             </dl>
             <p class="caja__ciego">
               <?= icono('ocultar', 'icono--sm') ?>
-              Cierre ciego: el efectivo esperado se muestra recién en el resumen, después de contar. Llega con HU-23 a HU-26.
+              Cierre ciego: el efectivo esperado se muestra recién en el arqueo, después de contar.
             </p>
             <div class="panel-bloque__pie">
               <a class="boton boton--primario" href="/caja/cierre"><?= icono('billete') ?> Contar y cerrar caja</a>
@@ -104,7 +113,6 @@ $fecha = static fn (string $momento): string => (new DateTimeImmutable($momento)
         <section class="caja__movimientos" aria-labelledby="t-movimientos">
           <div class="seccion__cabeza">
             <h2 id="t-movimientos">Ingresos y egresos</h2>
-            <span class="insignia insignia--neutra">HU-22</span>
           </div>
 
           <form class="panel-bloque" id="form-movimiento" method="post" action="/caja/movimientos" novalidate>
@@ -207,13 +215,10 @@ $fecha = static fn (string $momento): string => (new DateTimeImmutable($momento)
                   <td><?= $c['estado'] === 'abierta' ? '<span class="insignia insignia--ok">Abierta</span>' : '<span class="insignia insignia--neutra">Cerrada</span>' ?></td>
                   <td>
 <?php if ($c['estado'] === 'cerrada'): ?>
-                    <a class="boton boton--fantasma" href="/caja/reporte/<?= (int) $c['id'] ?>"><?= icono('imprimir') ?> Reporte</a>
+                    <a class="boton boton--fantasma" href="/caja/reporte/<?= (int) $c['id'] ?>" target="_blank" rel="noopener"><?= icono('pdf') ?> Reporte PDF</a>
 <?php endif; ?>
 <?php if ($c['estado'] === 'cerrada' && puede('caja.reabrir')): ?>
-                    <form class="form-inline" method="post" action="/caja/reabrir/<?= (int) $c['id'] ?>" data-confirmar="¿Reabrir esta caja? Se borra su conteo y su arqueo para poder cerrar el turno otra vez.">
-                      <?= csrf_campo() ?>
-                      <button class="boton boton--fantasma" type="submit"><?= icono('reintentar') ?> Reabrir</button>
-                    </form>
+                    <a class="boton boton--fantasma" href="/caja/reabrir/<?= (int) $c['id'] ?>"><?= icono('reintentar') ?> Reabrir</a>
 <?php endif; ?>
                   </td>
                 </tr>

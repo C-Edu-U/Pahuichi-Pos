@@ -14,17 +14,46 @@ use App\Models\Bitacora;
 use App\Models\Arqueo;
 use App\Models\Caja;
 use App\Models\MovimientoCaja;
-use App\Models\Negocio;
 use App\Models\Turno;
 use App\Services\ArqueoService;
 use App\Services\CajaService;
 use App\Services\ConteoService;
 use App\Services\MovimientoCajaService;
+use App\Services\ReporteCierre;
 use DomainException;
 
-/** Caja (HU-20): apertura con turno, cajero y fondo inicial. */
+/**
+ * Caja (HU-20 a HU-27): apertura, ingresos y egresos, cierre ciego, arqueo, reporte y
+ * reapertura. HU-20: el cajero opera y ve solo su caja; el administrador, todas. Un
+ * intento sobre la caja de otro (por la dirección directa) da 403 y queda en la bitácora.
+ */
 final class CajaController extends Controller
 {
+    /** La caja abierta si el usuario puede operarla; null si no hay. 403 si es de otro cajero. */
+    private function abiertaPropia(): ?array
+    {
+        $abierta = CajaService::abierta();
+        if ($abierta !== null) {
+            $this->exigirPropia($abierta);
+        }
+        return $abierta;
+    }
+
+    private function exigirPropia(array $caja): void
+    {
+        if (!CajaService::esPropia($caja, Auth::usuario())) {
+            Bitacora::registrar('acceso.denegado', 'cajas', (int) $caja['id'], ['ruta' => 'caja de ' . $caja['cajero']]);
+            throw new ErrorHttp(403);
+        }
+    }
+
+    /** El cajero ve solo sus cajas; el administrador, todas. */
+    private function cajeroFiltro(): ?int
+    {
+        $usuario = Auth::usuario();
+        return $usuario['rol'] === 'administrador' ? null : (int) $usuario['id'];
+    }
+
     public function index(Peticion $peticion): Respuesta
     {
         return $this->pantalla(['bloqueo' => Sesion::tomarFlash('bloqueo')]);
@@ -68,7 +97,7 @@ final class CajaController extends Controller
     public function movimiento(Peticion $peticion): Respuesta
     {
         $usuario = Auth::usuario();
-        $abierta = CajaService::abierta();
+        $abierta = $this->abiertaPropia();
         if ($abierta === null) {
             return $this->redirigirConAviso('/caja', 'No hay una caja abierta.');
         }
@@ -111,7 +140,7 @@ final class CajaController extends Controller
     /** Cierre ciego: conteo por denominación (HU-23). No muestra el efectivo esperado. */
     public function cierre(Peticion $peticion): Respuesta
     {
-        $abierta = CajaService::abierta();
+        $abierta = $this->abiertaPropia();
         if ($abierta === null) {
             return $this->redirigirConAviso('/caja', 'No hay una caja abierta.');
         }
@@ -134,7 +163,7 @@ final class CajaController extends Controller
     /** Guarda el conteo por denominación (HU-23). */
     public function conteo(Peticion $peticion): Respuesta
     {
-        $abierta = CajaService::abierta();
+        $abierta = $this->abiertaPropia();
         if ($abierta === null) {
             return $this->redirigirConAviso('/caja', 'No hay una caja abierta.');
         }
@@ -164,7 +193,7 @@ final class CajaController extends Controller
     /** Arqueo automático y resumen de cierre (HU-24). */
     public function arqueo(Peticion $peticion): Respuesta
     {
-        $abierta = CajaService::abierta();
+        $abierta = $this->abiertaPropia();
         if ($abierta !== null) {
             $conteo = Arqueo::porCaja((int) $abierta['id']);
             if ($conteo === null) {
@@ -176,8 +205,8 @@ final class CajaController extends Controller
             return $this->pantallaArqueo($abierta, $conteo, $esperado, $diferencia, false, [], '');
         }
 
-        // Sin caja abierta: se muestra el arqueo de la última caja cerrada.
-        $caja = Caja::ultimaCerrada();
+        // Sin caja abierta: se muestra el arqueo de la última caja cerrada (del cajero, si es cajero).
+        $caja = Caja::ultimaCerrada($this->cajeroFiltro());
         if ($caja === null) {
             return $this->redirigirConAviso('/caja', 'No hay ninguna caja cerrada todavía.');
         }
@@ -200,7 +229,7 @@ final class CajaController extends Controller
     /** Confirma el cierre: guarda la diferencia y el resumen, y cierra la caja (HU-24). */
     public function confirmarArqueo(Peticion $peticion): Respuesta
     {
-        $abierta = CajaService::abierta();
+        $abierta = $this->abiertaPropia();
         if ($abierta === null) {
             return $this->redirigirConAviso('/caja', 'No hay una caja abierta.');
         }
@@ -211,21 +240,24 @@ final class CajaController extends Controller
 
         $esperado = ArqueoService::esperado($abierta);
         $diferencia = ArqueoService::diferencia((float) $conteo['total_contado'], $esperado);
-        $resumen = ArqueoService::resumen((int) $abierta['id']);
         $observacion = trim((string) $peticion->entrada('observacion'));
 
         // HU-26: una diferencia igual o mayor al umbral obliga a explicar.
+        $errores = [];
         if ($observacion === '' && ArqueoService::exigeObservacion($diferencia)) {
-            $faltante = $diferencia < 0;
-            $errores['observacion'] = 'La diferencia es de Bs ' . number_format(abs($diferencia), 2, ',', '.')
-                . '. Escribe una observación para explicar el ' . ($faltante ? 'faltante' : 'sobrante') . '.';
+            $errores['observacion'] = ArqueoService::pedidoObservacion($diferencia);
+        } elseif (mb_strlen($observacion) > ArqueoService::OBSERVACION_MAXIMA) {
+            $errores['observacion'] = 'La observación admite hasta ' . ArqueoService::OBSERVACION_MAXIMA . ' caracteres.';
+        }
+        if ($errores) {
             return $this->pantallaArqueo($abierta, $conteo, $esperado, $diferencia, false, $errores, $observacion, 422);
         }
 
+        // El servicio vuelve a calcular todo con la caja bloqueada: lo guardado es lo del cierre.
         try {
-            (new ArqueoService())->confirmarCierre((int) $abierta['id'], $esperado, $diferencia, $resumen, $observacion);
+            (new ArqueoService())->confirmarCierre((int) $abierta['id'], $observacion);
         } catch (DomainException $e) {
-            return $this->redirigirConAviso('/caja/cierre', $e->getMessage());
+            return $this->redirigirConAviso('/caja/arqueo', $e->getMessage());
         }
 
         return $this->redirigirConAviso('/caja/arqueo', 'Caja cerrada y arqueada.');
@@ -249,11 +281,15 @@ final class CajaController extends Controller
             'cerrada' => $cerrada,
             'observacion' => $observacion,
             'umbral' => ArqueoService::umbralObservacion(),
+            'exigeObservacion' => !$cerrada && ArqueoService::exigeObservacion($diferencia),
             'errores' => $errores,
         ], $estado);
     }
 
-    /** Reporte de cierre: se imprime y se guarda en PDF (HU-25). */
+    /**
+     * Reporte de cierre en PDF (HU-25), con lo guardado al confirmar el arqueo. Se abre en
+     * el visor del navegador, desde donde se imprime; con ?descargar=1 se descarga.
+     */
     public function reporte(Peticion $peticion): Respuesta
     {
         $id = (int) $peticion->parametro('id');
@@ -261,55 +297,78 @@ final class CajaController extends Controller
         if ($caja === null) {
             throw ErrorHttp::noEncontrado();
         }
-        $conteo = Arqueo::porCaja($id);
-        if ($conteo === null) {
-            return $this->redirigirConAviso('/caja', 'Esa caja todavía no tiene arqueo.');
+        $this->exigirPropia($caja);
+        $arqueo = Arqueo::porCaja($id);
+        if ($arqueo === null || $arqueo['cerrado_en'] === null) {
+            return $this->redirigirConAviso('/caja', 'El reporte de cierre sale cuando la caja se cierra con su arqueo.');
         }
 
-        $esperado = $conteo['efectivo_esperado'] !== null
-            ? (float) $conteo['efectivo_esperado']
-            : ArqueoService::esperado($caja);
-        $diferencia = $conteo['diferencia'] !== null
-            ? (float) $conteo['diferencia']
-            : ArqueoService::diferencia((float) $conteo['total_contado'], $esperado);
-        $resumen = $conteo['resumen'] ?: ArqueoService::resumen($id);
-
-        return $this->vista('caja/reporte', [
-            'titulo' => 'Reporte de cierre',
-            'css' => ['reporte-cierre.css'],
-            'js' => ['reporte.js'],
-            'caja' => $caja,
-            'conteo' => $conteo,
-            'esperado' => $esperado,
-            'diferencia' => $diferencia,
-            'resumen' => $resumen,
-            'movimientos' => MovimientoCaja::porCaja($id),
-            'negocio' => Negocio::obtener(),
-        ], 200, 'layouts/simple');
-    }
-
-    public function cerrar(Peticion $peticion): Respuesta
-    {
-        $usuario = Auth::usuario();
-        try {
-            (new CajaService())->cerrar((int) $usuario['id'], $usuario['rol']);
-        } catch (DomainException $e) {
-            Sesion::flash('bloqueo', $e->getMessage());
-            return $this->redirigir('/caja');
-        }
-        return $this->redirigirConAviso('/caja', 'Caja cerrada.');
+        $bytes = ReporteCierre::pdf(ReporteCierre::datos($caja, $arqueo));
+        $disposicion = $peticion->consulta('descargar') === '1' ? 'attachment' : 'inline';
+        return new Respuesta($bytes, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => $disposicion . '; filename="' . ReporteCierre::nombreArchivo($caja) . '"',
+            'Content-Length' => (string) strlen($bytes),
+            'Cache-Control' => 'private, no-store',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     /** Reabre una caja cerrada para repetir el turno (solo administrador). */
+    /** Pantalla para reabrir una caja cerrada: muestra su arqueo y pide el motivo (HU-27). */
+    public function confirmarReapertura(Peticion $peticion): Respuesta
+    {
+        $caja = $this->cajaParaReabrir((int) $peticion->parametro('id'));
+        return $caja instanceof Respuesta ? $caja : $this->pantallaReapertura($caja);
+    }
+
     public function reabrir(Peticion $peticion): Respuesta
     {
+        $caja = $this->cajaParaReabrir((int) $peticion->parametro('id'));
+        if ($caja instanceof Respuesta) {
+            return $caja;
+        }
+        $motivo = trim((string) $peticion->entrada('motivo'));
         try {
-            (new CajaService())->reabrir((int) $peticion->parametro('id'));
+            (new CajaService())->reabrir((int) $caja['id'], $motivo, Auth::usuario());
         } catch (DomainException $e) {
-            Sesion::flash('bloqueo', $e->getMessage());
-            return $this->redirigir('/caja');
+            return $this->pantallaReapertura($caja, ['motivo' => $e->getMessage()], $motivo, 422);
         }
         return $this->redirigirConAviso('/caja', 'Caja reabierta: el turno vuelve a estar disponible.');
+    }
+
+    /** La caja cerrada a reabrir, o la redirección con el motivo por el que no se puede. */
+    private function cajaParaReabrir(int $id): array|Respuesta
+    {
+        $caja = Caja::buscar($id);
+        if ($caja === null) {
+            throw ErrorHttp::noEncontrado();
+        }
+        $bloqueo = match (true) {
+            $caja['estado'] !== 'cerrada' => 'Solo se puede reabrir una caja cerrada.',
+            CajaService::abierta() !== null => 'Ya hay una caja abierta: ciérrala antes de reabrir otra.',
+            default => null,
+        };
+        if ($bloqueo !== null) {
+            Sesion::flash('bloqueo', $bloqueo);
+            return $this->redirigir('/caja');
+        }
+        return $caja;
+    }
+
+    private function pantallaReapertura(array $caja, array $errores = [], string $motivo = '', int $estado = 200): Respuesta
+    {
+        return $this->vista('caja/reabrir', [
+            'titulo' => 'Reabrir caja',
+            'modulo' => 'caja',
+            'h1' => 'Reabrir caja',
+            'css' => ['modulos.css'],
+            'js' => [],
+            'caja' => $caja,
+            'arqueo' => Arqueo::porCaja((int) $caja['id']),
+            'motivo' => $motivo,
+            'errores' => $errores,
+        ], $estado);
     }
 
     public function limpiarHistorial(): Respuesta
@@ -328,6 +387,7 @@ final class CajaController extends Controller
         $turnos = Turno::activos();
         $sugerido = CajaService::turnoSugerido($turnos);
         $abierta = CajaService::abierta();
+        $propia = $abierta !== null && CajaService::esPropia($abierta, Auth::usuario());
         return $this->vista('caja/index', $datos + [
             'titulo' => 'Caja',
             'modulo' => 'caja',
@@ -335,12 +395,13 @@ final class CajaController extends Controller
             'css' => ['modulos.css'],
             'js' => ['caja.js'],
             'abierta' => $abierta,
+            'propia' => $propia,
             'turnos' => $turnos,
             'cajeros' => CajaService::cajeros(),
             'usuario' => Auth::usuario(),
-            'historial' => Caja::ultimas(),
-            'movimientos' => $abierta !== null ? MovimientoCaja::porCaja((int) $abierta['id']) : [],
-            'totales' => $abierta !== null ? MovimientoCaja::totales((int) $abierta['id']) : ['ingresos' => 0.0, 'egresos' => 0.0, 'neto' => 0.0],
+            'historial' => Caja::ultimas(10, $this->cajeroFiltro()),
+            'movimientos' => $propia ? MovimientoCaja::porCaja((int) $abierta['id']) : [],
+            'totales' => $propia ? MovimientoCaja::totales((int) $abierta['id']) : ['ingresos' => 0.0, 'egresos' => 0.0, 'neto' => 0.0],
             'errores' => [],
             'bloqueo' => null,
             'viejo' => [

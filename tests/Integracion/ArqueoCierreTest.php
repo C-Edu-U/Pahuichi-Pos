@@ -9,6 +9,8 @@ use App\Core\Reloj;
 use App\Models\Arqueo;
 use App\Models\Bitacora;
 use App\Models\Caja;
+use App\Services\ArqueoService;
+use DomainException;
 use Tests\CasoPrueba;
 
 /** HU-24: arqueo automático y resumen de cierre. */
@@ -117,6 +119,72 @@ final class ArqueoCierreTest extends CasoPrueba
         $this->assertCount(1, Bitacora::ultimos('caja.arqueo'));
     }
 
+    /**
+     * Escenario: Pago mixto y descuentos de promoción
+     *   Dado una venta de Bs 50 pagada 30 en efectivo y 20 por QR pendiente, con Bs 5 de promoción en una línea y Bs 3 de descuento manual
+     *   Cuando confirmo el cierre
+     *   Entonces solo los 30 en efectivo suman al esperado y los descuentos del resumen son Bs 8
+     */
+    public function testPagoMixtoYDescuentosDePromocion(): void
+    {
+        $venta = $this->ventaDirecta($this->cajaId, $this->mariela, 'efectivo', 'confirmado', 30.00, 3.00);
+        DB::consulta('UPDATE ventas SET total = 50.00, subtotal = 53.00 WHERE id = ?', [$venta]);
+        DB::insertar("INSERT INTO pagos (venta_id, metodo, monto, recibido, cambio, estado) VALUES (?, 'qr', 20.00, 20.00, 0, 'pendiente')", [$venta]);
+        DB::insertar(
+            "INSERT INTO detalle_venta (venta_id, producto_id, descripcion, cantidad, precio_unitario, descuento, subtotal, nota)
+             VALUES (?, (SELECT id FROM productos WHERE codigo = 'PL-01'), 'Majadito de charque', 1, 40.00, 5.00, 35.00, '')",
+            [$venta],
+        );
+        $this->contar(1, 0, 3); // 230 = 200 de fondo + 30 en efectivo
+
+        $this->assertRedirige('/caja/arqueo', $this->post('/caja/arqueo', ['observacion' => '']));
+
+        $a = Arqueo::porCaja($this->cajaId);
+        $this->assertSame(230.00, $a['efectivo_esperado']);
+        $this->assertSame(0.00, $a['diferencia']);
+        $this->assertSame('8.00', $a['resumen']['descuentos']);
+        $this->assertSame('20.00', $a['resumen']['qr']['pendientes']);
+        $this->assertSame('50.00', $a['resumen']['total']);
+    }
+
+    /**
+     * Escenario: Una venta de último momento
+     *   Dado conté el efectivo y la caja cuadraba
+     *   Cuando entra una venta en efectivo antes de confirmar el cierre
+     *   Entonces el arqueo guardado la incluye y pide explicar el sobrante o faltante que resulta
+     */
+    public function testElCierreCalculaConLaCajaComoEstaAlConfirmar(): void
+    {
+        $this->contar(1, 0, 0); // 200: cuadra con el fondo
+        $this->assertStringContainsString('La caja cuadra', $this->get('/caja/arqueo')->cuerpo);
+        $this->venta('efectivo', 'confirmado', 40.00);
+
+        try {
+            (new ArqueoService())->confirmarCierre($this->cajaId);
+            $this->fail('Sin observación no debía cerrar');
+        } catch (DomainException $e) {
+            $this->assertSame('La diferencia es de Bs 40,00. Escribe una observación para explicar el faltante.', $e->getMessage());
+        }
+        $this->assertSame('abierta', DB::valor('SELECT estado FROM cajas WHERE id = ?', [$this->cajaId]));
+
+        $guardado = (new ArqueoService())->confirmarCierre($this->cajaId, 'Venta cobrada al cerrar');
+
+        $this->assertSame(['esperado' => 240.00, 'diferencia' => -40.00], $guardado);
+        $a = Arqueo::porCaja($this->cajaId);
+        $this->assertSame(240.00, $a['efectivo_esperado']);
+        $this->assertSame(1, $a['resumen']['ventas']);
+    }
+
+    public function testUnaCajaCerradaNoSeVuelveACerrar(): void
+    {
+        $this->contar(1, 0, 0);
+        (new ArqueoService())->confirmarCierre($this->cajaId);
+
+        $this->expectException(DomainException::class);
+        $this->expectExceptionMessage('La caja ya está cerrada.');
+        (new ArqueoService())->confirmarCierre($this->cajaId);
+    }
+
     public function testSinConteoNoHayArqueo(): void
     {
         $this->assertRedirige('/caja/cierre', $this->get('/caja/arqueo'));
@@ -143,35 +211,6 @@ final class ArqueoCierreTest extends CasoPrueba
         $a = Arqueo::porCaja($this->cajaId);
         $this->assertNotNull($a);
         $this->assertSame(330.00, $a['total_contado']);
-    }
-
-    /**
-     * Escenario: Reabrir caja
-     *   Dado una caja cerrada y arqueada
-     *   Cuando el administrador la reabre
-     *   Entonces vuelve a estar abierta y sin arqueo, para cerrar el turno otra vez
-     */
-    public function testElAdministradorReabreUnaCajaCerrada(): void
-    {
-        $this->venta('efectivo', 'confirmado', 100.00);
-        $this->contar(1, 0, 10); // 300
-        $this->assertRedirige('/caja/arqueo', $this->post('/caja/arqueo', ['observacion' => '']));
-
-        $this->entrarComo('admin');
-        $r = $this->post('/caja/reabrir/' . $this->cajaId);
-
-        $this->assertRedirige('/caja', $r);
-        $caja = Caja::buscar($this->cajaId);
-        $this->assertNotNull($caja);
-        $this->assertSame('abierta', $caja['estado']);
-        $this->assertNull($caja['cerrada_en']);
-        $this->assertNull(Arqueo::porCaja($this->cajaId));
-        $this->assertCount(1, Bitacora::ultimos('caja.reabrir'));
-
-        // Con la caja reabierta el cajero vuelve a contar y a cerrar el turno
-        $this->entrarComo('mariela', 'pin');
-        $this->contar(1, 0, 10);
-        $this->assertRedirige('/caja/arqueo', $this->post('/caja/arqueo', ['observacion' => '']));
     }
 
     /**

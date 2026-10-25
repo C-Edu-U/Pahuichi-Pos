@@ -106,7 +106,8 @@ $sobrante = $diferencia > 0;
           <p class="alerta__texto">Cerrada el <?= e(fecha_corta($conteo['cerrado_en'])) ?><?= $observacion !== '' ? ' · Observación: ' . e($observacion) : '' ?></p>
         </div>
         <div class="panel-bloque__pie">
-          <a class="boton boton--primario" href="/caja/reporte/<?= (int) $caja['id'] ?>"><?= icono('imprimir') ?> Imprimir el reporte de cierre</a>
+          <a class="boton boton--primario" href="/caja/reporte/<?= (int) $caja['id'] ?>" target="_blank" rel="noopener"><?= icono('pdf') ?> Ver el reporte de cierre (PDF)</a>
+          <a class="boton boton--fantasma" href="/caja/reporte/<?= (int) $caja['id'] ?>?descargar=1"><?= icono('descargar') ?> Descargar PDF</a>
           <a class="boton boton--fantasma" href="/caja"><?= icono('caja') ?> Volver a caja</a>
         </div>
 <?php else: ?>
@@ -117,8 +118,8 @@ $sobrante = $diferencia > 0;
           </div>
           <div class="panel-bloque__cuerpo">
             <div class="campo campo--ancho">
-              <label class="campo__etiqueta" for="observacion">Observación</label>
-              <input class="control" id="observacion" name="observacion" type="text" maxlength="255" value="<?= e($observacion) ?>"<?= campo_error($errores, 'observacion') ?>>
+              <label class="campo__etiqueta" for="observacion">Observación<?= $exigeObservacion ? ' (obligatoria)' : '' ?></label>
+              <input class="control" id="observacion" name="observacion" type="text" maxlength="255" value="<?= e($observacion) ?>"<?= $exigeObservacion ? ' required' : '' ?><?= campo_error($errores, 'observacion', 'observacion-ayuda') ?>>
               <p class="campo__ayuda" id="observacion-ayuda">Explica la diferencia entre lo contado y lo esperado. Es obligatoria cuando la diferencia es de Bs <?= bs($umbral ?? 10) ?> o más.</p>
               <?= mensaje_error($errores, 'observacion') ?>
             </div>

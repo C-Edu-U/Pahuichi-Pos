@@ -30,12 +30,37 @@ final class Arqueo
         ['clave' => '0.10', 'valor' => 0.10, 'etiqueta' => 'Moneda de Bs 0,10', 'tipo' => 'moneda'],
     ];
 
+    /** Arqueo vigente de la caja (HU-27: los reemplazados al reabrir quedan aparte). */
     public static function porCaja(int $cajaId): ?array
     {
-        $fila = DB::fila('SELECT * FROM arqueos WHERE caja_id = ?', [$cajaId]);
-        if ($fila === null) {
-            return null;
-        }
+        $fila = DB::fila('SELECT * FROM arqueos WHERE caja_id = ? AND reemplazado_en IS NULL', [$cajaId]);
+        return $fila !== null ? self::leer($fila) : null;
+    }
+
+    /** Arqueos que la caja tuvo antes de reabrirse, del más antiguo al más nuevo. */
+    public static function reemplazados(int $cajaId): array
+    {
+        $filas = DB::filas(
+            'SELECT a.*, u.nombre AS reabierta_por_nombre FROM arqueos a
+             LEFT JOIN usuarios u ON u.id = a.reabierta_por
+             WHERE a.caja_id = ? AND a.reemplazado_en IS NOT NULL ORDER BY a.reemplazado_en, a.id',
+            [$cajaId],
+        );
+        return array_map(self::leer(...), $filas);
+    }
+
+    /** Al reabrir: el arqueo vigente queda reemplazado, con el motivo y quién reabrió. */
+    public static function reemplazar(int $cajaId, string $motivo, int $usuarioId, string $en): void
+    {
+        DB::consulta(
+            'UPDATE arqueos SET reemplazado_en = ?, reabierta_por = ?, motivo_reapertura = ?
+             WHERE caja_id = ? AND reemplazado_en IS NULL',
+            [$en, $usuarioId, $motivo, $cajaId],
+        );
+    }
+
+    private static function leer(array $fila): array
+    {
         $fila['denominaciones'] = json_decode((string) $fila['denominaciones'], true) ?: [];
         $fila['total_contado'] = (float) $fila['total_contado'];
         $fila['efectivo_esperado'] = $fila['efectivo_esperado'] !== null ? (float) $fila['efectivo_esperado'] : null;
@@ -59,7 +84,7 @@ final class Arqueo
         DB::consulta(
             'UPDATE arqueos
              SET efectivo_esperado = ?, diferencia = ?, resumen = ?, observacion = ?, cerrado_en = ?
-             WHERE caja_id = ?',
+             WHERE caja_id = ? AND reemplazado_en IS NULL',
             [
                 $esperado,
                 $diferencia,
