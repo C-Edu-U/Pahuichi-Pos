@@ -12,7 +12,7 @@ use Tests\CasoPrueba;
 
 /**
  * HU-06: el PIN del administrador también autoriza la anulación (la anulación en sí es
- * HU-44: por ahora solo se valida el PIN), y cada administrador elige su propio PIN.
+ * HU-44: la acción real está en la ruta de la factura), y cada administrador elige su propio PIN.
  */
 final class PinAutorizacionTest extends CasoPrueba
 {
@@ -44,21 +44,21 @@ final class PinAutorizacionTest extends CasoPrueba
      * Escenario: Anular pide el PIN del administrador
      *   Dado estoy en los tickets de una venta
      *   Cuando pulso «Anular venta» y el administrador escribe su PIN
-     *   Entonces el PIN se valida y se avisa que la anulación llega con HU-44, sin cambiar la venta
+     *   Entonces la validación aislada no modifica la venta; el cajero no ejecuta la anulación
      */
-    public function testAnularPideElPinYAvisaQueLlegaConHu44(): void
+    public function testValidarPinNoAnulaYLaAccionRealEsDelAdministrador(): void
     {
         $id = $this->venta();
 
         $html = $this->get('/facturas/' . $id)->cuerpo;
-        $this->assertStringContainsString('data-abrir-modal="modal-anular"', $html);
-        $this->assertStringContainsString('<dialog class="modal" id="modal-anular"', $html);
+        $this->assertStringNotContainsString('data-abrir-modal="modal-anular"', $html);
+        $this->assertStringNotContainsString('<dialog class="modal" id="modal-anular"', $html);
         $this->assertStringContainsString('<script src="/assets/js/anular.js"></script>', $html);
 
         $r = $this->anular('1234');
 
         $this->assertSame(200, $r->estado, $r->cuerpo);
-        $this->assertSame('PIN correcto. La anulación de ventas llega con HU-44: esta venta no se modificó.', json_decode($r->cuerpo, true)['aviso']);
+        $this->assertSame('PIN correcto. Para anular, el administrador debe confirmar la venta con su motivo en Ver tickets.', json_decode($r->cuerpo, true)['aviso']);
         $this->assertSame('cobrada', DB::valor('SELECT v.estado FROM ventas v JOIN facturas f ON f.venta_id = v.id WHERE f.id = ?', [$id]));
         $this->assertSame('emitida', DB::valor('SELECT estado FROM facturas WHERE id = ?', [$id]));
         $this->assertCount(0, Bitacora::ultimos('venta.anulacion'));

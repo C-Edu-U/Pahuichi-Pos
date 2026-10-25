@@ -32,19 +32,32 @@ final class FacturaController extends Controller
             'facturas' => Factura::ultimas(puede('ventas.todas') ? null : Auth::id())]);
     }
 
+    public function anular(Peticion $peticion): Respuesta
+    {
+        $f=$this->permitida((int)$peticion->parametro('id'));
+        $pin=$peticion->entrada('pin');$motivo=$peticion->entrada('motivo');
+        try {
+            if (!is_string($pin) || !is_string($motivo)) throw new DomainException('Escribe el PIN y el motivo.');
+            return Respuesta::json(\App\Services\AnulacionVentaService::anular((int)$f['id'],$pin,$motivo))->cabecera('Cache-Control','no-store');
+        } catch (DomainException $e) {
+            return Respuesta::json(['error'=>$e->getMessage()],422)->cabecera('Cache-Control','no-store');
+        }
+    }
+
     public function mostrar(Peticion $peticion): Respuesta
     {
         $f = $this->permitida((int) $peticion->parametro('id'));
         $s = $f['snapshot'];
         return $this->vista('facturas/tickets', ['titulo' => 'Factura N° ' . $f['numero'], 'h1' => 'Pedido ' . $s['pedido'] . ' · factura N° ' . $f['numero'],
             'modulo' => 'ventas', 'claseBody' => 'panel--tickets', 'css' => ['modulos.css', 'tickets.css', 'tickets-hu10.css'],
-            'js' => ['qrcode.js', 'tickets.js', 'anular.js'], 'f' => $f, 's' => $s, 'perfilesTickets' => ConfiguracionTickets::todas()]);
+            'js' => ['qrcode.js', 'tickets.js', 'anular.js'], 'f' => $f, 's' => $s, 'anulada' => $f['estado'] === 'anulada', 'anulacion' => \App\Services\AnulacionVentaService::detalle((int)$f['id']), 'perfilesTickets' => ConfiguracionTickets::todas()]);
     }
 
     /** Entrega un PDF real; nunca abre un diálogo ni envía trabajos a una impresora. */
     public function pdf(Peticion $peticion): Respuesta
     {
         $f = $this->permitida((int) $peticion->parametro('id'));
+        if ($f['estado'] !== 'emitida') throw new ErrorHttp(422, 'La factura está anulada. Consulta la venta para ver su estado.');
         $destino = $peticion->consulta('destino', 'caja');
         $soloFactura = $peticion->consulta('solo') === 'factura';
         if ($soloFactura && $destino !== 'caja') throw new ErrorHttp(422, 'La factura individual utiliza el perfil de caja.');
@@ -68,6 +81,7 @@ final class FacturaController extends Controller
     public function reimprimir(Peticion $peticion): Respuesta
     {
         $f = $this->permitida((int) $peticion->parametro('id'));
+        if ($f['estado'] !== 'emitida') throw new ErrorHttp(422, 'La factura está anulada. Consulta la venta para ver su estado.');
         Bitacora::registrar('factura.reimpresion', 'facturas', $f['id'], ['tipo' => 'tres_tickets', 'medio' => 'navegador', 'accion' => 'solicitud']);
         return Respuesta::json(['aviso' => 'Reimpresión solicitada.']);
     }

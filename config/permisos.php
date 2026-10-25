@@ -35,6 +35,7 @@ return [
     'caja.limpiar_historial' => $admin,
     'caja.reabrir' => $admin,
     'ventas.todas' => $admin,
+    'ventas.anular' => $admin,
     'conciliacion.resolver' => $admin,
     'qr.subir' => $admin,
     'clientes.crear' => $caja,

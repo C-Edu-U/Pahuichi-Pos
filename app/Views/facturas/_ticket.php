@@ -2,6 +2,7 @@
 <?php if ($tipoTicket === 'comanda'): ?>
           <article class="ticket ticket--comanda" id="ticket-comanda<?= isset($pdfCopia) ? '-' . (int) $pdfCopia : '' ?>">
             <p class="ticket__reimpresion" hidden>REIMPRESIÓN</p>
+<?php if (!empty($anulada)): ?><p class="ticket__reimpresion">ANULADA</p><?php endif; ?>
             <p class="comanda__pedido">N° <span data-campo="pedido"><?= e($s['pedido']) ?></span></p>
             <p class="comanda__destino" data-campo="destino"><?= e($s['tipo'] === 'mesa' ? 'MESA ' . $s['mesa'] : 'PARA LLEVAR') ?></p>
             <p class="comanda__hora" data-campo="hora-larga"><?= e($s['fecha_larga']) ?></p>
@@ -16,6 +17,7 @@ $cocina = array_filter($s['lineas'], static fn (array $l): bool => $l['cocina'] 
 <?php if ($tipoTicket === 'copia'): ?>
           <article class="ticket ticket--copia" id="ticket-copia<?= isset($pdfCopia) ? '-' . (int) $pdfCopia : '' ?>">
             <p class="ticket__reimpresion" hidden>REIMPRESIÓN</p>
+<?php if (!empty($anulada)): ?><p class="ticket__reimpresion">ANULADA</p><?php endif; ?>
             <p class="ticket__centro ticket__fuerte"><?= e($s['negocio']['nombre_comercial']) ?></p>
             <p class="ticket__centro">COPIA DE CAJA</p>
             <div class="ticket__separador"></div>
@@ -56,6 +58,7 @@ $cocina = array_filter($s['lineas'], static fn (array $l): bool => $l['cocina'] 
           <article class="ticket ticket--factura" id="ticket-factura<?= isset($pdfCopia) ? '-' . (int) $pdfCopia : '' ?>">
             <p class="ticket__reimpresion" hidden>REIMPRESIÓN</p>
             <p class="factura__academica">DOCUMENTO SIN VALOR FISCAL - PROYECTO ACADÉMICO</p>
+<?php if (!empty($anulada)): ?><p class="ticket__reimpresion">ANULADA</p><?php endif; ?>
             <p class="ticket__centro ticket__fuerte">FACTURA</p>
             <p class="ticket__centro">(Con Derecho a Crédito Fiscal)</p>
             <p class="ticket__centro ticket__fuerte" data-campo="razon"><?= e($s['negocio']['razon_social']) ?></p>
