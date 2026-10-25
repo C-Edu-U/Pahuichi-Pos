@@ -111,6 +111,13 @@ $sobrante = $diferencia > 0;
           <a class="boton boton--fantasma" href="/caja"><?= icono('caja') ?> Volver a caja</a>
         </div>
 <?php else: ?>
+<?php if (!empty($mesasAbiertas)): ?>
+          <div class="alerta alerta--aviso" role="alert" id="mesas-abiertas">
+          <?= icono('mesa') ?>
+          <p class="alerta__titulo">Todavía no se puede cerrar la caja</p>
+          <p class="alerta__texto"><?= e($mesasAbiertas) ?> Están en «Mesas», en el punto de venta.</p>
+        </div>
+<?php endif; ?>
         <form class="panel-bloque" id="form-arqueo" method="post" action="/caja/arqueo" novalidate>
           <?= csrf_campo() ?>
           <div class="panel-bloque__cabecera">
@@ -125,7 +132,7 @@ $sobrante = $diferencia > 0;
             </div>
           </div>
           <div class="panel-bloque__pie">
-            <button class="boton boton--primario" type="submit"><?= icono('check') ?> Confirmar cierre y arquear</button>
+            <button class="boton boton--primario" type="submit"<?= !empty($mesasAbiertas) ? ' disabled' : '' ?>><?= icono('check') ?> Confirmar cierre y arquear</button>
             <a class="boton boton--fantasma" href="/caja/cierre"><?= icono('editar') ?> Corregir el conteo</a>
           </div>
         </form>

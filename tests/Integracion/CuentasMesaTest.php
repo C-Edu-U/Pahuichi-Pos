@@ -207,6 +207,28 @@ final class CuentasMesaTest extends CasoPrueba
         $this->assertSame('abierta', $this->cuenta()['estado']);
     }
 
+    /**
+     * Escenario: No se cierra la caja con mesas abiertas
+     *   Dado la mesa 3 tiene la cuenta abierta
+     *   Cuando caja cuenta el efectivo e intenta cerrar
+     *   Entonces el sistema lo impide y avisa qué mesas faltan; cobrada la mesa, cierra
+     */
+    public function testLaCajaNoSeCierraConMesasAbiertas(): void
+    {
+        $this->ronda('3', [$this->majadito => 1], '40.00');
+        $this->entrarComo('mariela', 'pin');
+        $this->post('/caja/conteo', ['conteo' => ['200' => '1', '20' => '2']]);   // 240: fondo + la mesa
+
+        $this->assertStringContainsString('La mesa 3 tiene la cuenta abierta', $this->get('/caja/cierre')->cuerpo);
+        $this->assertMatchesRegularExpression('/<button[^>]*type="submit" disabled>.*Confirmar cierre y arquear/', $this->get('/caja/arqueo')->cuerpo);
+        $this->assertRedirige('/caja/arqueo', $this->post('/caja/arqueo', ['observacion' => 'Falta cobrar la mesa 3']));
+        $this->assertSame('abierta', DB::valor('SELECT estado FROM cajas WHERE id = ?', [$this->caja]));
+
+        $this->cerrar((int) $this->cuenta()['id'], '40.00');
+        $this->assertRedirige('/caja/arqueo', $this->post('/caja/arqueo', ['observacion' => '']));
+        $this->assertSame('cerrada', DB::valor('SELECT estado FROM cajas WHERE id = ?', [$this->caja]));
+    }
+
     public function testUnCobroRepetidoNoFacturaDosVeces(): void
     {
         $this->ronda('3', [$this->majadito => 1], '40.00');

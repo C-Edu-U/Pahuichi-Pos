@@ -14,6 +14,12 @@ final class Cuenta
         return DB::fila('SELECT * FROM cuentas WHERE id = ?' . ($bloquear ? ' FOR UPDATE' : ''), [$id]);
     }
 
+    /** Mesas con la cuenta abierta (HU-35): mientras haya, la caja no se cierra. */
+    public static function mesasAbiertas(): array
+    {
+        return array_column(DB::filas("SELECT mesa FROM cuentas WHERE estado = 'abierta' ORDER BY CAST(mesa AS UNSIGNED)"), 'mesa');
+    }
+
     public static function abiertaDeMesa(string $mesa, bool $bloquear = false): ?array
     {
         return DB::fila("SELECT * FROM cuentas WHERE mesa_abierta = ?" . ($bloquear ? ' FOR UPDATE' : ''), [$mesa]);

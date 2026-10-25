@@ -10,6 +10,7 @@ use App\Models\Arqueo;
 use App\Models\Bitacora;
 use App\Models\Caja;
 use App\Models\Configuracion;
+use App\Models\Cuenta;
 use App\Models\MovimientoCaja;
 use App\Models\Venta;
 use DomainException;
@@ -59,6 +60,17 @@ final class ArqueoService
         return $diferencia != 0.0 && abs($diferencia) >= self::umbralObservacion();
     }
 
+    /** HU-35: por qué no se puede cerrar con mesas abiertas (null si no hay). */
+    public static function bloqueoPorMesas(): ?string
+    {
+        $mesas = Cuenta::mesasAbiertas();
+        if ($mesas === []) {
+            return null;
+        }
+        return (count($mesas) === 1 ? 'La mesa ' . $mesas[0] . ' tiene la cuenta abierta' : 'Las mesas ' . implode(', ', $mesas) . ' tienen la cuenta abierta')
+            . ': cóbrala' . (count($mesas) === 1 ? '' : 's') . ' o cancela sus pedidos antes de cerrar la caja.';
+    }
+
     /** Lo que se le pide al cajero cuando falta la observación. */
     public static function pedidoObservacion(float $diferencia): string
     {
@@ -89,6 +101,12 @@ final class ArqueoService
             $caja = DB::fila('SELECT * FROM cajas WHERE id = ? FOR UPDATE', [$cajaId]);
             if ($caja === null || $caja['estado'] !== 'abierta') {
                 throw new DomainException('La caja ya está cerrada.');
+            }
+            // HU-35: las cuentas de mesa se cobran en la caja abierta; con alguna abierta no se cierra.
+            // Los pedidos de mesa bloquean la misma fila de la caja: no entra uno a mitad del cierre.
+            $mesas = self::bloqueoPorMesas();
+            if ($mesas !== null) {
+                throw new DomainException($mesas);
             }
             $conteo = Arqueo::porCaja($cajaId);
             if ($conteo === null) {
