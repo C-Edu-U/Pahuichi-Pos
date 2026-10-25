@@ -195,6 +195,18 @@ final class CuentasMesaTest extends CasoPrueba
         $this->assertCount(1, Bitacora::ultimos('venta.descuento_manual'));
     }
 
+    public function testOtroCajeroNoCobraEnUnaCajaAjena(): void
+    {
+        $this->ronda('3', [$this->majadito => 1], '40.00');
+        $this->entrarComo('jorge', 'pin');
+
+        $r = $this->cerrar((int) $this->cuenta()['id'], '40.00');
+
+        $this->assertSame(422, $r->estado);
+        $this->assertStringContainsString('La caja abierta pertenece a otro cajero.', $r->cuerpo);
+        $this->assertSame('abierta', $this->cuenta()['estado']);
+    }
+
     public function testUnCobroRepetidoNoFacturaDosVeces(): void
     {
         $this->ronda('3', [$this->majadito => 1], '40.00');

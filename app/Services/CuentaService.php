@@ -149,6 +149,10 @@ final class CuentaService
                 return Factura::buscar((int) Factura::deVenta((int) $previa['id'])['id']);
             }
             if ($caja === null) throw new DomainException('No hay una caja abierta: el cobro de la cuenta va a la caja abierta.');
+            // HU-20: un cajero cobra solo en su caja; el mesero cobra en la caja abierta
+            if (Auth::usuario()['rol'] === 'cajero' && (int) $caja['cajero_id'] !== Auth::id()) {
+                throw new DomainException('La caja abierta pertenece a otro cajero.');
+            }
             $cuenta = Cuenta::buscar($cuentaId, true) ?? throw new DomainException('Esa cuenta no existe.');
             if ($cuenta['estado'] !== 'abierta') throw new DomainException('La cuenta de la mesa ' . $cuenta['mesa'] . ' ya se cerró.');
 
