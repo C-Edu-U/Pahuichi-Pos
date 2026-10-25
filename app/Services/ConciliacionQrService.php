@@ -70,7 +70,7 @@ final class ConciliacionQrService
         return DB::filas('SELECT a.id,p.venta_id,p.monto,q.comprobante,v.caja_id,f.id AS factura_id
             FROM qr_avisos a JOIN pagos p ON p.id=a.pago_id JOIN qr_pagos q ON q.pago_id=p.id
             JOIN ventas v ON v.id=p.venta_id JOIN facturas f ON f.venta_id=v.id
-            WHERE a.usuario_id=? AND a.visto_en IS NULL AND p.estado=\'rechazado\' ORDER BY a.id DESC LIMIT 20',[Auth::id()]);
+            WHERE a.usuario_id=? AND a.visto_en IS NULL AND p.estado=\'rechazado\' AND v.estado=\'cobrada\' AND f.estado=\'emitida\' ORDER BY a.id DESC LIMIT 20',[Auth::id()]);
     }
     public static function enterado(int $id): void
     {

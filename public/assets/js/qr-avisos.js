@@ -12,7 +12,7 @@
    d.avisos.forEach(function(a){
     var panel=document.createElement('div');panel.className='qr-aviso';panel.setAttribute('role','alert');
     var titulo=document.createElement('strong');titulo.textContent='Pago QR rechazado';panel.append(titulo);
-    var texto=document.createElement('p');texto.textContent='Pedido '+a.venta_id+' · caja '+a.caja_id+' · comprobante '+a.comprobante+' · Bs '+a.monto;panel.append(texto);
+    var texto=document.createElement('p');texto.textContent='Pedido '+a.venta_id+' · caja '+a.caja_id+' · comprobante '+a.comprobante+' · Saldo por cobrar: Bs '+a.monto;panel.append(texto);
     var acciones=document.createElement('div');acciones.className='qr-aviso__acciones';
     var ver=document.createElement('a');ver.className='boton';ver.href='/facturas/'+a.factura_id;ver.target='_blank';ver.rel='noopener';ver.textContent='Ver venta';acciones.append(ver);
     var b=document.createElement('button');b.className='boton';b.type='button';b.textContent='Entendido';
