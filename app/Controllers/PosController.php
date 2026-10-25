@@ -63,7 +63,7 @@ final class PosController extends Controller
             $d['lineas'] = json_decode($d['lineas'], true, 32, JSON_THROW_ON_ERROR);
             $f = VentaService::cobrar($d);
             $s = isset($f['snapshot']) ? $f['snapshot'] : json_decode($f['snapshot_json'], true, 512, JSON_THROW_ON_ERROR);
-            return Respuesta::json(['id' => (int) $f['id'], 'numero' => (int) $f['numero'], 'pedido' => $s['pedido'], 'cambio' => $s['cambio'], 'pago_qr' => $s['pago_qr'] ?? null, 'tickets' => '/facturas/' . $f['id']]);
+            return Respuesta::json(['id' => (int) $f['id'], 'numero' => (int) $f['numero'], 'pedido' => $s['pedido'], 'cambio' => $s['cambio'], 'pago_qr' => $s['pago_qr'] ?? null, 'pago_efectivo' => $s['pago_efectivo'] ?? null, 'tickets' => '/facturas/' . $f['id']]);
         } catch (\App\Services\ComprobanteQrDuplicado $e) {
             return Respuesta::json(['error' => $e->getMessage(), 'comprobante_duplicado' => $e->original], 422);
         } catch (AutorizacionInvalida $e) {

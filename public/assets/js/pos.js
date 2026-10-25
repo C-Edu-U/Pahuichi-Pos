@@ -371,6 +371,7 @@
     $('cobro-error').hidden = !texto;
     $('recibido-error').textContent = texto;
     $('recibido-error').hidden = !texto;
+    if (window.PahuichiQr) window.PahuichiQr.error(texto);
   }
   function bloquearPedido(valor) {
     document.querySelector('.pos__catalogo').inert = valor;
@@ -507,7 +508,7 @@
       $('mesa').value = ''; elegirTipo('mesa');
       pintar(); bloquearPedido(false);
       $('venta-lista-titulo').textContent = 'Pedido ' + datos.pedido + ' cobrado';
-      $('venta-lista-detalle').textContent = 'Factura N° ' + datos.numero + (datos.pago_qr ? ' · QR pendiente de verificación' : ' · cambio Bs ' + P.bs(datos.cambio)) + ' · lista para imprimir';
+      $('venta-lista-detalle').textContent = 'Factura N° ' + datos.numero + (datos.pago_qr ? (datos.pago_efectivo ? ' · Efectivo Bs ' + P.bs(datos.pago_efectivo.monto) + ' · cambio Bs ' + P.bs(datos.cambio) : '') + ' · QR Bs ' + P.bs(datos.pago_qr.monto) + ' pendiente de verificación' : ' · cambio Bs ' + P.bs(datos.cambio)) + ' · lista para imprimir';
       $('venta-lista-ver').href = datos.tickets;
       $('venta-lista').hidden = false;
       $('pedido').classList.add('esta-abierto');

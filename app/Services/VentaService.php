@@ -16,7 +16,7 @@ use App\Models\Venta;
 use DomainException;
 
 /**
- * HU-57 y HU-39: cobro en efectivo o QR pendiente, con reintento idempotente.
+ * HU-57, HU-39 y HU-42: cobro en efectivo, QR pendiente o mixto, con reintento idempotente.
  * HU-06: descuento manual con el permiso de un solo uso que entregó el PIN del
  * administrador (AutorizacionService); el permiso se gasta recién al guardar la venta.
  * HU-46: las promociones activas descuentan por línea (PromocionService). El navegador
@@ -63,9 +63,9 @@ final class VentaService
         }
         ksort($cantidades);
         $metodo = $d['metodo'] ?? 'efectivo';
-        if (!in_array($metodo, ['efectivo', 'qr'], true)) throw new DomainException('Elige efectivo o QR.');
+        if (!in_array($metodo, ['efectivo', 'qr', 'mixto'], true)) throw new DomainException('Elige efectivo, QR o mixto.');
         $qr = null;
-        if ($metodo === 'qr') {
+        if ($metodo !== 'efectivo') {
             $ref = is_string($d['comprobante'] ?? null) ? trim($d['comprobante']) : '';
             $pagador = is_string($d['pagador'] ?? null) ? trim($d['pagador']) : '';
             if (!preg_match('/^[\p{L}\p{N}\-\/_.]{1,80}$/uD', $ref)) throw new DomainException('Escribe el número de comprobante QR (hasta 80 caracteres, sin espacios).');
@@ -79,7 +79,8 @@ final class VentaService
             $fotoTipo = $bytes === null ? null : QrDiarioService::imagen($bytes, 1048576);
             $qr = ['id' => $qrId, 'monto' => self::centavos($d['qr_monto'] ?? null), 'comprobante' => $ref, 'pagador' => $pagador, 'foto' => $bytes, 'foto_tipo' => $fotoTipo];
         }
-        $exacto = $metodo === 'qr' || ($d['exacto'] ?? '') === '1';
+        $efectivoMixto = $metodo === 'mixto' ? self::centavos($d['efectivo_monto'] ?? null) : null;
+        $exacto = $metodo === 'qr' || ($metodo === 'efectivo' && ($d['exacto'] ?? '') === '1');
         $recibido = $exacto ? null : self::centavos($d['recibido'] ?? null);
         $esperado = self::centavos($d['total_esperado'] ?? null);
         $cajaId = filter_var($d['caja_id'] ?? null, FILTER_VALIDATE_INT);
@@ -91,10 +92,11 @@ final class VentaService
         $clientePedido = ClienteService::normalizar($d['cliente_doc'] ?? '0', $d['cliente_nombre'] ?? '', $d['cliente_tipo'] ?? 'NIT');
         $datosHash = [$cajaId, $tipo, $mesa, $cantidades, $exacto, $recibido, $esperado, $descuento, $promoEsperada, $regalosEsperados];
         if ($qr !== null) $datosHash[] = [$metodo, $qr['id'], $qr['monto'], $qr['comprobante'], $qr['pagador'], hash('sha256', $qr['foto'] ?? '')];
+        if ($metodo === 'mixto') $datosHash[] = $efectivoMixto;
         if ($clientePedido['doc'] !== '0') $datosHash[] = $clientePedido;
         $hash = hash('sha256', json_encode($datosHash, JSON_THROW_ON_ERROR));
         $gastar = false;
-        $factura = DB::transaccion(static function () use ($uuid, $hash, $tipo, $mesa, $cantidades, $exacto, $recibido, $esperado, $cajaId, $descuento, $token, $promoEsperada, $regalosEsperados, $clientePedido, $metodo, $qr, &$gastar): array {
+        $factura = DB::transaccion(static function () use ($uuid, $hash, $tipo, $mesa, $cantidades, $exacto, $recibido, $esperado, $cajaId, $descuento, $token, $promoEsperada, $regalosEsperados, $clientePedido, $metodo, $qr, $efectivoMixto, &$gastar): array {
             // Serializa cobros y cierre sobre la misma fila, y evita cambiar de caja silenciosamente.
             $caja = Venta::cajaParaCobrar($cajaId);
             $previa = Venta::porUuid($uuid);
@@ -174,11 +176,16 @@ final class VentaService
                 $vigente = QrDiarioService::estado(true);
                 if (!$vigente['vigente'] || $vigente['id'] !== $qr['id']) throw new DomainException('El QR venció o fue reemplazado. Consulta el QR de hoy antes de cobrar.');
                 $fijo = self::centavos($vigente['monto']);
-                if ($total <= 0 || $qr['monto'] !== $total || ($fijo > 0 && $fijo !== $total)) throw new DomainException('El monto pagado por QR debe cubrir el total del pedido y respetar el importe fijo del QR, si tiene uno.');
+                if ($qr['monto'] <= 0 || ($fijo > 0 && $fijo !== $qr['monto'])) throw new DomainException('El monto pagado por QR debe ser positivo y respetar el importe fijo del QR, si tiene uno.');
+                if ($metodo === 'qr' && $qr['monto'] !== $total) throw new DomainException('El monto pagado por QR debe cubrir el total del pedido.');
+                if ($metodo === 'mixto' && ($efectivoMixto <= 0 || $efectivoMixto + $qr['monto'] !== $total)) throw new DomainException('La parte en efectivo y la parte QR deben ser positivas y sumar exactamente el total del pedido.');
             }
             if ($qr !== null) ComprobanteQrService::reservar($qr['comprobante'], $ahora->format('Y-m-d'));
+            $parteEfectivo = $metodo === 'mixto' ? $efectivoMixto : ($qr === null ? $total : 0);
             $rec = $exacto ? $total : $recibido;
-            if ($rec < $total) throw new DomainException('El efectivo recibido no cubre el total.');
+            if ($qr === null && $rec < $total) throw new DomainException('El efectivo recibido no cubre el total.');
+            if ($metodo === 'mixto' && $rec < $parteEfectivo) throw new DomainException('El efectivo recibido no cubre la parte en efectivo del pedido.');
+            $cambio = $metodo === 'qr' ? 0 : $rec - $parteEfectivo;
             // La configuración queda estable hasta confirmar la emisión.
             $fiscal = DB::fila('SELECT * FROM parametros_fiscales WHERE id = 1 FOR UPDATE');
             if (!$fiscal || (int) $fiscal['numero_inicial'] < 1) throw new DomainException('Configura los parámetros fiscales antes de cobrar.');
@@ -194,10 +201,11 @@ final class VentaService
                 $detalleId = Venta::detalle($ventaId, $l);
                 foreach ($l['promociones'] as $pr) Venta::promocion($ventaId, $detalleId, $pr, $pr['monto']);
             }
-            if ($qr === null) {
-                Venta::pago($ventaId, self::decimal($total), self::decimal($rec), self::decimal($rec - $total));
-            } else {
-                $pagoId = DB::insertar("INSERT INTO pagos (venta_id, metodo, monto, recibido, cambio, estado) VALUES (?, 'qr', ?, ?, 0, 'pendiente')", [$ventaId, self::decimal($total), self::decimal($total)]);
+            if ($parteEfectivo > 0) {
+                Venta::pago($ventaId, self::decimal($parteEfectivo), self::decimal($rec), self::decimal($cambio));
+            }
+            if ($qr !== null) {
+                $pagoId = DB::insertar("INSERT INTO pagos (venta_id, metodo, monto, recibido, cambio, estado) VALUES (?, 'qr', ?, ?, 0, 'pendiente')", [$ventaId, self::decimal($qr['monto']), self::decimal($qr['monto'])]);
                 ComprobanteQrService::asignar($qr['comprobante'], $ahora->format('Y-m-d'), $pagoId);
                 DB::insertar('INSERT INTO qr_pagos (pago_id, qr_diario_id, comprobante, pagador, foto, foto_tipo) VALUES (?, ?, ?, ?, ?, ?)', [$pagoId, $qr['id'], $qr['comprobante'], $qr['pagador'] ?: null, $qr['foto'], $qr['foto_tipo']]);
             }
@@ -206,11 +214,13 @@ final class VentaService
                 'cuf' => Cuf::generar($negocio, $fiscal, $numero, $ahora), 'fecha_emision' => $fecha, 'fecha_larga' => $ahora->format('d/m/Y H:i'),
                 'lineas' => $lineas, 'promociones' => self::decimal($promo + $regalos), 'subtotal' => self::decimal($subtotal), 'descuento' => self::decimal($descuento), 'total' => self::decimal($total),
                 'literal' => NumeroALetras::convertir($total),
-                'recibido' => self::decimal($rec), 'cambio' => self::decimal($rec - $total), 'leyenda' => $leyenda['texto']];
-            if ($qr !== null) $s['pago_qr'] = ['estado' => 'pendiente', 'monto' => self::decimal($total), 'comprobante' => $qr['comprobante'], 'pagador' => $qr['pagador']];
+                'recibido' => self::decimal($metodo === 'mixto' ? $rec + $qr['monto'] : $rec), 'cambio' => self::decimal($cambio), 'leyenda' => $leyenda['texto']];
+            if ($qr !== null) $s['pago_qr'] = ['estado' => 'pendiente', 'monto' => self::decimal($qr['monto']), 'comprobante' => $qr['comprobante'], 'pagador' => $qr['pagador']];
+            if ($metodo === 'mixto') $s['pago_efectivo'] = ['monto' => self::decimal($parteEfectivo), 'recibido' => self::decimal($rec), 'cambio' => self::decimal($cambio)];
             $id = Factura::crear($ventaId, $s, (int) $leyenda['id']);
             Bitacora::registrar('venta.cobro', 'ventas', $ventaId, ['factura_id' => $id, 'total' => $s['total'], 'metodo' => $metodo, 'leyenda_id' => $leyenda['id']]
-                + ($qr !== null ? ['estado_pago' => 'pendiente', 'comprobante' => $qr['comprobante']] : [])
+                + ($qr !== null ? ['estado_pago' => 'pendiente', 'comprobante' => $qr['comprobante'], 'qr' => self::decimal($qr['monto'])] : [])
+                + ($metodo === 'mixto' ? ['efectivo' => self::decimal($parteEfectivo), 'cambio' => self::decimal($cambio)] : [])
                 + ($promo + $regalos > 0 ? ['promociones' => $s['promociones']] : []));
             if ($permiso !== null) {
                 Bitacora::registrar('venta.descuento_manual', 'ventas', $ventaId, ['factura_id' => $id, 'monto' => $s['descuento'], 'motivo' => $permiso['motivo'],
