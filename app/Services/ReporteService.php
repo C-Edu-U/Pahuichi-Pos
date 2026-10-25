@@ -190,8 +190,9 @@ final class ReporteService
             FROM ventas v JOIN cajas c ON c.id = v.caja_id JOIN usuarios u ON u.id = v.usuario_id' . $donde . '
             GROUP BY u.id, u.nombre ORDER BY total DESC, u.nombre', $p);
 
-        return self::seccion('cajeros', 'Ventas por cajero', [
-            ['Cajero', 'texto'], ['Ventas', 'entero'], ['Total', 'monto'], ['Ticket promedio', 'monto'],
+        // Quien cobró: el cajero o, en una cuenta de mesa (HU-35), el mesero que la cerró
+        return self::seccion('cajeros', 'Ventas por quien cobró', [
+            ['Cobró', 'texto'], ['Ventas', 'entero'], ['Total', 'monto'], ['Ticket promedio', 'monto'],
         ], array_map(static fn (array $r): array => [
             $r['nombre'], (int) $r['ventas'], self::monto($r['total']), round(self::monto($r['total']) / max(1, (int) $r['ventas']), 2),
         ], $filas), [1, 2]);
@@ -229,7 +230,7 @@ final class ReporteService
             LEFT JOIN facturas f ON f.venta_id = v.id' . $donde . ' ORDER BY v.creado_en, v.id', $p);
 
         return self::seccion('anulaciones', 'Anulaciones', [
-            ['Fecha y hora', 'texto'], ['Pedido', 'texto'], ['Factura', 'texto'], ['Turno', 'texto'], ['Cajero', 'texto'], ['Monto', 'monto'],
+            ['Fecha y hora', 'texto'], ['Pedido', 'texto'], ['Factura', 'texto'], ['Turno', 'texto'], ['Cobró', 'texto'], ['Monto', 'monto'],
         ], array_map(static fn (array $r): array => [
             (new DateTimeImmutable($r['creado_en']))->format('d/m/Y H:i'), str_pad((string) $r['id'], 3, '0', STR_PAD_LEFT),
             $r['numero'] !== null ? (string) $r['numero'] : '—', $r['turno'], $r['cajero'], self::monto($r['total']),
