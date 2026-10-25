@@ -61,6 +61,7 @@
         var li = el('li', 'ronda ronda--' + r.estado + (op.caja && r.estado === 'enviada' && !r.comanda_vista ? ' ronda--nueva' : ''));
         var cab = el('p', 'ronda__cabeza');
         cab.appendChild(el('span', 'ronda__titulo', 'Pedido ' + r.numero + ' · ' + r.hora + ' · ' + r.usuario));
+        if (op.caja && r.estado === 'enviada' && !r.comanda_vista) cab.firstChild.appendChild(el('span', 'insignia insignia--aviso', 'Nuevo'));
         cab.appendChild(el('span', 'ronda__subtotal num', r.estado === 'cancelada' ? 'Cancelado' : 'Bs ' + P.bs(Number(r.subtotal))));
         li.appendChild(cab);
         var items = el('ul', 'ronda__lineas');

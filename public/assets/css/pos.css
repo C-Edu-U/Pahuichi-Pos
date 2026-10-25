@@ -1255,9 +1255,11 @@
   font-size: var(--texto-sm);
 }
 
+/* Pedido con la comanda sin imprimir: fondo ámbar suave y la marca «Nuevo» */
 .ronda--nueva {
-  padding-left: var(--esp-1);
-  border-left: 3px solid var(--ambar-500);
+  padding: var(--esp-1);
+  border-radius: var(--radio-sm);
+  background: var(--ambar-50);
 }
 
 .ronda--cancelada {
