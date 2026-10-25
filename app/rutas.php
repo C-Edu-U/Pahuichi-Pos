@@ -18,6 +18,7 @@ use App\Controllers\ConfigController;
 use App\Controllers\InicioController;
 use App\Controllers\ModuloController;
 use App\Controllers\QrController;
+use App\Controllers\ConciliacionController;
 use App\Controllers\PosController;
 use App\Controllers\PromocionController;
 use App\Controllers\TableroController;
@@ -53,6 +54,12 @@ $router->post('/usuarios/mi-pin', [UsuarioController::class, 'miPin'], $usuarios
 // Configuración (HU-08, HU-09, HU-10, HU-11)
 $config = ['auth', 'permiso:modulo.config'];
 $router->get('/config', [ConfigController::class, 'index'], $config);
+// HU-41: conciliacion del administrador y avisos privados a caja.
+$router->get('/conciliacion', [ConciliacionController::class, 'index'], ['auth','permiso:conciliacion.resolver']);
+$router->post('/conciliacion/{id}/resolver', [ConciliacionController::class, 'resolver'], ['auth','permiso:conciliacion.resolver']);
+$router->get('/conciliacion/{id}/foto', [ConciliacionController::class, 'foto'], ['auth','permiso:conciliacion.resolver']);
+$router->get('/conciliacion/avisos', [ConciliacionController::class, 'avisos'], ['auth','permiso:modulo.caja']);
+$router->post('/conciliacion/avisos/{id}/visto', [ConciliacionController::class, 'enterado'], ['auth','permiso:modulo.caja']);
 $router->get('/qr', [QrController::class, 'index'], ['auth', 'permiso:modulo.qr']);
 $router->post('/qr/subir', [QrController::class, 'subir'], ['auth', 'permiso:qr.subir']);
 $router->post('/qr/simular', [QrController::class, 'simular'], ['auth', 'permiso:qr.subir']);

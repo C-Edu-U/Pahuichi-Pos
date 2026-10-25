@@ -17,7 +17,7 @@ return [
     'modulo.caja' => $caja,
     'modulo.ventas' => $caja,
     'modulo.mesero' => ['administrador', 'mesero'],
-    'modulo.conciliacion' => $caja,
+    'modulo.conciliacion' => $admin,
     'modulo.qr' => $caja,
     'modulo.clientes' => $caja,
     'modulo.catalogo' => $caja,
