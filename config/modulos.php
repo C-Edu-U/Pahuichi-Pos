@@ -42,7 +42,6 @@ return [
     ],
     'reportes' => [
         'grupo' => 4, 'ruta' => '/reportes', 'icono' => 'reportes', 'texto' => 'Reportes',
-        'pendiente' => ['historias' => 'HU-63', 'texto' => 'Ventas por fecha y turno, Libro de Ventas, exportar a PDF y Excel.'],
     ],
     'bitacora' => [
         'grupo' => 4, 'ruta' => '/bitacora', 'icono' => 'bitacora', 'texto' => 'Bitácora',

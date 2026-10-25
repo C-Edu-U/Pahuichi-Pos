@@ -19,6 +19,7 @@ return [
         'ventas' => 'Ventas y tickets',
         'promociones' => 'Promociones',
         'qr' => 'Pagos QR',
+        'reportes' => 'Reportes',
     ],
 
     // accion => [texto, grupo, tono]
@@ -66,6 +67,7 @@ return [
         'producto.agotado' => ['Agotado', 'catalogo', 'neutra'],
         'producto.foto' => ['Foto del producto', 'catalogo', 'neutra'],
 
+        'reporte.exportar' => ['Reporte exportado', 'reportes', 'neutra'],
         'promocion.alta' => ['Promoción creada', 'promociones', 'neutra'],
         'promocion.edicion' => ['Promoción editada', 'promociones', 'aviso'],
         'promocion.activar' => ['Promoción activada', 'promociones', 'neutra'],

@@ -69,10 +69,10 @@ final class InstalacionTest extends CasoPrueba
     public function testModuloSinConstruirMuestraProximamente(): void
     {
         $this->entrarComo('admin');
-        $r = $this->get('/reportes');
+        $r = $this->get('/mesero');
 
         $this->assertSame(200, $r->estado);
         $this->assertStringContainsString('Próximamente', $r->cuerpo);
-        $this->assertStringContainsString('HU-63', $r->cuerpo);
+        $this->assertStringContainsString('HU-35', $r->cuerpo);
     }
 }

@@ -19,6 +19,7 @@ use App\Controllers\InicioController;
 use App\Controllers\ModuloController;
 use App\Controllers\PosController;
 use App\Controllers\PromocionController;
+use App\Controllers\ReporteController;
 use App\Controllers\TableroController;
 use App\Controllers\FacturaController;
 use App\Controllers\ProductoController;
@@ -114,6 +115,10 @@ $router->post('/promociones/nueva', [PromocionController::class, 'crear'], $prom
 $router->get('/promociones/{id}/editar', [PromocionController::class, 'editar'], $promociones);
 $router->post('/promociones/{id}', [PromocionController::class, 'actualizar'], $promociones);
 $router->post('/promociones/{id}/estado', [PromocionController::class, 'estado'], $promociones);
+
+// Reportes (HU-63): solo el administrador; exportar pide su propio permiso
+$router->get('/reportes', [ReporteController::class, 'index'], ['auth', 'permiso:modulo.reportes']);
+$router->get('/reportes/exportar', [ReporteController::class, 'exportar'], ['auth', 'permiso:modulo.reportes', 'permiso:reportes.exportar']);
 
 // Bitácora (HU-05): solo lectura, solo el administrador
 $router->get('/bitacora', [BitacoraController::class, 'index'], ['auth', 'permiso:modulo.bitacora']);
