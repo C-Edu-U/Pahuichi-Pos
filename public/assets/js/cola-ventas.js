@@ -11,24 +11,28 @@
    - «enviada»: confirmada, con su factura; queda hasta que el cajero la marque lista.
 
    No toca la pantalla: el POS le pasa dónde guardar (localStorage), cómo enviar y qué
-   hacer cuando algo cambia. Así se prueba en Node (tests/js/cola-ventas.test.mjs). */
+   hacer cuando algo cambia. Así se prueba en Node (tests/js/cola-ventas.test.mjs).
+   HU-35: el mesero usa otra cola (su clave y su prefijo) para sus pedidos y cobros. */
 (function () {
   'use strict';
 
   var CLAVE = 'pahuichi.hu36.cola';
 
   /**
-   * @param {{almacen: Storage, usuario: string, enviar: function(object): Promise<object>, alCambiar?: function(Array): void}} op
+   * @param {{almacen: Storage, usuario: string, enviar: function(object): Promise<object>, alCambiar?: function(Array): void,
+   *          clave?: string, prefijo?: string}} op  clave: dónde se guarda; prefijo: del número provisional (S-)
    * enviar(datos) resuelve {ok: true, datos} | {red: true} | {sesion: true} | {rechazo: 'motivo'}
    */
   function crear(op) {
     var procesando = null;
+    var clave = op.clave || CLAVE;
+    var prefijo = op.prefijo || 'S-';
 
     function leer() {
-      try { return JSON.parse(op.almacen.getItem(CLAVE) || '[]'); } catch (e) { return []; }
+      try { return JSON.parse(op.almacen.getItem(clave) || '[]'); } catch (e) { return []; }
     }
     function escribir(lista) {
-      op.almacen.setItem(CLAVE, JSON.stringify(lista));
+      op.almacen.setItem(clave, JSON.stringify(lista));
       if (op.alCambiar) op.alCambiar(propias(lista));
     }
     function propias(lista) {
@@ -43,7 +47,7 @@
     /** Número provisional del día para anotar el pedido mientras no hay factura (S-1, S-2…). */
     function numeroProvisional(lista, fecha) {
       var delDia = lista.filter(function (v) { return v.fecha === fecha; });
-      return 'S-' + (delDia.reduce(function (m, v) { return Math.max(m, Number(String(v.provisional).slice(2)) || 0); }, 0) + 1);
+      return prefijo + (delDia.reduce(function (m, v) { return Math.max(m, Number(String(v.provisional).slice(prefijo.length)) || 0); }, 0) + 1);
     }
 
     /** Guarda la venta en la cola. Lanza si el equipo no deja guardar: entonces no se cobra. */
@@ -78,8 +82,8 @@
               cambiar(siguiente.uuid, {estado: 'enviada', factura: r.datos});
               resultado.enviadas.push(Object.assign({}, siguiente, {factura: r.datos}));
             } else if (r.rechazo !== undefined) {
-              cambiar(siguiente.uuid, {estado: 'rechazada', motivo: r.rechazo});
-              resultado.rechazadas.push(Object.assign({}, siguiente, {motivo: r.rechazo}));
+              cambiar(siguiente.uuid, {estado: 'rechazada', motivo: r.rechazo, descuento: r.descuento || null});
+              resultado.rechazadas.push(Object.assign({}, siguiente, {motivo: r.rechazo, descuento: r.descuento || null}));
             } else {
               resultado.detenido = r.sesion ? 'sesion' : 'red';
               break;
@@ -113,10 +117,11 @@
   }
 
   /** Envío real al servidor: interpreta la respuesta del cobro. */
-  async function enviarAlServidor(datos, csrf) {
+  /** url: '/pos/cobrar' (por defecto) o, para el mesero (HU-35), '/cuentas/rondas' o '/cuentas/cerrar'. */
+  async function enviarAlServidor(datos, csrf, url) {
     var r;
     try {
-      r = await fetch('/pos/cobrar', {method: 'POST', credentials: 'same-origin', redirect: 'manual',
+      r = await fetch(url || '/pos/cobrar', {method: 'POST', credentials: 'same-origin', redirect: 'manual',
         headers: {'X-CSRF-Token': csrf(), 'Accept': 'application/json'},
         body: new URLSearchParams(datos)});
     } catch (e) {

@@ -1,7 +1,8 @@
 /* Cuentas por mesa (HU-35): lo que comparten la pantalla del mesero y la caja.
    - listar(): las cuentas abiertas y las cobradas de hoy, con sus pedidos.
    - pintar(cuenta, opciones): la ficha de una mesa (pedidos, total y acciones).
-   - cobrar(cuenta, alCobrar): diálogo para cerrar y cobrar en efectivo (QR y mixto, HU-39).
+   - cobrar(cuenta, alCobrar, enviar): diálogo para cerrar y cobrar en efectivo (QR y mixto,
+     HU-39). enviar(datos, cuenta) es opcional: el mesero cobra a través de su cola sin red.
    - cancelar(ronda, alCancelar): diálogo para cancelar un pedido con su motivo.
    Un cobro que no se confirmó conserva su uuid: reintentar no cobra dos veces. */
 (function () {
@@ -99,8 +100,10 @@
       }
       var cobrar = el('button', 'boton boton--primario', 'Cerrar y cobrar');
       cobrar.type = 'button';
-      cobrar.disabled = !op.hayCaja;
-      if (!op.hayCaja) cobrar.title = 'No hay una caja abierta';
+      // Sin caja abierta no se cobra; con un cobro guardado sin red, tampoco otra vez
+      cobrar.disabled = !op.hayCaja || !!c.cobroPendiente;
+      if (c.cobroPendiente) cobrar.textContent = 'Cobro por enviar';
+      else if (!op.hayCaja) cobrar.title = 'No hay una caja abierta';
       cobrar.addEventListener('click', function () { op.alCobrar(c); });
       pie.appendChild(cobrar);
       art.appendChild(pie);
@@ -113,7 +116,7 @@
   }
 
   /* ------------------------------------------------------------------ cobro */
-  var cobro = null;   // {cuenta, uuid, descuento: {centavos, motivo, token}, alCobrar}
+  var cobro = null;   // {cuenta, uuid, descuento: {centavos, motivo, token}, alCobrar, enviar}
 
   function errorCobro(texto) { $('cuenta-error').textContent = texto; $('cuenta-error').hidden = !texto; }
   function aCobrar() { return (centavos(cobro.cuenta.total) - (cobro.descuento ? cobro.descuento.centavos : 0)) / 100; }
@@ -136,13 +139,15 @@
       ? ($('cuenta-cliente-nombre').value.trim() || 'Cliente') + ' · ' + $('cuenta-cliente-tipo').value + ' ' + doc : 'S/N · NIT 0';
   }
 
-  function cobrar(cuenta, alCobrar) {
+  function cobrar(cuenta, alCobrar, enviar) {
     // El mismo cobro (misma mesa y total) conserva su uuid si no se confirmó
-    if (!cobro || cobro.cuenta.id !== cuenta.id || cobro.cuenta.total !== cuenta.total) {
+    // Una cuenta abierta sin red todavía no tiene número: se reconoce por la mesa
+    if (!cobro || cobro.cuenta.mesa !== cuenta.mesa || cobro.cuenta.total !== cuenta.total) {
       cobro = {cuenta: cuenta, uuid: crypto.randomUUID(), descuento: null};
       $('cuenta-cliente-doc').value = ''; $('cuenta-cliente-nombre').value = ''; $('cuenta-cliente-tipo').value = 'NIT';
     }
     cobro.alCobrar = alCobrar;
+    cobro.enviar = enviar || null;
     $('cuenta-titulo').textContent = 'Cobrar la mesa ' + cuenta.mesa;
     var activas = cuenta.rondas.filter(function (r) { return r.estado === 'enviada'; }).length;
     $('cuenta-detalle').textContent = (activas === 1 ? '1 pedido' : activas + ' pedidos') + ' · abierta a las ' + cuenta.abierta + ' · ' + cuenta.abierta_por;
@@ -163,11 +168,12 @@
     if (!cobro) return;
     var boton = $('cuenta-confirmar');
     boton.disabled = true; errorCobro('');
-    var datos = Object.assign({uuid: cobro.uuid, exacto: exacto ? '1' : '0', recibido: $('cuenta-recibido').value,
+    var datos = Object.assign({uuid: cobro.uuid, mesa: cobro.cuenta.mesa, exacto: exacto ? '1' : '0', recibido: $('cuenta-recibido').value,
       total_esperado: cobro.cuenta.total,
       descuento: cobro.descuento ? (cobro.descuento.centavos / 100).toFixed(2) : '', autorizacion: cobro.descuento ? cobro.descuento.token : ''}, datosCliente());
     try {
-      var r = await pedir('/cuentas/' + cobro.cuenta.id + '/cerrar', datos);
+      // Caja: directo a la cuenta. Mesero: por su cola; sin red queda guardado ({guardado: true})
+      var r = cobro.enviar ? await cobro.enviar(datos, cobro.cuenta) : await pedir('/cuentas/' + cobro.cuenta.id + '/cerrar', datos);
       var hecho = cobro;
       cobro = null;
       $('modal-cuenta').close();

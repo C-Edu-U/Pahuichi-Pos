@@ -20,6 +20,18 @@ $estadoCatalogo = $caja !== null
             <h2 class="seccion__titulo" id="t-mesas">Mesas abiertas</h2>
             <button class="boton boton--fantasma" type="button" id="m-actualizar"><?= icono('reintentar', 'icono--sm') ?> Actualizar</button>
           </div>
+          <div class="alerta alerta--aviso" id="m-sin-red" role="status" hidden>
+            <?= icono('sinRed') ?>
+            <p class="alerta__texto" id="m-sin-red-texto">Sin conexión.</p>
+          </div>
+          <!-- Fase B: pedidos y cobros guardados sin red; lo que no se registró queda con su motivo -->
+          <section class="cola-ventas" id="m-cola" aria-labelledby="t-m-cola" hidden>
+            <div class="cola-ventas__cabeza">
+              <h3 class="cola-ventas__titulo" id="t-m-cola">Sin enviar <span class="cola-ventas__cuenta" id="m-cola-cuenta"></span></h3>
+              <button class="boton boton--fantasma" type="button" id="m-cola-enviar" hidden><?= icono('reintentar', 'icono--sm') ?> Enviar ahora</button>
+            </div>
+            <ul class="cola-ventas__lista" id="m-cola-lista" role="list" aria-live="polite"></ul>
+          </section>
           <div class="cuentas" id="m-cuentas" aria-live="polite"></div>
           <p class="cuentas__vacio" id="m-cuentas-vacio">Ninguna mesa abierta. El primer pedido de una mesa abre su cuenta.</p>
           <details class="mesero__cobradas" id="m-cobradas-panel" hidden>

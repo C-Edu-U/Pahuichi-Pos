@@ -229,6 +229,46 @@ final class CuentasMesaTest extends CasoPrueba
         $this->assertSame('cerrada', DB::valor('SELECT estado FROM cajas WHERE id = ?', [$this->caja]));
     }
 
+    /**
+     * Escenario (fase B, sin red): el cobro guardado en el celular nombra la mesa
+     *   Dado la mesa 3 pidió sin red y su cuenta todavía no tiene número en el celular
+     *   Cuando vuelve la red y salen su pedido y su cobro, en ese orden (dos veces por un reintento)
+     *   Entonces la cuenta se cobra una sola vez
+     */
+    public function testElCobroGuardadoSinRedNombraLaMesa(): void
+    {
+        $this->assertSame(200, $this->post('/cuentas/rondas', ['accion' => 'ronda', 'uuid' => $this->uuid(), 'mesa' => '3',
+            'lineas' => json_encode([['id' => $this->majadito, 'cantidad' => 1, 'nota' => '']]), 'total_esperado' => '40.00',
+            'promociones' => '0.00', 'regalos' => '0.00', 'momento' => '2026-10-22T11:58:00'])->estado);
+        $cobro = ['accion' => 'cierre', 'uuid' => $this->uuid(), 'mesa' => '3', 'exacto' => '1', 'total_esperado' => '40.00'];
+
+        $primero = $this->post('/cuentas/cerrar', $cobro);
+        $segundo = $this->post('/cuentas/cerrar', $cobro);
+
+        $this->assertSame(200, $primero->estado, $primero->cuerpo);
+        $this->assertSame(json_decode($primero->cuerpo, true), json_decode($segundo->cuerpo, true));
+        $this->assertSame('/cuentas/' . $this->cuenta()['id'] . '/factura', json_decode($primero->cuerpo, true)['tickets']);
+        $this->assertSame(1, (int) DB::valor('SELECT COUNT(*) FROM facturas'));
+        // Otra vez la mesa, ya cobrada: no tiene cuenta abierta
+        $r = $this->post('/cuentas/cerrar', ['uuid' => $this->uuid(), 'mesa' => '3', 'exacto' => '1', 'total_esperado' => '40.00']);
+        $this->assertSame(422, $r->estado);
+        $this->assertStringContainsString('La mesa 3 no tiene una cuenta abierta', $r->cuerpo);
+    }
+
+    /** Fase B: todo lo que carga la pantalla del mesero está en la caché del service worker. */
+    public function testLaPantallaDelMeseroSePuedeAbrirSinRed(): void
+    {
+        $html = $this->get('/mesero')->cuerpo;
+        $sw = (string) file_get_contents(dirname(__DIR__, 2) . '/public/sw.js');
+
+        preg_match_all('#(?:href|src)="(/assets/(?:css|js)/[^"?]+)"#', $html, $m);
+        foreach (array_unique(array_filter($m[1], static fn (string $r): bool => !str_ends_with($r, 'print.css'))) as $recurso) {
+            $this->assertStringContainsString("'{$recurso}'", $sw, "{$recurso} no está en la caché del service worker");
+        }
+        $this->assertStringContainsString("'/mesero'", $sw);
+        $this->assertStringContainsString('id="m-cola"', $html);
+    }
+
     public function testUnCobroRepetidoNoFacturaDosVeces(): void
     {
         $this->ronda('3', [$this->majadito => 1], '40.00');
