@@ -7,6 +7,7 @@ namespace Tests\Integracion;
 use App\Core\DB;
 use App\Core\Reloj;
 use App\Models\Bitacora;
+use App\Models\Caja;
 use App\Models\Turno;
 use Tests\CasoPrueba;
 
@@ -147,35 +148,94 @@ final class TurnosTest extends CasoPrueba
         $this->assertStringContainsString('único turno', $r->cuerpo);
     }
 
-    public function testNoEliminarTurnoConCajasHoy(): void
+    public function testNoEliminarTurnoConCajas(): void
     {
-        DB::consulta("INSERT INTO cajas (turno_id, fecha, cajero_id, abierta_por, fondo_inicial, abierta_en) VALUES (?, ?, 1, 1, 100, NOW())", [$this->mediodia, Reloj::ahora()->format('Y-m-d')]);
+        // Una caja de otro día también lo impide: sus reportes nombran el turno
+        DB::consulta("INSERT INTO cajas (turno_id, fecha, cajero_id, abierta_por, fondo_inicial, abierta_en, estado) VALUES (?, '2026-10-01', 1, 1, 100, NOW(), 'cerrada')", [$this->mediodia]);
 
         $r = $this->post('/config/turnos', ['eliminar' => '1', 'turnos_eliminar' => [$this->mediodia]]);
 
         $this->assertSame(422, $r->estado);
-        $this->assertStringContainsString('ya tiene cajas hoy', $r->cuerpo);
+        $this->assertStringContainsString('ya tiene cajas y no se puede eliminar', $r->cuerpo);
+        $this->assertNotNull(Turno::buscar($this->mediodia));
     }
 
-    public function testNoEliminarTurnoEnCurso(): void
+    /**
+     * Escenario: Cambio de horario con un turno en curso
+     *   Dado son las 12:00 y el turno de medio día está en curso
+     *   Cuando el administrador cambia el horario de la noche (o el del propio medio día) y guarda
+     *   Entonces los cambios se guardan
+     */
+    public function testSeEditaConUnTurnoEnCurso(): void
     {
         Reloj::fijar('2026-10-15 12:00:00');
         $this->entrarComo('admin');
 
-        $r = $this->post('/config/turnos', ['eliminar' => '1', 'turnos_eliminar' => [$this->mediodia]]);
+        $this->assertRedirige('/config#turnos', $this->enviar('11:00', '16:00', '17:00', '23:59'));
+        $this->assertSame('17:00:00', DB::valor('SELECT hora_inicio FROM turnos WHERE id = ?', [$this->noche]));
 
-        $this->assertSame(422, $r->estado);
-        $this->assertStringContainsString('está en curso', $r->cuerpo);
+        $this->assertRedirige('/config#turnos', $this->enviar('10:30', '16:00', '17:00', '23:59'));
+        $this->assertSame('10:30:00', DB::valor('SELECT hora_inicio FROM turnos WHERE id = ?', [$this->mediodia]));
+        $this->assertStringNotContainsString('está en curso', $this->get('/config')->cuerpo);
     }
 
-    public function testNoEditarTurnoEnCurso(): void
+    public function testSeEliminaUnTurnoEnCursoSinCajas(): void
     {
         Reloj::fijar('2026-10-15 12:00:00');
         $this->entrarComo('admin');
 
-        $r = $this->enviar('10:00', '15:00', '18:00', '23:59');
+        $this->assertRedirige('/config#turnos', $this->post('/config/turnos', ['eliminar' => '1', 'turnos_eliminar' => [$this->mediodia]]));
+        $this->assertNull(Turno::buscar($this->mediodia));
+    }
+
+    public function testConUnErrorLaPantallaConservaLoEscrito(): void
+    {
+        $r = $this->enviar('11:00', '16:00', '20:00', '19:00');
 
         $this->assertSame(422, $r->estado);
-        $this->assertStringContainsString('está en curso', $r->cuerpo);
+        $this->assertStringContainsString('value="11:00"', $r->cuerpo);
+        $this->assertStringContainsString('value="16:00"', $r->cuerpo);
+        $this->assertStringContainsString('value="20:00"', $r->cuerpo);
+        $this->assertStringContainsString('value="19:00"', $r->cuerpo);
+        $this->assertStringNotContainsString('Elige la hora de inicio.', $r->cuerpo);
+    }
+
+    /**
+     * Escenario: La caja conserva su horario
+     *   Dado la caja de medio día se abrió con el horario 11:00 a 16:00
+     *   Cuando el administrador cambia el horario de medio día a 10:30 a 15:30
+     *   Entonces esa caja sigue mostrando 11:00 a 16:00 y la próxima caja usa el horario nuevo
+     */
+    public function testLaCajaConservaElHorarioConElQueAbrio(): void
+    {
+        Reloj::fijar('2026-10-15 11:30:00');
+        $this->entrarComo('mariela', 'pin');
+        $this->post('/caja/abrir', ['turno_id' => $this->mediodia, 'fondo' => '200']);
+        $caja = (int) DB::valor("SELECT id FROM cajas WHERE estado = 'abierta'");
+
+        $this->entrarComo('admin');
+        $this->assertRedirige('/config#turnos', $this->enviar('10:30', '15:30', '18:00', '23:59'));
+
+        $this->assertSame('11:00 a 16:00', Turno::horario((array) Caja::buscar($caja)));
+        $this->assertStringContainsString('11:00 a 16:00', $this->get('/caja')->cuerpo);
+
+        DB::consulta("UPDATE cajas SET estado = 'cerrada' WHERE id = ?", [$caja]);
+        Reloj::fijar('2026-10-16 11:00:00');
+        $this->entrarComo('mariela', 'pin');
+        $this->post('/caja/abrir', ['turno_id' => $this->mediodia, 'fondo' => '200']);
+        $nueva = (int) DB::valor("SELECT id FROM cajas WHERE estado = 'abierta'");
+        $this->assertSame('10:30 a 15:30', Turno::horario((array) Caja::buscar($nueva)));
+    }
+
+    public function testLaMedianocheSeVe2359EnTodasLasPantallas(): void
+    {
+        $this->assertSame('18:00 a 23:59', Turno::horario(['hora_inicio' => '18:00:00', 'hora_fin' => '24:00:00']));
+
+        Reloj::fijar('2026-10-15 18:30:00');
+        $this->entrarComo('mariela', 'pin');
+        $html = $this->get('/caja')->cuerpo;
+
+        $this->assertStringContainsString('Noche · 18:00 a 23:59', $html);
+        $this->assertStringNotContainsString('24:00', $html);
     }
 }

@@ -168,7 +168,7 @@ $cufdVigente = !isset($errores['f-vigencia']) && ParametrosFiscales::cufdVigente
                     <input class="casilla__input" id="eliminar-turno-<?= $id ?>" name="turnos_eliminar[]" type="checkbox" value="<?= $id ?>">
                     Eliminar este turno
                   </label>
-                  <p class="campo__ayuda">Solo se puede eliminar si no tiene cajas hoy y no está en curso.</p>
+                  <p class="campo__ayuda">Solo se puede eliminar si todavía no tiene cajas.</p>
                   <?= mensaje_error($errores, "e{$id}") ?>
                 </div>
                 <div class="campo">
@@ -182,9 +182,6 @@ $cufdVigente = !isset($errores['f-vigencia']) && ParametrosFiscales::cufdVigente
                   <p class="campo__ayuda" id="t<?= $id ?>-fin-ayuda">23:59 es hasta medianoche.</p>
                   <?= mensaje_error($errores, "t{$id}-fin") ?>
                 </div>
-<?php if (Turno::estaEnCurso($id)): ?>
-                <p class="campo__ayuda campo__ayuda--aviso">Este turno está en curso ahora: su horario no se puede editar hasta que termine.</p>
-<?php endif; ?>
               </fieldset>
 <?php endforeach; ?>
 
@@ -220,7 +217,7 @@ $cufdVigente = !isset($errores['f-vigencia']) && ParametrosFiscales::cufdVigente
                 </div>
                 <?= isset($errores['nuevo_general']) ? '<p class="alerta alerta--peligro campo--ancho" role="alert">' . e($errores['nuevo_general']) . '</p>' : '' ?>
               </fieldset>
-              <p class="config__nota">Un turno no abre si la caja del anterior no está cerrada y arqueada. Un turno en curso no se puede editar ni eliminar. El turno siempre termina después de empezar: 23:59 es hasta medianoche.</p>
+              <p class="config__nota">Un turno no abre si la caja del anterior no está cerrada y arqueada. El horario nuevo se usa desde la próxima caja que se abra: las cajas ya abiertas o cerradas conservan el suyo. El turno siempre termina después de empezar: 23:59 es hasta medianoche.</p>
             </div>
             <div class="panel-bloque__pie">
               <button class="boton boton--primario" type="submit">Guardar cambios</button>
