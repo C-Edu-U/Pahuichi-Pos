@@ -42,4 +42,10 @@ return [
     'catalogo.editar' => $admin,
     'catalogo.agotado' => $caja,
     'reportes.exportar' => $admin,
+    // HU-35: cuentas por mesa. El mesero toma pedidos y cobra; caja ve y cobra; el
+    // descuento manual con PIN solo en caja
+    'cuentas.ver' => ['administrador', 'cajero', 'mesero'],
+    'cuentas.tomar' => ['administrador', 'mesero'],
+    'cuentas.cobrar' => ['administrador', 'cajero', 'mesero'],
+    'cuentas.descuento' => $caja,
 ];

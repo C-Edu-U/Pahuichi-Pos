@@ -84,9 +84,29 @@
     }
   }
 
+  /* HU-35: mesa del pedido. Los botones 1 a 12 llenan el campo «Otra»; el campo es el valor
+     y marca su botón. mesa(campo) vuelve a marcar después de cambiar el valor por código. */
+  function mesa(campo) {
+    var grupo = campo && campo.closest('.mesas--pedido');
+    if (!grupo) return;
+    grupo.querySelectorAll('.mesa-opcion').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.getAttribute('data-mesa') === campo.value));
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('.mesas--pedido .mesa-opcion');
+    if (!b) return;
+    var campo = b.closest('.mesas--pedido').querySelector('.mesas__otra');
+    campo.value = b.getAttribute('data-mesa');
+    campo.dispatchEvent(new Event('input', {bubbles: true}));
+  });
+  document.addEventListener('input', function (e) {
+    if (e.target.classList && e.target.classList.contains('mesas__otra')) mesa(e.target);
+  });
+
   window.Pahuichi = {
     puede: puede, parametro: parametro, leer: leer, guardar: guardar,
-    bs: bs, leerMonto: leerMonto, normalizar: normalizar, aviso: aviso, marcarCampo: marcarCampo
+    bs: bs, leerMonto: leerMonto, normalizar: normalizar, aviso: aviso, marcarCampo: marcarCampo, mesa: mesa
   };
 
   // PWA: service worker en la raíz del sitio

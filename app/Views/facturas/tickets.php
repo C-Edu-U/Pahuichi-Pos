@@ -50,7 +50,9 @@
         <!-- Comanda -->
         <section class="ticket-col" aria-labelledby="t-comanda">
           <h2 class="ticket-col__titulo" id="t-comanda">Comanda <span>para cocina</span></h2>
-<?php $tipoTicket = 'comanda'; require __DIR__ . '/_ticket.php'; ?>
+<?php if (!empty($s['cuenta'])): ?>
+          <p class="ticket-col__nota">Cuenta de la mesa <?= e($s['mesa']) ?>: las comandas salieron con cada pedido (<?= (int) $s['cuenta']['rondas'] ?>) y no se repiten.</p>
+<?php else: $tipoTicket = 'comanda'; require __DIR__ . '/_ticket.php'; endif; ?>
         </section>
 
         <!-- Copia de caja -->

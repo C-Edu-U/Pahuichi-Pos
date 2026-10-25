@@ -25,6 +25,7 @@ const RECURSOS = [
   '/assets/js/motor-promociones.js',
   '/assets/js/cliente-pos.js',
   '/assets/js/cola-ventas.js',
+  '/assets/js/cuentas.js',
   '/assets/js/pos.js',
   '/assets/js/producto-fotos-pos.js',
   '/assets/img/icono.svg',

@@ -53,6 +53,11 @@ final class FacturaController extends Controller
         } catch (DomainException $e) {
             throw new ErrorHttp(422, $e->getMessage());
         }
+        // HU-35: en una cuenta de mesa las comandas salieron con cada pedido
+        if (!empty($f['snapshot']['cuenta'])) {
+            $salida['tipos'] = array_values(array_diff($salida['tipos'], ['comanda']));
+            if ($salida['tipos'] === []) throw new ErrorHttp(422, 'Las comandas de esta mesa salieron con cada pedido.');
+        }
         $bytes = TicketsPdf::generar($f['snapshot'], $salida);
         $nombre = 'Tickets-' . $destino . '-factura-' . (int) $f['numero'] . '.pdf';
         $disposicion = $peticion->consulta('descargar') === '1' ? 'attachment' : 'inline';

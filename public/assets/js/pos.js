@@ -403,6 +403,7 @@
     });
     elegirTipo(guardado.tipo === 'llevar' ? 'llevar' : 'mesa');
     $('mesa').value = /^[1-9]\d?$/.test(guardado.mesa || '') ? guardado.mesa : '';
+    P.mesa($('mesa'));
     if (guardado.cliente && guardado.cliente.cliente_doc) window.PahuichiCliente.restaurar(guardado.cliente);
   }
 
@@ -434,14 +435,14 @@
   function elegirTipo(tipo) {
     tipoPedido = tipo;
     document.querySelectorAll('[data-tipo]').forEach(function (x) { x.setAttribute('aria-pressed', String(x.getAttribute('data-tipo') === tipo)); });
-    $('mesa').hidden = tipo !== 'mesa';
+    $('mesas').hidden = tipo !== 'mesa';
     $('mesa').removeAttribute('aria-invalid');
     errorCobro('');
     guardarPedido();
   }
   function exigirMesa() {
     if (tipoPedido !== 'mesa' || /^[1-9]\d?$/.test($('mesa').value)) return true;
-    errorCobro('Escribe el número de mesa, de 1 a 99, o elige Llevar.');
+    errorCobro('Elige la mesa (o escribe otra, de 1 a 99), o elige Llevar.');
     $('mesa').setAttribute('aria-invalid', 'true');
     $('mesa').focus();
     return false;
@@ -449,7 +450,7 @@
   document.querySelectorAll('[data-tipo]').forEach(function (b) {
     b.addEventListener('click', function () {
       elegirTipo(b.getAttribute('data-tipo'));
-      if (tipoPedido === 'mesa') $('mesa').focus();
+      if (tipoPedido === 'mesa') ($('mesas').querySelector('[aria-pressed="true"]') || $('mesas').querySelector('.mesa-opcion')).focus();
     });
   });
   // Solo cifras y sin ceros a la izquierda: «04» queda en «4»
@@ -528,7 +529,7 @@
     carrito.vaciar(); notasAbiertas.clear();
     window.PahuichiCliente.reset();
     if (dialogoCobro.open) dialogoCobro.close();
-    $('mesa').value = ''; elegirTipo('mesa');
+    $('mesa').value = ''; P.mesa($('mesa')); elegirTipo('mesa');
     pintar();
   }
 
@@ -811,5 +812,49 @@
   dialogoCobro.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' && e.target === $('recibido')) { e.preventDefault(); cobrar(false); }
   });
+  /* HU-35: cuentas por mesa. Los meseros envían pedidos a la cuenta de una mesa; aquí se
+     imprime la comanda de cada uno y caja también puede cerrar y cobrar la cuenta. Cada 20
+     segundos se revisa si llegaron pedidos nuevos (con comanda sin abrir) y se avisa. */
+  var Cuentas = window.PahuichiCuentas;
+  if (Cuentas && $('ver-mesas')) {
+    var avisadas = null;
+    var ocupado = function () { return $('modal-cuenta').open || $('modal-cancelar-ronda').open; };
+    var opcionesMesa = {caja: true, hayCaja: true,
+      alCobrar: function (c) { Cuentas.cobrar(c, mesaCobrada); },
+      alCancelar: function (r, c) { Cuentas.cancelar(r, c, function () { mesas(false); }); }};
+    var mesas = async function (avisar) {
+      var r;
+      try { r = await Cuentas.listar(); } catch (e) { return; }
+      var abiertas = r.cuentas.filter(function (c) { return c.estado === 'abierta'; });
+      var nuevas = [];
+      abiertas.forEach(function (c) {
+        c.rondas.forEach(function (x) { if (x.estado === 'enviada' && !x.comanda_vista) nuevas.push({mesa: c.mesa, id: x.id, numero: x.numero}); });
+      });
+      $('mesas-cuenta').textContent = abiertas.length;
+      $('ver-mesas').classList.toggle('tiene-nuevas', nuevas.length > 0);
+      $('ver-mesas').setAttribute('aria-label', 'Mesas abiertas: ' + abiertas.length + (nuevas.length ? ', ' + nuevas.length + ' pedidos con la comanda sin imprimir' : ''));
+      if (avisadas && avisar) {
+        nuevas.forEach(function (n) { if (!avisadas[n.id]) P.aviso('Nuevo pedido de la mesa ' + n.mesa + ': imprime su comanda en «Mesas».'); });
+      }
+      avisadas = {};
+      nuevas.forEach(function (n) { avisadas[n.id] = true; });
+      if (ocupado()) return;
+      $('lista-cuentas').replaceChildren.apply($('lista-cuentas'), abiertas.map(function (c) { return Cuentas.pintar(c, opcionesMesa); }));
+      $('cuentas-vacio').hidden = abiertas.length !== 0;
+    };
+    var mesaCobrada = function (r, c) {
+      ventaLista('Mesa ' + c.mesa + ' cobrada', 'Factura N° ' + r.numero + ' · cambio Bs ' + P.bs(Number(r.cambio)) + ' · factura y copia en PDF', r.tickets);
+      P.aviso('Mesa ' + c.mesa + ' cobrada: factura N° ' + r.numero + '.');
+      mesas(false);
+    };
+    $('ver-mesas').addEventListener('click', function () { mesas(false); $('modal-cuentas').showModal(); });
+    // Al abrir una comanda deja de ser nueva
+    $('lista-cuentas').addEventListener('click', function (e) {
+      if (e.target.closest('[data-ronda-comanda]')) window.setTimeout(function () { mesas(false); }, 1500);
+    });
+    mesas(false);
+    window.setInterval(function () { if (navigator.onLine !== false) mesas(true); }, 20000);
+  }
+
   window.PahuichiPos = { filtrar: filtrar, carrito: carrito };
 })();

@@ -1149,3 +1149,187 @@
 .cliente-pos__buscador--hu32 .cliente-pos__sugerencia { min-height: 3rem; }
 .cliente-pos__buscador--hu32 .control,
 .cliente-pos__buscador--hu32 .boton { font-size: 1rem; }
+
+/* --------------------------------------------------------------------------
+   HU-35: mesa del pedido (1 a 12 u otra) y cuentas por mesa
+   -------------------------------------------------------------------------- */
+.mesas--pedido {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--esp-05);
+}
+
+.pos__pedido .mesas--pedido {
+  margin: 0 var(--esp-2) var(--esp-1);
+}
+
+.mesas--pedido[hidden] {
+  display: none;
+}
+
+.mesas--pedido .mesa-opcion {
+  min-height: 2.75rem;
+  font-size: var(--texto-sm);
+}
+
+.mesas__otra {
+  grid-column: span 2;
+  min-height: 2.75rem;
+  text-align: center;
+}
+
+#ver-mesas.tiene-nuevas {
+  background: var(--ambar-50);
+  color: var(--ambar-800);
+}
+
+.metodos__opcion[aria-pressed="true"] {
+  background: var(--blanco);
+  color: var(--verde-800);
+  box-shadow: var(--sombra-1), 0 0 0 1px var(--color-borde);
+}
+
+.modal--ancho {
+  width: min(48rem, calc(100vw - var(--esp-2)));
+  max-height: calc(100dvh - var(--esp-2));
+  overflow: auto;
+}
+
+.cuentas {
+  display: grid;
+  gap: var(--esp-2);
+}
+
+.cuentas__vacio {
+  font-size: var(--texto-sm);
+  color: var(--color-texto-2);
+}
+
+.cuenta {
+  display: grid;
+  gap: var(--esp-1);
+  padding: var(--esp-2);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  background: var(--blanco);
+}
+
+.cuenta__cabeza {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0 var(--esp-2);
+  align-items: baseline;
+}
+
+.cuenta__mesa {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--esp-1);
+  font-size: var(--texto-lg);
+  font-weight: var(--peso-semi);
+}
+
+.cuenta__datos {
+  font-size: var(--texto-sm);
+  color: var(--color-texto-2);
+}
+
+.cuenta__total {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  font-size: var(--texto-xl);
+  font-weight: var(--peso-semi);
+}
+
+.cuenta__rondas {
+  display: grid;
+  gap: var(--esp-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ronda {
+  padding: var(--esp-1) 0 0;
+  border-top: 1px solid var(--linea-suave);
+  font-size: var(--texto-sm);
+}
+
+.ronda--nueva {
+  padding-left: var(--esp-1);
+  border-left: 3px solid var(--ambar-500);
+}
+
+.ronda--cancelada {
+  color: var(--color-texto-2);
+}
+
+.ronda--cancelada .ronda__lineas {
+  text-decoration: line-through;
+}
+
+.ronda__cabeza {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--esp-1);
+  font-weight: var(--peso-semi);
+}
+
+.ronda__lineas {
+  margin: var(--esp-05) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ronda__nota,
+.ronda__promo,
+.ronda__motivo {
+  color: var(--color-texto-2);
+}
+
+.ronda__acciones,
+.cuenta__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-05);
+  margin-top: var(--esp-05);
+}
+
+.cuenta__acciones {
+  justify-content: flex-end;
+}
+
+.cuenta-cobro__detalle,
+.cuenta-cobro__descuento {
+  margin: var(--esp-1) var(--esp-3) 0;
+  font-size: var(--texto-sm);
+  color: var(--color-texto-2);
+}
+
+.cuenta-cobro__nota {
+  margin: var(--esp-05) var(--esp-3) 0;
+  font-size: var(--texto-xs);
+  color: var(--color-texto-2);
+}
+
+.cuenta-cobro__cliente summary {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-1);
+  min-height: 2.75rem;
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-semi);
+  cursor: pointer;
+}
+
+.cuenta-cobro__cliente summary span {
+  font-weight: var(--peso-normal);
+  color: var(--color-texto-2);
+}
+
+.cuenta-cobro__campos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--esp-1) var(--esp-2);
+  margin-top: var(--esp-1);
+}

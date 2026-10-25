@@ -114,8 +114,11 @@ final class TipoPedidoTest extends CasoPrueba
         $html = $this->get('/pos')->cuerpo;
 
         $this->assertStringContainsString('<button class="tipo-pedido__opcion" type="button" data-tipo="mesa" aria-pressed="true">', $html);
-        $this->assertMatchesRegularExpression('/<input [^>]*id="mesa"[^>]* value="" placeholder="N°"/', $html);
+        // HU-35: mesas 1 a 12 en botones y otra escrita; ninguna elegida al empezar
+        $this->assertMatchesRegularExpression('/<input [^>]*id="mesa"[^>]* value="" placeholder="Otra"/', $html);
+        $this->assertSame(12, substr_count($html, 'data-mesa="'));
+        $this->assertStringNotContainsString('class="mesa-opcion" type="button" data-mesa="1" aria-pressed="true"', $html);
         $js = (string) file_get_contents(dirname(__DIR__, 2) . '/public/assets/js/pos.js');
-        $this->assertStringContainsString("Escribe el número de mesa, de 1 a 99, o elige Llevar.", $js);
+        $this->assertStringContainsString("Elige la mesa (o escribe otra, de 1 a 99), o elige Llevar.", $js);
     }
 }

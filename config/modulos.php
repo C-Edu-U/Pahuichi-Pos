@@ -21,7 +21,6 @@ return [
     ],
     'mesero' => [
         'grupo' => 1, 'ruta' => '/mesero', 'icono' => 'mesa', 'texto' => 'Pedidos',
-        'pendiente' => ['historias' => 'HU-35', 'texto' => 'El mesero toma el pedido en su celular y llega a caja para el cobro.'],
     ],
     'conciliacion' => [
         'grupo' => 2, 'ruta' => '/conciliacion', 'icono' => 'check', 'texto' => 'Conciliación QR',

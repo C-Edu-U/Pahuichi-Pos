@@ -6,112 +6,13 @@
  * Los datos de cada producto van en data-* para el JS (la CSP no permite scripts en línea).
  */
 use App\Core\Auth;
-use App\Models\Categoria;
-use App\Services\PromocionService;
 
-$inicial = $hayFavoritos ? 'favoritos' : 'todo';
-$datos = array_map(static fn (array $p): array => [
-    'id' => (int) $p['id'],
-    'codigo' => $p['codigo'],
-    'nombre' => $p['nombre'],
-    'corto' => $p['nombre_corto'],
-    'precio' => (float) $p['precio'],
-    'foto' => $p['foto'],
-    'agotado' => (bool) (int) $p['agotado'],
-    // HU-31: la nota para cocina solo se ofrece en lo que sale en la comanda
-    'cocina' => (bool) (int) $p['va_a_cocina'],
-    'categoria' => (int) $p['categoria_id'],
-], $productos);
-// HU-46: valor en centésimos (12,50 → 1250), igual que lo calcula PromocionService.
-// HU-49: restricciones y usos de hoy; montos en centavos, horas como «HH:MM:SS».
-$entero = static fn (mixed $x): ?int => $x === null ? null : (int) $x;
-$promos = array_map(static fn (array $pr): array => [
-    'id' => (int) $pr['id'],
-    'nombre' => $pr['nombre'],
-    'tipo' => $pr['tipo'],
-    'valor_tipo' => $pr['valor_tipo'],
-    'valor' => $pr['valor'] === null ? null : PromocionService::centesimos((string) $pr['valor']),
-    'producto_id' => $entero($pr['producto_id']),
-    'categoria_id' => $entero($pr['categoria_id']),
-    'cantidad_compra' => $entero($pr['cantidad_compra']),
-    'regalo_producto_id' => $entero($pr['regalo_producto_id']),
-    'precio_combo' => $pr['precio_combo'] === null ? null : PromocionService::centesimos((string) $pr['precio_combo']),
-    'items' => array_map(static fn (array $it): array => ['producto_id' => $it['producto_id'], 'cantidad' => $it['cantidad']], $pr['items']),
-    'fecha_desde' => $pr['fecha_desde'],
-    'fecha_hasta' => $pr['fecha_hasta'],
-    'dias' => (int) $pr['dias'],
-    'hora_desde' => $pr['hora_desde'],
-    'hora_hasta' => $pr['hora_hasta'],
-    'cantidad_minima' => $entero($pr['cantidad_minima']),
-    'monto_minimo' => $pr['monto_minimo'] === null ? null : PromocionService::centesimos((string) $pr['monto_minimo']),
-    'tope_usos_dia' => $entero($pr['tope_usos_dia']),
-    'acumulable' => (bool) (int) $pr['acumulable'],
-    'prioridad' => (int) $pr['prioridad'],
-    'usos' => (int) ($contextoPromos['usos'][(int) $pr['id']] ?? 0),
-], $promociones);
-// Promociones que tocan cada producto; la marca «Promo» se ve si alguna vale ahora (pos.js la actualiza)
-$conPromo = [];
-foreach ($productos as $p) {
-    foreach ($promociones as $pr) {
-        if ((int) $pr['producto_id'] === (int) $p['id'] || (int) $pr['categoria_id'] === (int) $p['categoria_id']
-            || in_array((int) $p['id'], array_column($pr['items'], 'producto_id'), true)) {
-            $conPromo[(int) $p['id']][(int) $pr['id']] = PromocionService::vigente($pr, $contextoPromos);
-        }
-    }
-}
+require __DIR__ . '/_datos.php';
 ?>
     <main class="contenido contenido--pos" id="contenido">
       <div class="pos" data-caja="<?= (int) $caja['id'] ?>" data-usuario="<?= (int) Auth::id() ?>" id="pos" data-productos="<?= e(json_encode($datos, JSON_UNESCAPED_UNICODE)) ?>" data-promociones="<?= e(json_encode($promos, JSON_UNESCAPED_UNICODE)) ?>" data-ahora="<?= e($ahora->format('Y-m-d\TH:i:s')) ?>">
-        <section class="pos__catalogo" aria-labelledby="t-catalogo">
-          <h2 class="visualmente-oculto" id="t-catalogo">Productos</h2>
-          <div class="pos__busqueda">
-            <div class="control-grupo">
-              <?= icono('buscar', 'control-grupo__icono') ?>
-              <label class="visualmente-oculto" for="pos-buscar">Buscar producto por nombre o código</label>
-              <input class="control" id="pos-buscar" type="search" placeholder="Buscar plato o código" autocomplete="off" aria-keyshortcuts="F2">
-              <kbd class="atajo control-grupo__atajo" aria-hidden="true">F2</kbd>
-            </div>
-            <p class="pos__turno" id="pos-turno"><span class="punto-estado" aria-hidden="true"></span>Caja abierta · <?= e(mb_strtolower($caja['turno'])) ?> desde las <?= e(substr($caja['abierta_en'], 11, 5)) ?> · <?= e($caja['cajero']) ?></p>
-          </div>
-
-          <div class="categorias-pos" id="categorias-pos" role="group" aria-label="Categorías">
-<?php if ($hayFavoritos): ?>
-            <button class="categoria-pos categoria-pos--favoritos" type="button" data-categoria="favoritos" aria-pressed="true"><?= icono('estrella') ?>Favoritos</button>
-<?php endif; ?>
-<?php foreach ($categorias as $c): ?>
-            <button class="categoria-pos <?= e(Categoria::clase($c['color'])) ?>" type="button" data-categoria="<?= (int) $c['id'] ?>" aria-pressed="false"><?= e($c['nombre']) ?></button>
-<?php endforeach; ?>
-            <button class="categoria-pos categoria-pos--todo" type="button" data-categoria="todo" aria-pressed="<?= $inicial === 'todo' ? 'true' : 'false' ?>">Todo</button>
-          </div>
-
-          <ul class="grilla-productos" id="grilla" role="list" data-inicial="<?= e($inicial) ?>">
-<?php foreach ($productos as $p):
-    $agotado = (bool) (int) $p['agotado'];
-    $favorito = (bool) (int) $p['favorito'];
-    $visible = $inicial === 'todo' || $favorito;
-    $promosProducto = $conPromo[(int) $p['id']] ?? [];
-    $promoAhora = in_array(true, $promosProducto, true);
-?>
-            <li data-categoria="<?= (int) $p['categoria_id'] ?>" data-favorito="<?= (int) $favorito ?>" data-busqueda="<?= e($p['nombre'] . ' ' . $p['nombre_corto'] . ' ' . $p['codigo']) ?>"<?= $visible ? '' : ' hidden' ?>>
-              <button class="producto-pos <?= e(Categoria::clase($p['categoria_color'])) ?>" type="button" data-id="<?= (int) $p['id'] ?>"<?= $promosProducto ? ' data-promos="' . e(implode(',', array_keys($promosProducto))) . '"' : '' ?><?= $agotado ? ' disabled' : '' ?> aria-label="<?= e($p['nombre'] . ', ' . bs($p['precio']) . ' bolivianos' . ($agotado ? ', agotado' : '')) ?>">
-                <span class="producto-pos__foto" aria-hidden="true"><?php if ($p['foto'] !== null): ?><img src="/catalogo/productos/<?= (int) $p['id'] ?>/foto?v=<?= e(rawurlencode($p['foto'])) ?>" alt="" loading="lazy"><?php else: ?><?= icono(Categoria::icono($p['categoria']), 'producto-pos__icono') ?><?php endif; ?></span>
-                <span class="producto-pos__nombre"><?= e($p['nombre_corto']) ?></span>
-                <span class="producto-pos__pie"><span class="producto-pos__precio monto"><span class="monto__moneda">Bs</span><?= bs($p['precio']) ?></span><?= $agotado ? '<span class="insignia insignia--aviso">Agotado</span>' : ($promosProducto ? '<span class="insignia insignia--promo"' . ($promoAhora ? '' : ' hidden') . '>Promo</span>' : '') ?></span>
-              </button>
-            </li>
-<?php endforeach; ?>
-          </ul>
-          <div class="vacio" id="pos-vacio"<?= $productos === [] ? '' : ' hidden' ?>>
-            <?= icono('buscar', 'icono--lg vacio__icono') ?>
-<?php if ($productos === []): ?>
-            <h3 class="vacio__titulo">No hay productos para vender</h3>
-            <p class="vacio__texto">Activa productos y categorías en el Catálogo.</p>
-<?php else: ?>
-            <h3 class="vacio__titulo">Ningún producto coincide</h3>
-            <p class="vacio__texto">Prueba con otro nombre o código, o vuelve a «Todo».</p>
-<?php endif; ?>
-          </div>
-        </section>
+<?php $estadoCatalogo = '<p class="pos__turno" id="pos-turno"><span class="punto-estado" aria-hidden="true"></span>Caja abierta · ' . e(mb_strtolower($caja['turno'])) . ' desde las ' . e(substr($caja['abierta_en'], 11, 5)) . ' · ' . e($caja['cajero']) . '</p>'; ?>
+<?php require __DIR__ . '/_catalogo.php'; ?>
 
         <section class="pos__pedido" id="pedido" aria-labelledby="t-pedido">
           <button class="pos__resumen-movil" type="button" id="ver-pedido" aria-expanded="false" aria-controls="pedido-cuerpo">
@@ -147,10 +48,9 @@ foreach ($productos as $p) {
                 <button class="tipo-pedido__opcion" type="button" data-tipo="llevar" aria-pressed="false">
                   <svg class="icono icono--sm" aria-hidden="true"><use href="#i-llevar"></use></svg>Llevar
                 </button>
-                <label class="visualmente-oculto" for="mesa">Número de mesa, de 1 a 99</label>
-                <input class="control control--numero tipo-pedido__mesa" id="mesa" type="text" inputmode="numeric" maxlength="2" value="" placeholder="N°" autocomplete="off" aria-describedby="cobro-error">
               </div>
             </div>
+<?php $idMesa = 'mesa'; $idMesas = 'mesas'; $describeMesa = 'cobro-error'; require __DIR__ . '/_mesas.php'; ?>
 
             <div class="cliente-pos">
               <button class="cliente-pos__resumen" type="button" id="cliente-cambiar" aria-expanded="false" aria-controls="cliente-buscador">
@@ -197,6 +97,8 @@ foreach ($productos as $p) {
               </div>
               <p class="campo__error" id="cobro-error" role="alert" hidden></p>
               <div class="totales__secundarias">
+                <!-- HU-35: cuentas por mesa de los meseros -->
+                <button class="boton boton--fantasma" type="button" id="ver-mesas"><?= icono('mesa', 'icono--sm') ?>Mesas <span class="pestana__cuenta" id="mesas-cuenta">0</span></button>
                 <button class="boton boton--fantasma" type="button" disabled title="Ventas en espera pendientes"><?= icono('pausa', 'icono--sm') ?>En espera</button>
                 <button class="boton boton--fantasma" type="button" disabled title="Ventas en espera pendientes">Retomar <span class="pestana__cuenta">0</span></button>
                 <button class="boton boton--fantasma" type="button" id="descuento" disabled>Descuento</button>
@@ -266,6 +168,21 @@ foreach ($productos as $p) {
           <div class="modal__acciones"><button class="boton boton--primario" id="confirmar-cobro" type="button">Confirmar cobro</button></div>
         </div>
       </dialog>
+
+      <!-- HU-35: mesas abiertas por los meseros: comandas de cada pedido y cobro de la cuenta -->
+      <dialog class="modal modal--ancho" id="modal-cuentas" aria-labelledby="cuentas-titulo">
+        <div class="modal__cuerpo">
+          <div class="cobro__cabeza">
+            <h2 class="modal__titulo" id="cuentas-titulo">Mesas abiertas</h2>
+            <button class="boton boton--fantasma boton--icono" type="button" data-cerrar-modal aria-label="Cerrar (Esc)">
+              <svg class="icono" aria-hidden="true"><use href="#i-cerrar"></use></svg>
+            </button>
+          </div>
+          <div class="cuentas" id="lista-cuentas"></div>
+          <p class="cuentas__vacio" id="cuentas-vacio">Ninguna mesa abierta. Los meseros abren la cuenta de una mesa con su primer pedido.</p>
+        </div>
+      </dialog>
+<?php $conDescuento = true; require dirname(__DIR__) . '/cuentas/_dialogos.php'; ?>
 
       <!-- HU-06: descuento manual con el PIN del administrador -->
       <dialog class="modal" id="modal-descuento" aria-labelledby="descuento-titulo" aria-describedby="descuento-texto">
