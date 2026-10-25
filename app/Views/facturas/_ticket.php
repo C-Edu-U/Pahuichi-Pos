@@ -33,7 +33,11 @@ $cocina = array_filter($s['lineas'], static fn (array $l): bool => $l['cocina'] 
             <div class="ticket__separador"></div>
             <dl class="ticket__totales"><div><dt>Subtotal</dt><dd><?= bs($s['subtotal']) ?></dd></div><?php if ((float) $s['descuento'] > 0): ?><div><dt>Descuento</dt><dd><?= bs($s['descuento']) ?></dd></div><?php endif; ?><div class="ticket__fuerte"><dt>TOTAL Bs</dt><dd><?= bs($s['total']) ?></dd></div></dl>
             <div class="ticket__separador"></div>
+<?php if (!empty($s['pago_qr'])): ?>
+            <dl class="ticket__totales"><div><dt>QR · PENDIENTE</dt><dd><?= bs($s['pago_qr']['monto']) ?></dd></div><div><dt>Comprobante</dt><dd><?= e($s['pago_qr']['comprobante']) ?></dd></div></dl>
+<?php else: ?>
             <dl class="ticket__totales"><div><dt>Efectivo</dt><dd><?= bs($s['total']) ?></dd></div><div><dt>Recibido</dt><dd><?= bs($s['recibido']) ?></dd></div><div class="ticket__fuerte"><dt>Cambio</dt><dd><?= bs($s['cambio']) ?></dd></div></dl>
+<?php endif; ?>
           </article>
 <?php endif; ?>
 <?php if ($tipoTicket === 'factura'): ?>
@@ -67,6 +71,7 @@ $cocina = array_filter($s['lineas'], static fn (array $l): bool => $l['cocina'] 
             </ul>
             <div class="ticket__separador"></div>
             <dl class="ticket__totales"><div><dt>SUBTOTAL Bs</dt><dd><?= bs($s['subtotal']) ?></dd></div><div><dt>DESCUENTO Bs</dt><dd><?= bs($s['descuento']) ?></dd></div><div class="ticket__fuerte"><dt>TOTAL Bs</dt><dd><?= bs($s['total']) ?></dd></div><div><dt>MONTO GIFT CARD Bs</dt><dd>0,00</dd></div><div class="ticket__fuerte"><dt>MONTO A PAGAR Bs</dt><dd><?= bs($s['total']) ?></dd></div><div><dt>IMPORTE BASE CRÉDITO FISCAL Bs</dt><dd><?= bs($s['total']) ?></dd></div></dl>
+<?php if (!empty($s['pago_qr'])): ?><p class="ticket__centro">QR · PENDIENTE · Comprobante <?= e($s['pago_qr']['comprobante']) ?></p><?php endif; ?>
 <?php if (isset($s['literal'])): ?><p class="ticket__literal"><?= e('Son: ' . $s['literal']) ?></p><?php endif; ?>
             <div class="ticket__separador"></div>
             <p class="ticket__centro ticket__fuerte ticket__chico">ESTA FACTURA CONTRIBUYE AL DESARROLLO DEL PAÍS. EL USO ILÍCITO DE ÉSTA SERÁ SANCIONADO DE ACUERDO A LEY</p>

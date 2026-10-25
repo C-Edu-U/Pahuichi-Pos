@@ -384,6 +384,7 @@
     $('confirmar-cobro').disabled = enviando;
     $('recibido').disabled = valor;
     document.querySelector('.billetes').inert = valor;
+    if (window.PahuichiQr) window.PahuichiQr.bloquear(valor);
     $('cobrar-texto').textContent = pendiente ? 'Reintentar cobro' : 'Cobrar';
   }
   /* HU-30: mesa (con su número) o para llevar. El número no trae valor por
@@ -430,6 +431,7 @@
     if (!exigirMesa() || !promocionesAlDia()) return;
     $('cobro-total').textContent = P.bs(aCobrar());
     $('recibido').value = aCobrar().toFixed(2);
+    if (window.PahuichiQr) window.PahuichiQr.abrir(aCobrar());
     errorCobro(''); cambio(); dialogoCobro.showModal(); $('recibido').focus();
   });
   /* HU-49: una promoción puede empezar o terminar mientras se arma el pedido (horario,
@@ -468,6 +470,9 @@
         descuento: descuento ? (descuento.centavos / 100).toFixed(2) : '', autorizacion: descuento ? descuento.token : '',
         a_cobrar: aCobrar().toFixed(2),
         lineas: JSON.stringify(carrito.lineas.map(function (l) { return {id: Number(l.producto.id), cantidad: l.cantidad, nota: l.nota || ''}; }))};
+      try {
+        if (!exacto && window.PahuichiQr) Object.assign(pendiente, window.PahuichiQr.datos());
+      } catch (e) { pendiente = null; errorCobro(e.message); return; }
       Object.assign(pendiente, cliente);
       try { sessionStorage.setItem(claveCobro, JSON.stringify(pendiente)); }
       catch (e) { pendiente = null; errorCobro('Permite el almacenamiento de esta pestaña para proteger el reintento del cobro.'); return; }
@@ -495,12 +500,13 @@
       usadasPendiente = [];
       carrito.vaciar(); notasAbiertas.clear();
       window.PahuichiCliente.reset();
+      if (window.PahuichiQr) window.PahuichiQr.reset();
       if (dialogoCobro.open) dialogoCobro.close();
       // El siguiente pedido vuelve a elegir su mesa
       $('mesa').value = ''; elegirTipo('mesa');
       pintar(); bloquearPedido(false);
       $('venta-lista-titulo').textContent = 'Pedido ' + datos.pedido + ' cobrado';
-      $('venta-lista-detalle').textContent = 'Factura N° ' + datos.numero + ' · cambio Bs ' + P.bs(datos.cambio) + ' · lista para imprimir';
+      $('venta-lista-detalle').textContent = 'Factura N° ' + datos.numero + (datos.pago_qr ? ' · QR pendiente de verificación' : ' · cambio Bs ' + P.bs(datos.cambio)) + ' · lista para imprimir';
       $('venta-lista-ver').href = datos.tickets;
       $('venta-lista').hidden = false;
       $('pedido').classList.add('esta-abierto');
