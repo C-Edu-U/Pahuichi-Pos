@@ -113,7 +113,6 @@ $fecha = static fn (string $momento): string => (new DateTimeImmutable($momento)
         <section class="caja__movimientos" aria-labelledby="t-movimientos">
           <div class="seccion__cabeza">
             <h2 id="t-movimientos">Ingresos y egresos</h2>
-            <span class="insignia insignia--neutra">HU-22</span>
           </div>
 
           <form class="panel-bloque" id="form-movimiento" method="post" action="/caja/movimientos" novalidate>
