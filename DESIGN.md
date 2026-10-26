@@ -1,6 +1,6 @@
 # Design
 
-Sistema visual de Pahuichi POS. Todo lo que dice este archivo está en `public/assets/css/`. Las vistas PHP (`app/Views/`) usan estas clases; la demo estática en `demo/` guarda su copia de referencia.
+Sistema visual de Pahuichi POS. Todo lo que dice este archivo está en `public/assets/css/`. Las vistas PHP (`app/Views/`) usan estas clases.
 
 ## Principios
 

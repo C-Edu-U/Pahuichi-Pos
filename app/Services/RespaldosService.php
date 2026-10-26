@@ -57,6 +57,7 @@ final class RespaldosService
     {
         if (getenv('APP_RESTAURADA') === '1') throw new DomainException('Las pruebas de copias se realizan desde el sistema habitual.');
         if (!in_array($accion, ['copiar', 'vencer', 'restaurar'], true)) throw new DomainException('Acción de simulación no válida.');
+        if ($accion !== 'restaurar' && !con_demostraciones()) throw new DomainException('Las simulaciones de copias no están disponibles en producción.');
         $estado = $this->estado();
         if (!$estado['activo']) throw new DomainException('El servicio de copias no está disponible. Espera unos segundos o revisa Docker.');
         if ($accion !== 'copiar' && (!self::nombreValido($archivo) || is_link($this->carpeta . '/' . $archivo) || !is_file($this->carpeta . '/' . $archivo))) throw new DomainException('La copia seleccionada ya no está disponible.');

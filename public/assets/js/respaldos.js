@@ -5,6 +5,7 @@
   if (!panel) return;
   var lista = document.getElementById('respaldo-lista'), boton = document.getElementById('respaldo-simular');
   var aviso = document.getElementById('respaldo-estado'), reloj = document.getElementById('respaldo-proxima');
+  var simulaciones = panel.hasAttribute('data-simular');
   var estado = null, desfase = 0, enviando = false, consultando = false, firma = '';
   var solicitud = '';
   try { solicitud = sessionStorage.getItem('hu07-solicitud') || ''; } catch (e) { /* funciona sin persistencia */ }
@@ -46,7 +47,8 @@
         var b = document.createElement('button'); b.type = 'button'; b.className = 'boton'; b.textContent = 'Simular vencimiento en 5 s'; b.dataset.vencer = copia.nombre;
         var acciones = document.createElement('div'); acciones.className = 'respaldo-acciones';
         var restaurar = document.createElement('button'); restaurar.type = 'button'; restaurar.className = 'boton'; restaurar.textContent = 'Probar restauración'; restaurar.dataset.restaurar = copia.nombre;
-        acciones.append(b, restaurar); fila.append(info, acciones); lista.appendChild(fila);
+        if (simulaciones) acciones.append(b);
+        acciones.append(restaurar); fila.append(info, acciones); lista.appendChild(fila);
       });
     }
     lista.querySelectorAll('button').forEach(function (b) { b.disabled = ocupado || !datos.activo; });
@@ -58,7 +60,7 @@
       aviso.textContent = datos.resultado.mensaje || 'Consultando resultado…';
       if (datos.resultado.estado === 'hecho' || datos.resultado.estado === 'error') guardar('');
     } else if (!datos.activo) aviso.textContent = 'El servicio de copias no está disponible. Revisa que Docker esté activo.';
-    else if (!aviso.dataset.terminado) aviso.textContent = 'Servicio disponible. Puedes simular la copia o el vencimiento desde esta pantalla.';
+    else if (!aviso.dataset.terminado) aviso.textContent = simulaciones ? 'Servicio disponible. Puedes simular la copia o el vencimiento desde esta pantalla.' : 'Servicio disponible.';
     if (datos.resultado && (datos.resultado.estado === 'hecho' || datos.resultado.estado === 'error')) aviso.dataset.terminado = '1';
     pintarRestauracion(datos);
     cuenta();

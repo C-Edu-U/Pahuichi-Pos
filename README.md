@@ -43,7 +43,15 @@ La base también se puede revisar con un cliente SQL en `127.0.0.1:3307` (usuari
 | Mesero | Usuario `luis`, contraseña `Pahuichi2026` | Pedidos |
 | Cocina | Usuario `teresa` | No entra al panel: recibe la comanda impresa |
 
-Los cajeros también tienen la contraseña `Pahuichi2026`. El PIN de autorización del administrador es `1234`: autoriza el descuento manual y lo usará la anulación.
+Los cajeros también tienen la contraseña `Pahuichi2026`. El PIN de autorización del administrador es `1234`: autoriza el descuento manual y la anulación.
+
+### En producción
+
+Con `APP_ENTORNO=produccion` en `.env`, el sistema oculta el detalle de los errores, los datos de prueba del login y los botones de demostración (simular el vencimiento del QR, los comprobantes repetidos y las copias). Al instalarlo para el negocio:
+
+1. Cambia las contraseñas y los PIN de los usuarios de prueba, o desactívalos y crea los reales en Usuarios.
+2. Completa los datos del negocio en Configuración. Los parámetros fiscales de prueba son simulados: no son credenciales del SIN.
+3. Cambia `DB_CLAVE` y `DB_CLAVE_ROOT` en `.env` antes del primer arranque.
 
 ## Estado
 
@@ -118,7 +126,6 @@ database/
   seeds.sql             datos de prueba, solo si la base está vacía
 docker/                 imagen de PHP con Apache y HTTPS, arranque e init de MariaDB
 tests/                  PHPUnit: Unit/ e Integracion/
-demo/                   demo visual estática de todas las pantallas (referencia)
 ```
 
 Flujo de una petición: `public/index.php` → `Router` → middleware → `Controller` → `Model` o `Service` → `Vista` dentro de su layout.
@@ -127,17 +134,13 @@ Flujo de una petición: `public/index.php` → `Router` → middleware → `Cont
 - Cada cambio de esquema es una migración nueva en `database/migraciones/`; las ya aplicadas no se editan.
 - Toda salida variable de las vistas pasa por `e()`; todo formulario POST lleva `csrf_campo()`.
 
-## Demo visual
-
-`demo/` guarda la demo estática con todas las pantallas del producto final y datos simulados en el navegador. Es la referencia para portar cada pantalla a su vista PHP. Se abre directo: `demo/login.html`. Sus páginas del panel se arman con [herramientas/panel](herramientas/panel/LEEME.md).
-
 Más detalle del diseño en [DESIGN.md](DESIGN.md).
 
 ## Licencias de terceros
 
 - Íconos: [Tabler Icons](https://tabler.io/icons), MIT.
 - Tipografía de marca: Archivo, SIL Open Font License.
-- Generador de QR de la demo: [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) de Kazuhiko Arase, MIT.
+- Generador de QR: [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) de Kazuhiko Arase, MIT.
 - Imagen de PHP: [php](https://hub.docker.com/_/php) oficial; extensiones con [docker-php-extension-installer](https://github.com/mlocati/docker-php-extension-installer), MIT.
 - Base de datos: [MariaDB](https://mariadb.org/), GPL v2.
 - Pruebas: [PHPUnit](https://phpunit.de/), BSD-3.
