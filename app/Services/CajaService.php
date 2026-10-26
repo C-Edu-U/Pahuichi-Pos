@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Core\DB;
 use App\Core\Reloj;
+use App\Models\Arqueo;
 use App\Models\Bitacora;
 use App\Models\Caja;
 use App\Models\Turno;
@@ -95,35 +96,54 @@ final class CajaService
         return $id;
     }
 
+    /** Largo máximo del motivo de reapertura (la columna es VARCHAR(255)). */
+    public const MOTIVO_MAXIMO = 255;
+
     /**
-     * Reabre una caja cerrada para que su turno se pueda volver a usar (solo administrador).
+     * Reabre una caja cerrada para repetir el cierre (HU-27). Solo el administrador y con
+     * un motivo. El arqueo anterior no se borra: queda reemplazado, con el motivo y quién
+     * reabrió, y se ve en el reporte de cierre. Las ventas y los movimientos se conservan.
      *
-     * Borra el conteo y el arqueo del intento anterior. Las ventas y los movimientos
-     * del turno se conservan: siguen siendo de ese turno.
+     * @throws DomainException si no hay motivo, la caja no está cerrada o ya hay otra abierta
      */
-    public function reabrir(int $id): void
+    public function reabrir(int $id, string $motivo, array $usuario): void
     {
-        $caja = Caja::buscar($id);
-        if ($caja === null) {
-            throw new DomainException('Esa caja no existe.');
+        $motivo = trim($motivo);
+        if ($motivo === '') {
+            throw new DomainException('Escribe el motivo para reabrir la caja.');
         }
-        if ($caja['estado'] !== 'cerrada') {
-            throw new DomainException('Solo se puede reabrir una caja cerrada.');
-        }
-        if (Caja::abierta() !== null) {
-            throw new DomainException('Ya hay una caja abierta: ciérrala antes de reabrir otra.');
+        if (mb_strlen($motivo) > self::MOTIVO_MAXIMO) {
+            throw new DomainException('El motivo admite hasta ' . self::MOTIVO_MAXIMO . ' caracteres.');
         }
 
-        DB::transaccion(static function () use ($id): void {
-            DB::consulta('DELETE FROM arqueos WHERE caja_id = ?', [$id]);
+        DB::transaccion(static function () use ($id, $motivo, $usuario): void {
+            $bloqueada = DB::fila('SELECT estado FROM cajas WHERE id = ? FOR UPDATE', [$id]);
+            $caja = Caja::buscar($id);
+            if ($bloqueada === null || $caja === null) {
+                throw new DomainException('Esa caja no existe.');
+            }
+            if ($bloqueada['estado'] !== 'cerrada') {
+                throw new DomainException('Solo se puede reabrir una caja cerrada.');
+            }
+            if (Caja::abierta() !== null) {
+                throw new DomainException('Ya hay una caja abierta: ciérrala antes de reabrir otra.');
+            }
+
+            $anterior = Arqueo::porCaja($id);
+            Arqueo::reemplazar($id, $motivo, (int) $usuario['id'], Reloj::sql());
             DB::consulta("UPDATE cajas SET estado = 'abierta', cerrada_en = NULL WHERE id = ?", [$id]);
-        });
 
-        Bitacora::registrar('caja.reabrir', 'cajas', $id, [
-            'turno' => $caja['turno'],
-            'cajero' => $caja['cajero'],
-            'fondo_inicial' => number_format((float) $caja['fondo_inicial'], 2, '.', ''),
-        ]);
+            Bitacora::registrar('caja.reabrir', 'cajas', $id, [
+                'turno' => $caja['turno'],
+                'cajero' => $caja['cajero'],
+                'fondo_inicial' => number_format((float) $caja['fondo_inicial'], 2, '.', ''),
+                'motivo' => $motivo,
+                'arqueo_anterior' => $anterior !== null ? [
+                    'total_contado' => number_format($anterior['total_contado'], 2, '.', ''),
+                    'diferencia' => $anterior['diferencia'] !== null ? number_format($anterior['diferencia'], 2, '.', '') : null,
+                ] : null,
+            ]);
+        });
     }
 
     /**
