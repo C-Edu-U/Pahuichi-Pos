@@ -1601,9 +1601,28 @@
   outline-offset: 2px;
 }
 
+.historial-precios__tabla {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
 .historial-precios .tabla {
   border: 1px solid var(--color-borde);
   border-radius: var(--radio);
+}
+
+@media (max-width: 639.98px) {
+  .historial-precios .tabla {
+    width: 100%;
+    table-layout: fixed;
+    font-size: 0.75rem;
+  }
+
+  .historial-precios .tabla th,
+  .historial-precios .tabla td {
+    padding: 8px 6px;
+    overflow-wrap: anywhere;
+  }
 }
 
 /* --------------------------------------------------------------------------
