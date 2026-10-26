@@ -84,6 +84,7 @@ return [
 
         // Llegan con sus historias (Sprint 3 a 5)
         'venta.cobro' => ['Venta cobrada', 'ventas', 'ok'],
+        'venta.cobro_saldo_qr' => ['Saldo QR cobrado en efectivo', 'ventas', 'ok'],
         'factura.reimpresion' => ['Reimpresión de tickets', 'ventas', 'aviso'],
         'venta.anulacion' => ['Anulación de venta', 'ventas', 'peligro'],
         'venta.descuento_manual' => ['Descuento manual', 'ventas', 'aviso'],
@@ -98,7 +99,7 @@ return [
     // Las que nombra RF-04: anulaciones, descuentos manuales, reimpresiones,
     // confirmación de QR, cambios de precio, apertura y cierre de caja
     'sensibles' => [
-        'venta.anulacion', 'venta.descuento_manual', 'impresion.reimpresion',
+        'venta.anulacion', 'venta.descuento_manual', 'venta.cobro_saldo_qr', 'impresion.reimpresion',
         'qr.confirmar', 'qr.rechazar', 'producto.precio',
         'caja.apertura', 'caja.cierre', 'caja.reapertura', 'caja.reabrir', 'caja.arqueo', 'factura.reimpresion',
     ],

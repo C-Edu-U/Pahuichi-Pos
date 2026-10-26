@@ -11,7 +11,8 @@ final class Factura
     private const SELECT = "SELECT f.*, v.usuario_id, v.caja_id, c.cajero_id,
         CASE WHEN v.estado = 'cobrada' AND f.estado = 'emitida' THEN
             COALESCE((SELECT SUM(p.monto) FROM pagos p WHERE p.venta_id = v.id
-                AND p.metodo = 'qr' AND p.estado = 'rechazado'), 0)
+                AND p.metodo = 'qr' AND p.estado = 'rechazado'
+                AND NOT EXISTS (SELECT 1 FROM qr_recuperaciones r WHERE r.pago_rechazado_id=p.id)), 0)
             ELSE 0 END AS saldo_por_cobrar
         FROM facturas f JOIN ventas v ON v.id = f.venta_id JOIN cajas c ON c.id = v.caja_id";
 

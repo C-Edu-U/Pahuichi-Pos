@@ -86,7 +86,7 @@ final class Venta
                 COALESCE(SUM(CASE WHEN p.metodo = 'efectivo' AND p.estado = 'confirmado' THEN p.monto END), 0) AS efectivo,
                 COALESCE(SUM(CASE WHEN p.metodo = 'qr' AND p.estado = 'confirmado' THEN p.monto END), 0) AS qr_confirmado,
                 COALESCE(SUM(CASE WHEN p.metodo = 'qr' AND p.estado = 'pendiente' THEN p.monto END), 0) AS qr_pendiente,
-                COALESCE(SUM(CASE WHEN p.metodo = 'qr' AND p.estado = 'rechazado' THEN p.monto END), 0) AS qr_rechazado
+                COALESCE(SUM(CASE WHEN p.metodo = 'qr' AND p.estado = 'rechazado' AND NOT EXISTS (SELECT 1 FROM qr_recuperaciones r WHERE r.pago_rechazado_id=p.id) THEN p.monto END), 0) AS qr_rechazado
              FROM pagos p JOIN ventas v ON v.id = p.venta_id
              WHERE v.caja_id = ? AND v.estado = 'cobrada'",
             [$cajaId],

@@ -34,11 +34,8 @@
         <?php if ($anulacion): ?><p>Motivo: <?= e($anulacion['motivo']) ?></p><p><?= e($anulacion['administrador']) ?> · <?= e($anulacion['creado_en']) ?></p><?php endif; ?></div>
       </aside>
 <?php endif; ?>
-<?php if ((float) ($f['saldo_por_cobrar'] ?? 0) > 0): ?>
-      <aside class="alerta alerta--peligro" id="saldo-por-cobrar" role="status">
-        <strong>Saldo por cobrar: Bs <?= bs($f['saldo_por_cobrar']) ?></strong>
-        <p>El pago QR fue rechazado. Este importe sigue pendiente de cobro y no cuenta como QR confirmado. El efectivo ya cobrado se conserva.</p>
-      </aside>
+<?php if (!$anulada): ?>
+<?php require __DIR__ . '/_saldo_qr.php'; ?>
 <?php endif; ?>
 
       <!-- HU-44: anulación real con PIN, motivo y registro atómico. -->

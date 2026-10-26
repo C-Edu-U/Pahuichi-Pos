@@ -36,7 +36,9 @@ final class PermisosTest extends CasoPrueba
 
         $menu = $this->modulosDelMenu($this->get('/caja')->cuerpo);
 
-        $this->assertSame(['tablero', 'pos', 'caja', 'ventas', 'conciliacion', 'qr', 'clientes', 'catalogo'], $menu);
+        // HU-41: Conciliación QR es del administrador (confirma o rechaza); el cajero recibe
+        // los avisos de pagos rechazados en su pantalla
+        $this->assertSame(['tablero', 'pos', 'caja', 'ventas', 'qr', 'clientes', 'catalogo'], $menu);
     }
 
     public function testMenuDelAdministradorTieneTodo(): void
