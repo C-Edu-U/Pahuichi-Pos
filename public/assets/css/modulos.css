@@ -2253,3 +2253,111 @@
     font-size: 2.25rem;
   }
 }
+
+/* --------------------------------------------------------------------------
+   Reportes (HU-63)
+   -------------------------------------------------------------------------- */
+.reportes__barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-2);
+  margin-bottom: var(--esp-3);
+}
+
+.reportes__exportar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-1);
+}
+
+.reportes__cifras {
+  margin-bottom: var(--esp-3);
+}
+
+.reportes__indice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-05);
+  margin-bottom: var(--esp-2);
+}
+
+.reportes__indice a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0 var(--esp-2);
+  border-radius: var(--radio);
+  color: var(--color-texto-2);
+  font-weight: var(--peso-semi);
+  text-decoration: none;
+}
+
+.reportes__indice a:hover {
+  background: var(--verde-50);
+  color: var(--verde-800);
+}
+
+.reportes__seccion {
+  margin-top: var(--esp-4);
+  scroll-margin-top: calc(var(--barra-alto) + var(--esp-2));
+}
+
+.reportes__seccion .seccion__titulo {
+  margin-bottom: var(--esp-2);
+}
+
+.reportes__vacio,
+.reportes__nota {
+  font-size: var(--texto-sm);
+  color: var(--color-texto-2);
+}
+
+.reportes__nota {
+  margin-top: var(--esp-1);
+}
+
+.tabla tfoot th,
+.tabla tfoot td {
+  border-top: 1px solid var(--color-borde-fuerte);
+  font-weight: var(--peso-semi);
+}
+
+@media (max-width: 767.98px) {
+  .tabla--fichas tfoot {
+    display: block;
+  }
+
+  .tabla--fichas tfoot tr {
+    display: grid;
+    gap: var(--esp-05);
+    padding: var(--esp-2);
+    border-top: 1px solid var(--color-borde-fuerte);
+  }
+
+  .tabla--fichas tfoot th,
+  .tabla--fichas tfoot td {
+    display: block;
+    padding: 0;
+    border: 0;
+    text-align: right;
+  }
+
+  .tabla--fichas tfoot th {
+    text-align: left;
+  }
+
+  .tabla--fichas tfoot td:empty {
+    display: none;
+  }
+
+  .tabla--fichas tfoot td::before {
+    content: attr(data-etiqueta);
+    float: left;
+    margin-right: var(--esp-2);
+    color: var(--color-texto-2);
+    font-size: var(--texto-xs);
+    font-weight: var(--peso-medio);
+  }
+}
