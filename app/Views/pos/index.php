@@ -5,6 +5,7 @@
  * $contextoPromos y $ahora (HU-49: momento del servidor y usos de hoy).
  * Los datos de cada producto van en data-* para el JS (la CSP no permite scripts en línea).
  */
+use App\Core\Auth;
 use App\Models\Categoria;
 use App\Services\PromocionService;
 
@@ -60,7 +61,7 @@ foreach ($productos as $p) {
 }
 ?>
     <main class="contenido contenido--pos" id="contenido">
-      <div class="pos" data-caja="<?= (int) $caja['id'] ?>" id="pos" data-productos="<?= e(json_encode($datos, JSON_UNESCAPED_UNICODE)) ?>" data-promociones="<?= e(json_encode($promos, JSON_UNESCAPED_UNICODE)) ?>" data-ahora="<?= e($ahora->format('Y-m-d\TH:i:s')) ?>">
+      <div class="pos" data-caja="<?= (int) $caja['id'] ?>" data-usuario="<?= (int) Auth::id() ?>" id="pos" data-productos="<?= e(json_encode($datos, JSON_UNESCAPED_UNICODE)) ?>" data-promociones="<?= e(json_encode($promos, JSON_UNESCAPED_UNICODE)) ?>" data-ahora="<?= e($ahora->format('Y-m-d\TH:i:s')) ?>">
         <section class="pos__catalogo" aria-labelledby="t-catalogo">
           <h2 class="visualmente-oculto" id="t-catalogo">Productos</h2>
           <div class="pos__busqueda">
@@ -119,6 +120,15 @@ foreach ($productos as $p) {
           </button>
 
           <div class="pos__pedido-cuerpo" id="pedido-cuerpo">
+            <!-- HU-36: ventas guardadas sin red; se envían solas al volver la conexión -->
+            <section class="cola-ventas" id="cola-ventas" aria-labelledby="t-cola" hidden>
+              <div class="cola-ventas__cabeza">
+                <h3 class="cola-ventas__titulo" id="t-cola">Ventas sin enviar <span class="cola-ventas__cuenta" id="cola-cuenta"></span></h3>
+                <button class="boton boton--fantasma" type="button" id="cola-enviar" hidden><?= icono('reintentar', 'icono--sm') ?> Enviar ahora</button>
+              </div>
+              <ul class="cola-ventas__lista" id="cola-lista" role="list" aria-live="polite"></ul>
+            </section>
+
             <div class="venta-lista" id="venta-lista" role="status" hidden>
               <svg class="icono" aria-hidden="true"><use href="#i-check"></use></svg>
               <div class="venta-lista__texto">

@@ -103,10 +103,12 @@
      Estado de la conexión con el servidor
      ------------------------------------------------------------------ */
   var estadoRed = document.getElementById('estado-red');
+  // HU-36: también sin conexión si la página salió de la copia guardada del service worker
+  var copiaSinRed = document.documentElement.hasAttribute('data-sin-red');
   function pintarRed() {
-    if (estadoRed) estadoRed.hidden = navigator.onLine;
+    if (estadoRed) estadoRed.hidden = navigator.onLine && !copiaSinRed;
   }
-  window.addEventListener('online', function () { pintarRed(); aviso('Conexión recuperada.'); });
+  window.addEventListener('online', function () { copiaSinRed = false; pintarRed(); aviso('Conexión recuperada.'); });
   window.addEventListener('offline', pintarRed);
   pintarRed();
 
@@ -119,6 +121,11 @@
   var dialogoInactividad = null;
 
   function cerrarPorInactividad() {
+    // Sin red, salir dejaría al equipo sin pantalla (HU-36): se espera a que vuelva
+    if (!navigator.onLine || copiaSinRed) {
+      window.addEventListener('online', cerrarPorInactividad, {once: true});
+      return;
+    }
     var form = document.getElementById('form-salir');
     if (!form) { window.location.href = '/login?estado=inactividad'; return; }
     var motivo = form.querySelector('[name="motivo"]');

@@ -359,6 +359,79 @@
   color: var(--ambar-800);
 }
 
+/* HU-36: ventas guardadas sin red, con su estado */
+.cola-ventas {
+  margin: var(--esp-1) var(--esp-1) 0;
+  padding: var(--esp-1) var(--esp-1) var(--esp-1) var(--esp-2);
+  border: 1px solid var(--ambar-200);
+  border-radius: var(--radio);
+  background: var(--ambar-50);
+}
+
+.cola-ventas__cabeza {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-1);
+}
+
+.cola-ventas__titulo {
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-semi);
+  color: var(--ambar-800);
+}
+
+.cola-ventas__cuenta {
+  font-weight: var(--peso-normal);
+}
+
+.cola-ventas__lista {
+  display: grid;
+  gap: var(--esp-1);
+  margin-top: var(--esp-05);
+}
+
+.cola-ventas__item {
+  display: grid;
+  gap: var(--esp-05);
+  padding-top: var(--esp-1);
+  border-top: 1px solid var(--ambar-200);
+  font-size: var(--texto-sm);
+}
+
+.cola-ventas__texto {
+  display: grid;
+}
+
+.cola-ventas__nombre {
+  font-weight: var(--peso-semi);
+}
+
+.cola-ventas__estado {
+  color: var(--color-texto-2);
+}
+
+.cola-ventas__item--rechazada .cola-ventas__estado {
+  color: var(--color-peligro);
+}
+
+.cola-ventas__item--enviada .cola-ventas__estado {
+  color: var(--verde-800);
+}
+
+.cola-ventas__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-05);
+}
+
+.cola-ventas__acciones .boton {
+  min-height: 2.75rem;
+  padding: 0 var(--esp-1);
+  font-size: var(--texto-sm);
+}
+
 .venta-lista--alerta > .icono {
   color: var(--ambar-800);
 }

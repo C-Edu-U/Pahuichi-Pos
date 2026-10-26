@@ -3,7 +3,10 @@
    dibuja el servidor. Favoritos es la primera pantalla; la búsqueda recorre
    todos los productos sin importar la pestaña.
    HU-29: carrito. Un toque agrega, otro suma una unidad; + y − por línea,
-   quitar, total siempre visible y cancelar el pedido. La lógica está en carrito.js. */
+   quitar, total siempre visible y cancelar el pedido. La lógica está en carrito.js.
+   HU-36: el pedido se guarda en el equipo en cada cambio y vuelve al recargar; el
+   cobro pasa por la cola de ventas (cola-ventas.js), que lo guarda si no hay red y lo
+   envía solo al volver. */
 (function () {
   'use strict';
 
@@ -153,6 +156,16 @@
      tratándolas como UTC, sin conversión de zona. */
   var ahoraServidor = Date.parse($('pos').getAttribute('data-ahora') + 'Z');
   var cargado = Date.now();
+  // HU-36: sin red, la página sale de la caché con su hora vieja; vale la última hora
+  // del servidor que se vio con red más lo transcurrido desde entonces
+  try {
+    var reloj = JSON.parse(localStorage.getItem('pahuichi.hu36.reloj') || 'null');
+    if (document.documentElement.hasAttribute('data-sin-red')) {
+      if (reloj) { ahoraServidor = reloj.servidor; cargado = reloj.equipo; }
+    } else {
+      localStorage.setItem('pahuichi.hu36.reloj', JSON.stringify({servidor: ahoraServidor, equipo: cargado}));
+    }
+  } catch (e) { /* sin almacenamiento: vale la hora de la página */ }
   function contexto() {
     var d = new Date(ahoraServidor + (Date.now() - cargado));
     var iso = d.toISOString();
@@ -266,6 +279,7 @@
       }
     });
     marcarProductos();
+    guardarPedido();
   }
 
   $('lineas').addEventListener('click', function (e) {
@@ -319,12 +333,13 @@
   }
 
   $('lineas').addEventListener('input', function (e) {
-    if (!e.target.matches('.linea__nota input') || pendiente) return;
+    if (!e.target.matches('.linea__nota input') || enviando) return;
     var li = e.target.closest('.linea');
     var l = carrito.linea(li.dataset.id);
     // No recorta mientras se escribe: conserva espacios y el texto al redibujar.
     l.nota = e.target.value;
     li.querySelector('.linea__nota-texto').textContent = l.nota;
+    guardarPedido();
   });
 
   // Enter guarda la nota y la cierra (ya quedó guardada al escribir)
@@ -359,11 +374,40 @@
     this.setAttribute('aria-expanded', String(abierto));
   });
 
-  pintar();
-  // HU-57: un identificador por intento. Reintentar conserva el mismo pedido.
-  var pendiente = null;
+  /* HU-36: el pedido en curso (líneas, notas, mesa, cliente) se guarda en el equipo en
+     cada cambio. Es de este usuario y de esta caja: otro cajero no lo ve. */
+  var usuario = $('pos').getAttribute('data-usuario') || '0';
+  var cajaId = $('pos').getAttribute('data-caja');
+  var prefijoPedido = 'pahuichi.hu36.pedido.' + usuario + '.';
+  var clavePedido = prefijoPedido + cajaId;
+  var pedidoListo = false;   // no guarda hasta haber restaurado el que había
+  function guardarPedido() {
+    if (!pedidoListo) return;
+    var cliente = {};
+    try { cliente = window.PahuichiCliente.datos(); } catch (e) { cliente = {}; }
+    try {
+      if (carrito.vacio()) { localStorage.removeItem(clavePedido); return; }
+      localStorage.setItem(clavePedido, JSON.stringify({
+        lineas: carrito.lineas.map(function (l) { return {id: String(l.producto.id), cantidad: l.cantidad, nota: l.nota || ''}; }),
+        tipo: tipoPedido, mesa: $('mesa').value, cliente: cliente
+      }));
+    } catch (e) { /* almacenamiento lleno o bloqueado: el pedido sigue en pantalla */ }
+  }
+  function cargarPedido(guardado) {
+    carrito.vaciar(); notasAbiertas.clear();
+    (guardado.lineas || []).forEach(function (g) {
+      var l = carrito.agregar(g.id);   // un producto que ya no está o se agotó no vuelve
+      if (!l) return;
+      l.cantidad = Math.max(1, Math.min(999, parseInt(g.cantidad, 10) || 1));
+      l.nota = String(g.nota || '').slice(0, 60);
+    });
+    elegirTipo(guardado.tipo === 'llevar' ? 'llevar' : 'mesa');
+    $('mesa').value = /^[1-9]\d?$/.test(guardado.mesa || '') ? guardado.mesa : '';
+    if (guardado.cliente && guardado.cliente.cliente_doc) window.PahuichiCliente.restaurar(guardado.cliente);
+  }
+
+  // HU-57: un identificador por venta. Reintentar conserva el mismo pedido.
   var enviando = false;
-  var claveCobro = 'pahuichi.hu57.cobro.' + $('pos').getAttribute('data-caja');
   var dialogoCobro = $('modal-cobro');
   var tipoPedido = 'mesa';
   function errorCobro(texto) {
@@ -379,12 +423,11 @@
     document.querySelector('.tipo-pedido').inert = valor;
     $('vaciar').disabled = valor || carrito.vacio();
     $('descuento').disabled = valor || carrito.vacio();
-    $('cobrar').disabled = enviando || (!pendiente && carrito.vacio());
+    $('cobrar').disabled = valor || carrito.vacio();
     $('efectivo-exacto').disabled = valor || carrito.vacio();
     $('confirmar-cobro').disabled = enviando;
     $('recibido').disabled = valor;
     document.querySelector('.billetes').inert = valor;
-    $('cobrar-texto').textContent = pendiente ? 'Reintentar cobro' : 'Cobrar';
   }
   /* HU-30: mesa (con su número) o para llevar. El número no trae valor por
      defecto: se escribe en cada pedido para no cobrar en la mesa equivocada. */
@@ -394,6 +437,7 @@
     $('mesa').hidden = tipo !== 'mesa';
     $('mesa').removeAttribute('aria-invalid');
     errorCobro('');
+    guardarPedido();
   }
   function exigirMesa() {
     if (tipoPedido !== 'mesa' || /^[1-9]\d?$/.test($('mesa').value)) return true;
@@ -413,6 +457,11 @@
     var limpio = this.value.replace(/\D/g, '').replace(/^0+/, '');
     if (limpio !== this.value) this.value = limpio;
     if (this.hasAttribute('aria-invalid')) { this.removeAttribute('aria-invalid'); errorCobro(''); }
+    guardarPedido();
+  });
+  // El cliente elegido también se guarda con el pedido
+  ['input', 'change', 'click'].forEach(function (ev) {
+    document.querySelector('.cliente-pos').addEventListener(ev, function () { window.setTimeout(guardarPedido, 0); });
   });
   function cambio() {
     var recibido = Number($('recibido').value.replace(',', '.'));
@@ -426,7 +475,6 @@
     });
   });
   $('cobrar').addEventListener('click', function () {
-    if (pendiente) { cobrar(false); return; }
     if (!exigirMesa() || !promocionesAlDia()) return;
     $('cobro-total').textContent = P.bs(aCobrar());
     $('recibido').value = aCobrar().toFixed(2);
@@ -434,7 +482,6 @@
   });
   /* HU-49: una promoción puede empezar o terminar mientras se arma el pedido (horario,
      tope). Si lo que vale ahora no es lo que se ve, se repinta y no se cobra a ciegas. */
-  var usadasPendiente = [];
   function promocionesAlDia() {
     if (firmaActual() === firmaPintada) return true;
     if (dialogoCobro.open) dialogoCobro.close();
@@ -445,80 +492,235 @@
   }
   // Cada 30 segundos: marcas «Promo» al día y, si cambió una promoción del pedido, se repinta
   setInterval(function () {
-    if (enviando || pendiente || document.querySelector('dialog[open]')) return;
+    if (enviando || document.querySelector('dialog[open]')) return;
     var escribiendo = $('lineas').contains(document.activeElement) && document.activeElement.matches('input');
     if (firmaActual() !== firmaPintada && !escribiendo) pintar(); else marcarProductos();
   }, 30000);
 
+  /* HU-36: cola de ventas. Cada cobro entra a la cola con su uuid y su hora; si hay red
+     sale enseguida (junto con las que esperaban, en orden). Sin red queda guardado con
+     un número provisional para anotar el pedido, y se envía solo al volver la red. */
+  var Cola = window.PahuichiColaVentas;
+  var almacen;
+  try { almacen = window.localStorage; almacen.getItem(Cola.CLAVE); } catch (e) { almacen = null; }
+  var cola = almacen ? Cola.crear({
+    almacen: almacen, usuario: usuario,
+    enviar: function (datos) { return Cola.enviarAlServidor(datos, function () { return document.body.getAttribute('data-csrf') || ''; }); },
+    alCambiar: pintarCola
+  }) : null;
+
+  function ventaLista(titulo, detalle, enlace) {
+    $('venta-lista-titulo').textContent = titulo;
+    $('venta-lista-detalle').textContent = detalle;
+    $('venta-lista-ver').hidden = !enlace;
+    if (enlace) $('venta-lista-ver').href = enlace;
+    // Guardada sin red: en ámbar y con el ícono de sin conexión
+    $('venta-lista').classList.toggle('venta-lista--alerta', !enlace);
+    $('venta-lista').querySelector('use').setAttribute('href', enlace ? '#i-check' : '#i-sinRed');
+    $('venta-lista').hidden = false;
+    $('pedido').classList.add('esta-abierto');
+    $('ver-pedido').setAttribute('aria-expanded', 'true');
+  }
+
+  // Pedido nuevo: carrito vacío, sin descuento, sin cliente y otra vez a elegir la mesa
+  function pedidoNuevo() {
+    descuento = null;
+    carrito.vaciar(); notasAbiertas.clear();
+    window.PahuichiCliente.reset();
+    if (dialogoCobro.open) dialogoCobro.close();
+    $('mesa').value = ''; elegirTipo('mesa');
+    pintar();
+  }
+
   async function cobrar(exacto) {
-    if (enviando || (!pendiente && carrito.vacio())) return;
-    if (!pendiente && (!exigirMesa() || !promocionesAlDia())) return;
+    if (enviando || carrito.vacio()) return;
+    if (!exigirMesa() || !promocionesAlDia()) return;
     errorCobro('');
-    if (!pendiente) {
-      var ev = evaluacion();
-      usadasPendiente = Promos.agrupar(ev.lineas).map(function (g) { return g.promocion.id; })
-        .concat(ev.regalos.map(function (r) { return r.promocion.id; }));
-      var cliente;
-      try { cliente = window.PahuichiCliente.datos(); }
-      catch (e) { errorCobro(e.message); return; }
-      pendiente = {uuid: crypto.randomUUID(), caja_id: $('pos').getAttribute('data-caja'),
-        tipo: tipoPedido, mesa: $('mesa').value, exacto: exacto ? '1' : '0',
-        recibido: $('recibido').value, total_esperado: carrito.total().toFixed(2),
-        promociones: (promoCentavos() / 100).toFixed(2), regalos: (regalosCentavos() / 100).toFixed(2),
-        descuento: descuento ? (descuento.centavos / 100).toFixed(2) : '', autorizacion: descuento ? descuento.token : '',
-        a_cobrar: aCobrar().toFixed(2),
-        lineas: JSON.stringify(carrito.lineas.map(function (l) { return {id: Number(l.producto.id), cantidad: l.cantidad, nota: l.nota || ''}; }))};
-      Object.assign(pendiente, cliente);
-      try { sessionStorage.setItem(claveCobro, JSON.stringify(pendiente)); }
-      catch (e) { pendiente = null; errorCobro('Permite el almacenamiento de esta pestaña para proteger el reintento del cobro.'); return; }
-    }
+    if (!cola) { errorCobro('Este equipo no deja guardar datos del sitio. Permite el almacenamiento para cobrar sin perder ventas.'); return; }
+    var ev = evaluacion();
+    var usadas = Promos.agrupar(ev.lineas).map(function (g) { return g.promocion.id; })
+      .concat(ev.regalos.map(function (r) { return r.promocion.id; }));
+    var cliente;
+    try { cliente = window.PahuichiCliente.datos(); }
+    catch (e) { errorCobro(e.message); return; }
+    var c = contexto();
+    var datos = {uuid: crypto.randomUUID(), caja_id: cajaId,
+      tipo: tipoPedido, mesa: $('mesa').value, exacto: exacto ? '1' : '0',
+      recibido: $('recibido').value, total_esperado: carrito.total().toFixed(2),
+      promociones: (promoCentavos() / 100).toFixed(2), regalos: (regalosCentavos() / 100).toFixed(2),
+      descuento: descuento ? (descuento.centavos / 100).toFixed(2) : '', autorizacion: descuento ? descuento.token : '',
+      a_cobrar: aCobrar().toFixed(2), momento: c.fecha + 'T' + c.hora,
+      lineas: JSON.stringify(carrito.lineas.map(function (l) { return {id: Number(l.producto.id), cantidad: l.cantidad, nota: l.nota || ''}; }))};
+    Object.assign(datos, cliente);
+    var venta;
+    try { venta = cola.agregar(datos, {total: aCobrar().toFixed(2), items: carrito.unidades(), hora: c.hora.slice(0, 5)}); }
+    catch (e) { errorCobro('No se pudo guardar la venta en este equipo. Libera espacio o permite el almacenamiento y vuelve a cobrar.'); return; }
+
     enviando = true; bloquearPedido(true);
-    try {
-      var respuesta = await fetch('/pos/cobrar', {method: 'POST',
-        headers: {'X-CSRF-Token': document.body.getAttribute('data-csrf') || '', 'Accept': 'application/json'},
-        body: new URLSearchParams(pendiente)});
-      var datos = await respuesta.json();
-      if (!respuesta.ok) {
-        if (respuesta.status === 422) {
-          sessionStorage.removeItem(claveCobro); pendiente = null;
-          // Permiso vencido o ya usado: se quita el descuento para pedir el PIN otra vez
-          if (datos.descuento === 'invalido') { descuento = null; pintar(); }
-        }
-        throw new Error(datos.error || 'No se pudo confirmar la respuesta. Reintenta el mismo cobro.');
-      }
-      sessionStorage.removeItem(claveCobro);
-      pendiente = null;
-      enviando = false;
-      descuento = null;
+    var r = await cola.procesar();
+    enviando = false;
+    var mia = function (v) { return v.uuid === datos.uuid; };
+    var enviada = r.enviadas.filter(mia)[0];
+    var rechazada = r.rechazadas.filter(mia)[0];
+    avisarCola(r, datos.uuid);
+
+    if (enviada) {
+      cola.quitar(datos.uuid);
       // HU-49: esta venta cuenta para el tope de hoy de sus promociones
-      usadasPendiente.forEach(function (id) { usos[id] = (usos[id] || 0) + 1; });
-      usadasPendiente = [];
-      carrito.vaciar(); notasAbiertas.clear();
-      window.PahuichiCliente.reset();
-      if (dialogoCobro.open) dialogoCobro.close();
-      // El siguiente pedido vuelve a elegir su mesa
-      $('mesa').value = ''; elegirTipo('mesa');
-      pintar(); bloquearPedido(false);
-      $('venta-lista-titulo').textContent = 'Pedido ' + datos.pedido + ' cobrado';
-      $('venta-lista-detalle').textContent = 'Factura N° ' + datos.numero + ' · cambio Bs ' + P.bs(datos.cambio) + ' · lista para imprimir';
-      $('venta-lista-ver').href = datos.tickets;
-      $('venta-lista').hidden = false;
-      $('pedido').classList.add('esta-abierto');
-      $('ver-pedido').setAttribute('aria-expanded', 'true');
+      usadas.forEach(function (id) { usos[id] = (usos[id] || 0) + 1; });
+      pedidoNuevo(); bloquearPedido(false);
+      ventaLista('Pedido ' + enviada.factura.pedido + ' cobrado',
+        'Factura N° ' + enviada.factura.numero + ' · cambio Bs ' + P.bs(enviada.factura.cambio) + ' · lista para imprimir', enviada.factura.tickets);
       anunciar('Venta guardada. Abre Ver tickets para consultar comanda, copia de caja y factura.');
       $('venta-lista-ver').focus();
-    } catch (e) {
-      errorCobro(pendiente ? 'No se confirmó el resultado. Pulsa Reintentar cobro; se comprobará el mismo pedido sin duplicarlo.' : e.message);
-      enviando = false; bloquearPedido(!!pendiente);
+      return;
     }
+    if (rechazada) {
+      // Con red y rechazada: el pedido sigue en pantalla para corregirlo
+      cola.quitar(datos.uuid);
+      bloquearPedido(false);
+      if (rechazada.descuento === 'invalido') { descuento = null; pintar(); }
+      errorCobro(rechazada.motivo);
+      return;
+    }
+    // Sin red (o con la sesión vencida): la venta queda guardada y se sigue vendiendo
+    usadas.forEach(function (id) { usos[id] = (usos[id] || 0) + 1; });
+    pedidoNuevo(); bloquearPedido(false);
+    ventaLista('Pedido ' + venta.provisional + ' guardado sin conexión',
+      r.detenido === 'sesion'
+        ? 'Tu sesión terminó. Entra de nuevo y la venta se enviará sola.'
+        : 'Anota ' + venta.provisional + ' para cocina. Se envía solo al volver la red; los tickets salen entonces.', null);
+    anunciar('Sin conexión. Pedido ' + venta.provisional + ' guardado en este equipo; se enviará al volver la red.');
+    buscador.focus();
   }
+
+  /* Ventas sin enviar: lista con su estado. Pendiente, rechazada (con su motivo, para
+     volverla al pedido o descartarla) o enviada (con sus tickets). */
+  function pintarCola(ventas) {
+    var seccion = $('cola-ventas');
+    if (!seccion) return;
+    ventas = ventas || (cola ? cola.ventas() : []);
+    seccion.hidden = ventas.length === 0;
+    var ul = $('cola-lista');
+    ul.innerHTML = '';
+    ventas.forEach(function (v) {
+      var li = document.createElement('li');
+      li.className = 'cola-ventas__item cola-ventas__item--' + v.estado;
+      li.setAttribute('data-uuid', v.uuid);
+      li.innerHTML = '<div class="cola-ventas__texto"><span class="cola-ventas__nombre"></span><span class="cola-ventas__estado"></span></div><div class="cola-ventas__acciones"></div>';
+      li.querySelector('.cola-ventas__nombre').textContent = v.provisional + ' · ' + v.hora + ' · ' + (v.items === 1 ? '1 ítem' : v.items + ' ítems') + ' · Bs ' + P.bs(Number(v.total));
+      var estado = li.querySelector('.cola-ventas__estado');
+      var acciones = li.querySelector('.cola-ventas__acciones');
+      if (v.estado === 'pendiente') {
+        estado.textContent = 'Por enviar';
+      } else if (v.estado === 'rechazada') {
+        estado.textContent = 'No se registró: ' + v.motivo;
+        acciones.appendChild(accion('Volver al pedido', 'retomar'));
+        acciones.appendChild(accion('Descartar', 'descartar'));
+      } else {
+        estado.textContent = 'Enviada · factura N° ' + v.factura.numero + ' · pedido ' + v.factura.pedido;
+        var ver = document.createElement('a');
+        ver.className = 'boton boton--fantasma'; ver.href = v.factura.tickets; ver.textContent = 'Ver tickets';
+        acciones.appendChild(ver);
+        acciones.appendChild(accion('Listo', 'listo'));
+      }
+      ul.appendChild(li);
+    });
+    var pendientes = ventas.filter(function (v) { return v.estado === 'pendiente'; }).length;
+    $('cola-enviar').hidden = pendientes === 0;
+    $('cola-cuenta').textContent = pendientes ? (pendientes === 1 ? '1 por enviar' : pendientes + ' por enviar') : '';
+  }
+  function accion(texto, que) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'boton boton--fantasma'; b.setAttribute('data-cola', que); b.textContent = texto;
+    return b;
+  }
+
+  function avisarCola(r, propia) {
+    r.enviadas.forEach(function (v) {
+      if (v.uuid !== propia) P.aviso('Pedido ' + v.provisional + ' enviado: factura N° ' + v.factura.numero + '.');
+    });
+    r.rechazadas.forEach(function (v) {
+      if (v.uuid !== propia) P.aviso('El pedido ' + v.provisional + ' no se registró. Revísalo en «Ventas sin enviar».', 'peligro');
+    });
+  }
+
+  async function enviarCola() {
+    if (!cola || enviando || !cola.pendientes()) return;
+    var r = await cola.procesar();
+    avisarCola(r, null);
+  }
+
+  if ($('cola-lista')) {
+    $('cola-lista').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-cola]');
+      if (!b) return;
+      var uuid = b.closest('[data-uuid]').getAttribute('data-uuid');
+      var que = b.getAttribute('data-cola');
+      if (que === 'listo') { cola.quitar(uuid); return; }
+      var v = cola.ventas().filter(function (x) { return x.uuid === uuid; })[0];
+      if (!v) return;
+      if (que === 'descartar') {
+        if (!window.confirm('¿Descartar el pedido ' + v.provisional + ' por Bs ' + P.bs(Number(v.total)) + '? No queda registrado en el sistema.')) return;
+        cola.quitar(uuid);
+        P.aviso('Pedido ' + v.provisional + ' descartado.');
+        return;
+      }
+      // Volver al pedido: solo con el pedido en pantalla vacío, para no mezclar
+      if (!carrito.vacio()) { P.aviso('Termina o vacía el pedido en curso antes de retomar ' + v.provisional + '.'); return; }
+      var lineas = [];
+      try { lineas = JSON.parse(v.datos.lineas); } catch (err) { lineas = []; }
+      cargarPedido({lineas: lineas, tipo: v.datos.tipo, mesa: v.datos.mesa, cliente: v.datos});
+      cola.quitar(uuid);
+      pintar();
+      P.aviso('Pedido ' + v.provisional + ' de vuelta en pantalla. Revísalo y cóbralo otra vez.');
+    });
+    $('cola-enviar').addEventListener('click', enviarCola);
+  }
+
   $('efectivo-exacto').addEventListener('click', function () { cobrar(true); });
   $('confirmar-cobro').addEventListener('click', function () { cobrar(false); });
-  try { pendiente = JSON.parse(sessionStorage.getItem(claveCobro) || 'null'); } catch (e) { pendiente = null; }
-  if (pendiente) {
-    window.PahuichiCliente.restaurar(pendiente);
-    bloquearPedido(true);
-    errorCobro('Hay un cobro pendiente de comprobar por Bs ' + (pendiente.a_cobrar || pendiente.total_esperado) + '. Pulsa Reintentar cobro para recuperar su factura.');
+  // Un cobro sin confirmar de la versión anterior (HU-57, en sessionStorage) pasa a la cola
+  try {
+    var viejo = JSON.parse(sessionStorage.getItem('pahuichi.hu57.cobro.' + cajaId) || 'null');
+    if (viejo && cola) {
+      var lineasViejo = JSON.parse(viejo.lineas || '[]');
+      cola.agregar(viejo, {total: viejo.a_cobrar || viejo.total_esperado, hora: '--:--',
+        items: lineasViejo.reduce(function (s, l) { return s + l.cantidad; }, 0)});
+      sessionStorage.removeItem('pahuichi.hu57.cobro.' + cajaId);
+    }
+  } catch (e) { /* nada que migrar */ }
+
+  // El pedido que quedó en pantalla antes de recargar (o de cortarse la red) vuelve
+  try {
+    Object.keys(localStorage).forEach(function (k) {
+      if (k.indexOf(prefijoPedido) === 0 && k !== clavePedido) localStorage.removeItem(k);   // de una caja anterior
+    });
+    var guardado = JSON.parse(localStorage.getItem(clavePedido) || 'null');
+    if (guardado && guardado.lineas && guardado.lineas.length) {
+      cargarPedido(guardado);
+      if (!carrito.vacio()) anunciar('Se recuperó el pedido en curso.');
+    }
+  } catch (e) { /* sin almacenamiento: empieza vacío */ }
+  pedidoListo = true;
+  pintar();
+
+  // HU-36: las fotos del catálogo quedan en la caché para abrir el POS sin red
+  if ('serviceWorker' in navigator) {
+    var fotos = Array.prototype.map.call(grilla.querySelectorAll('.producto-pos__foto img'), function (img) { return img.getAttribute('src'); });
+    if (fotos.length) {
+      navigator.serviceWorker.ready.then(function (reg) {
+        if (reg.active) reg.active.postMessage({tipo: 'fotos', urls: fotos});
+      }).catch(function () { /* sin service worker: las fotos se piden a la red */ });
+    }
+  }
+
+  // Ventas guardadas: se envían al abrir, al volver la red y cada 30 segundos mientras queden
+  pintarCola();
+  if (cola) {
+    enviarCola();
+    window.addEventListener('online', enviarCola);
+    window.setInterval(function () { if (navigator.onLine !== false) enviarCola(); }, 30000);
   }
 
   /* HU-06: pedir el descuento. El administrador escribe su PIN en el mismo equipo;

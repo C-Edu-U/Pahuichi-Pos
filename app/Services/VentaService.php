@@ -13,6 +13,7 @@ use App\Models\Negocio;
 use App\Models\Producto;
 use App\Models\Promocion;
 use App\Models\Venta;
+use DateTimeImmutable;
 use DomainException;
 
 /**
@@ -22,9 +23,35 @@ use DomainException;
  * HU-46: las promociones activas descuentan por línea (PromocionService). El navegador
  * envía cuánto descontaron en pantalla; si no coincide, una promoción cambió y no se cobra.
  * El regalo por compra entra como una línea más, con descuento igual a su precio (Bs 0).
+ * HU-36: una venta hecha sin red llega más tarde; sus promociones se evalúan a la hora en
+ * que se vendió («momento»), si esa hora es creíble: dentro de la caja abierta y de las
+ * últimas 12 horas. La venta y su factura llevan la hora en que llegan al servidor.
  */
 final class VentaService
 {
+    /** Hasta cuántas horas atrás se acepta la hora de una venta hecha sin red. */
+    public const HORAS_SIN_RED = 12;
+
+    /**
+     * Hora en que se hizo la venta según el POS (la hora del servidor al cargar más lo
+     * transcurrido). Si no es creíble, vale la hora de llegada.
+     */
+    public static function momentoDeVenta(mixed $texto, DateTimeImmutable $ahora, array $caja): DateTimeImmutable
+    {
+        if (!is_string($texto) || !preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/D', $texto)) {
+            return $ahora;
+        }
+        $momento = DateTimeImmutable::createFromFormat('!Y-m-d\TH:i:s', $texto, $ahora->getTimezone());
+        if ($momento === false || $momento->format('Y-m-d\TH:i:s') !== $texto) {
+            return $ahora;
+        }
+        $abierta = new DateTimeImmutable((string) $caja['abierta_en'], $ahora->getTimezone());
+        $creible = $momento <= $ahora->modify('+2 minutes')
+            && $momento >= $ahora->modify('-' . self::HORAS_SIN_RED . ' hours')
+            && $momento >= $abierta->modify('-1 minute');
+        return $creible && $momento < $ahora ? $momento : $ahora;
+    }
+
     public static function decimal(int $centavos): string
     {
         return intdiv($centavos, 100) . '.' . str_pad((string) ($centavos % 100), 2, '0', STR_PAD_LEFT);
@@ -74,9 +101,12 @@ final class VentaService
         $clientePedido = ClienteService::normalizar($d['cliente_doc'] ?? '0', $d['cliente_nombre'] ?? '', $d['cliente_tipo'] ?? 'NIT');
         $datosHash = [$cajaId, $tipo, $mesa, $cantidades, $exacto, $recibido, $esperado, $descuento, $promoEsperada, $regalosEsperados];
         if ($clientePedido['doc'] !== '0') $datosHash[] = $clientePedido;
+        // HU-36: el reintento de una venta sin red repite su hora; otra hora es otro pedido
+        $momentoPedido = is_string($d['momento'] ?? null) ? $d['momento'] : null;
+        if ($momentoPedido !== null) $datosHash[] = ['momento' => $momentoPedido];
         $hash = hash('sha256', json_encode($datosHash, JSON_THROW_ON_ERROR));
         $gastar = false;
-        $factura = DB::transaccion(static function () use ($uuid, $hash, $tipo, $mesa, $cantidades, $exacto, $recibido, $esperado, $cajaId, $descuento, $token, $promoEsperada, $regalosEsperados, $clientePedido, &$gastar): array {
+        $factura = DB::transaccion(static function () use ($uuid, $hash, $tipo, $mesa, $cantidades, $exacto, $recibido, $esperado, $cajaId, $descuento, $token, $promoEsperada, $regalosEsperados, $clientePedido, $momentoPedido, &$gastar): array {
             // Serializa cobros y cierre sobre la misma fila, y evita cambiar de caja silenciosamente.
             $caja = Venta::cajaParaCobrar($cajaId);
             $previa = Venta::porUuid($uuid);
@@ -110,7 +140,8 @@ final class VentaService
             // HU-49: con la fecha, el día y la hora del cobro, y los usos de hoy para el tope.
             $promo = 0;
             $promociones = Promocion::activas();
-            $contexto = PromocionService::contexto(Reloj::ahora());
+            $vendida = self::momentoDeVenta($momentoPedido, Reloj::ahora(), $caja);
+            $contexto = PromocionService::contexto($vendida);
             // Productos que se pueden regalar: activos, de una categoría activa y no agotados
             $idsRegalo = array_values(array_unique(array_filter(array_map(static fn (array $pr): int => (int) ($pr['regalo_producto_id'] ?? 0), $promociones))));
             $regalables = [];
@@ -178,7 +209,9 @@ final class VentaService
                 'recibido' => self::decimal($rec), 'cambio' => self::decimal($rec - $total), 'leyenda' => $leyenda['texto']];
             $id = Factura::crear($ventaId, $s, (int) $leyenda['id']);
             Bitacora::registrar('venta.cobro', 'ventas', $ventaId, ['factura_id' => $id, 'total' => $s['total'], 'metodo' => 'efectivo', 'leyenda_id' => $leyenda['id']]
-                + ($promo + $regalos > 0 ? ['promociones' => $s['promociones']] : []));
+                + ($promo + $regalos > 0 ? ['promociones' => $s['promociones']] : [])
+                // HU-36: vendida sin red y enviada después
+                + ($ahora->getTimestamp() - $vendida->getTimestamp() >= 60 ? ['vendida_sin_red' => $vendida->format('d/m/Y H:i:s')] : []));
             if ($permiso !== null) {
                 Bitacora::registrar('venta.descuento_manual', 'ventas', $ventaId, ['factura_id' => $id, 'monto' => $s['descuento'], 'motivo' => $permiso['motivo'],
                     'subtotal' => $s['subtotal'], 'total' => $s['total'], 'autorizado_por' => $permiso['admin']]);

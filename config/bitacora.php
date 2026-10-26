@@ -116,6 +116,6 @@ return [
         'precio' => 'Precio', 'turno' => 'Turno', 'cajero' => 'Cajero', 'usuario' => 'Usuario',
         'rol' => 'Rol', 'modo' => 'Con', 'intentos' => 'Intentos', 'hasta' => 'Hasta',
         'ruta' => 'Ruta', 'metodo' => 'Método', 'permiso' => 'Permiso', 'favorito' => 'Favorito',
-        'agotado' => 'Agotado', 'borradas' => 'Cajas borradas', 'archivadas' => 'Cajas archivadas', 'accion' => 'Acción', 'autorizado_por' => 'Autorizó', 'subtotal' => 'Subtotal', 'aplica' => 'Se aplica a', 'cuando' => 'Cuándo', 'condiciones' => 'Condiciones', 'descuento' => 'Descuento', 'promociones' => 'Promociones', 'texto' => 'Texto', 'activo' => 'Activa', 'mediodia' => 'Medio día', 'noche' => 'Noche',
+        'agotado' => 'Agotado', 'borradas' => 'Cajas borradas', 'archivadas' => 'Cajas archivadas', 'accion' => 'Acción', 'autorizado_por' => 'Autorizó', 'subtotal' => 'Subtotal', 'aplica' => 'Se aplica a', 'cuando' => 'Cuándo', 'condiciones' => 'Condiciones', 'descuento' => 'Descuento', 'promociones' => 'Promociones', 'vendida_sin_red' => 'Vendida sin red', 'texto' => 'Texto', 'activo' => 'Activa', 'mediodia' => 'Medio día', 'noche' => 'Noche',
     ],
 ];

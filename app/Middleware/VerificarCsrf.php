@@ -19,7 +19,7 @@ final class VerificarCsrf implements Middleware
             $token = $peticion->datos['_csrf'] ?? ($peticion->cabeceras['x-csrf-token'] ?? null);
             if (!Csrf::valido($token)) {
                 return $peticion->esperaJson()
-                    ? Respuesta::json(['error' => 'La página venció. Recárgala e inténtalo de nuevo.'], 403)
+                    ? Respuesta::json(['error' => 'La página venció. Recárgala e inténtalo de nuevo.', 'recargar' => true], 403)
                     : App::paginaError(419);
             }
         }
