@@ -31,7 +31,17 @@ Como Mesero, quiero tomar el pedido desde mi celular y enviarlo a caja, para que
 
 `tests/Integracion/CuentasMesaTest.php`: el pedido de la mesa 3 llega a caja pendiente de cobro (escenario 1); los pedidos se suman y caja imprime su comanda; promociones a la hora de cada pedido; el mesero cierra y cobra en la caja abierta; caja cobra con descuento; sin duplicados; cancelaciones; sin caja abierta no hay pedidos; el mesero no cobra en caja ni ve reportes (escenario 2).
 
+## Sin conexión (fase B)
+
+- **Pedidos y cobros sin red**: van a la cola del mesero (la de HU-36, con su propia clave) y se envían solos al volver la red, en orden. El cobro de una mesa sale después de sus pedidos que esperaban, y nombra la mesa (`POST /cuentas/cerrar`), porque una cuenta abierta sin red todavía no tiene número.
+- **Las mesas sin red** se ven con la última lista que llegó, más lo que está por enviar. Una mesa con su cobro guardado no se puede cobrar otra vez.
+- **Lo que no se registra** (por ejemplo, la caja se cerró mientras no había red) queda en «Sin enviar» con su motivo, para volver el pedido a la pantalla o descartarlo.
+- La pantalla del mesero, sus recursos y las fotos quedan en la caché del service worker; sin red se abre la última copia. Mientras dure el corte, la comanda va a cocina de palabra y la factura sale al volver la red.
+
+## Cierre de caja
+
+La caja no se cierra mientras alguna mesa tenga la cuenta abierta: el conteo y el arqueo avisan qué mesas faltan y el servidor lo impide.
+
 ## Pendiente
 
-- **Modo sin conexión del mesero** (fase B): la cola de HU-36 aplicada a los pedidos y al cobro de la cuenta.
 - **QR y mixto** al cobrar la cuenta: con HU-39.

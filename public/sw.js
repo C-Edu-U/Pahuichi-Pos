@@ -1,12 +1,13 @@
 /* Service worker de Pahuichi POS (HU-36: PWA y funcionamiento sin red).
    - Recursos de la interfaz (CSS, JS, fuentes): primero la red; sin conexión, lo guardado.
-   - Punto de venta (/pos): primero la red, y se guarda una copia; sin conexión se entrega
-     esa copia, marcada con data-sin-red para que el POS use la hora guardada. La copia
-     lleva el nombre del cajero: se borra al volver al login (cerrar sesión).
+   - Punto de venta (/pos) y pedidos del mesero (/mesero, HU-35): primero la red, y se
+     guarda una copia; sin conexión se entrega esa copia, marcada con data-sin-red para que
+     la pantalla use la hora guardada. La copia lleva el nombre del usuario: se borra al
+     volver al login (cerrar sesión).
    - Fotos de productos: desde la caché al instante y se actualizan por detrás. El POS
      pide guardar las de todo el catálogo al abrirse.
    - Otras páginas sin conexión: la página «Sin conexión». Nunca se guardan: traen datos. */
-const VERSION = 'pahuichi-v4';
+const VERSION = 'pahuichi-v5';
 const PAGINAS = 'pahuichi-paginas';
 const FOTOS = 'pahuichi-fotos';
 const RECURSOS = [
@@ -19,6 +20,7 @@ const RECURSOS = [
   '/assets/css/pages.css',
   '/assets/css/modulos.css',
   '/assets/css/pos.css',
+  '/assets/css/mesero.css',
   '/assets/css/foto-producto.css',
   '/assets/js/app.js',
   '/assets/js/carrito.js',
@@ -26,6 +28,7 @@ const RECURSOS = [
   '/assets/js/cliente-pos.js',
   '/assets/js/cola-ventas.js',
   '/assets/js/cuentas.js',
+  '/assets/js/mesero.js',
   '/assets/js/pos.js',
   '/assets/js/producto-fotos-pos.js',
   '/assets/img/icono.svg',
@@ -52,17 +55,20 @@ async function copiaMarcada(respuesta) {
   return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 }
 
-async function puntoDeVenta(pedido) {
+// Pantallas que funcionan sin red: se guarda la última copia de cada una
+const SIN_RED = ['/pos', '/mesero'];
+
+async function pantallaSinRed(pedido, ruta) {
   try {
     const r = await fetch(pedido);
     // Solo la pantalla real: no una redirección al login ni un error
     if (r.ok && !r.redirected && r.type === 'basic') {
       const copia = r.clone();
-      caches.open(PAGINAS).then((c) => c.put('/pos', copia));
+      caches.open(PAGINAS).then((c) => c.put(ruta, copia));
     }
     return r;
   } catch (err) {
-    const guardada = await caches.match('/pos', { cacheName: PAGINAS });
+    const guardada = await caches.match(ruta, { cacheName: PAGINAS });
     return guardada ? copiaMarcada(guardada) : caches.match('/sin-conexion.html');
   }
 }
@@ -105,7 +111,7 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET' || url.origin !== self.location.origin) return;
   if (e.request.mode === 'navigate') {
-    e.respondWith(url.pathname === '/pos' ? puntoDeVenta(e.request) : pagina(e.request, url));
+    e.respondWith(SIN_RED.includes(url.pathname) ? pantallaSinRed(e.request, url.pathname) : pagina(e.request, url));
   } else if (FOTO.test(url.pathname)) {
     e.respondWith(foto(e.request));
   } else if (url.pathname.startsWith('/assets/') || url.pathname === '/manifest.json') {

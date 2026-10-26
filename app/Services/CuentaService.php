@@ -126,6 +126,20 @@ final class CuentaService
      */
     public static function cerrar(int $cuentaId, array $d): array
     {
+        return self::cerrarCuenta($cuentaId, null, $d);
+    }
+
+    /**
+     * Cierra la cuenta abierta de una mesa (HU-35, sin red): el mesero puede haber abierto la
+     * cuenta sin conexión, así que su cobro guardado la nombra por la mesa, no por su número.
+     */
+    public static function cerrarMesa(mixed $mesa, array $d): array
+    {
+        return self::cerrarCuenta(null, self::mesa($mesa), $d);
+    }
+
+    private static function cerrarCuenta(?int $cuentaId, ?string $mesa, array $d): array
+    {
         $uuid = VentaService::uuid($d['uuid'] ?? '');
         $exacto = ($d['exacto'] ?? '') === '1';
         $recibido = $exacto ? null : VentaService::centavos($d['recibido'] ?? null);
@@ -134,12 +148,12 @@ final class CuentaService
         $token = is_string($d['autorizacion'] ?? null) ? $d['autorizacion'] : '';
         if ($descuento > 0 && !puede('cuentas.descuento')) throw new DomainException('El descuento manual se aplica en caja.');
         $cliente = ClienteService::normalizar($d['cliente_doc'] ?? '0', $d['cliente_nombre'] ?? '', $d['cliente_tipo'] ?? 'NIT');
-        $datosHash = ['cuenta' => $cuentaId, $exacto, $recibido, $esperado, $descuento];
+        $datosHash = [$cuentaId !== null ? ['cuenta' => $cuentaId] : ['mesa' => $mesa], $exacto, $recibido, $esperado, $descuento];
         if ($cliente['doc'] !== '0') $datosHash[] = $cliente;
         $hash = hash('sha256', json_encode($datosHash, JSON_THROW_ON_ERROR));
         $gastar = false;
 
-        $factura = DB::transaccion(static function () use ($cuentaId, $uuid, $hash, $exacto, $recibido, $esperado, $descuento, $token, $cliente, &$gastar): array {
+        $factura = DB::transaccion(static function () use ($cuentaId, $mesa, $uuid, $hash, $exacto, $recibido, $esperado, $descuento, $token, $cliente, &$gastar): array {
             $caja = self::cajaAbierta();
             $previa = Venta::porUuid($uuid);
             if ($previa !== null) {
@@ -153,7 +167,10 @@ final class CuentaService
             if (Auth::usuario()['rol'] === 'cajero' && (int) $caja['cajero_id'] !== Auth::id()) {
                 throw new DomainException('La caja abierta pertenece a otro cajero.');
             }
-            $cuenta = Cuenta::buscar($cuentaId, true) ?? throw new DomainException('Esa cuenta no existe.');
+            $cuenta = $cuentaId !== null
+                ? Cuenta::buscar($cuentaId, true) ?? throw new DomainException('Esa cuenta no existe.')
+                : Cuenta::abiertaDeMesa($mesa, true) ?? throw new DomainException('La mesa ' . $mesa . ' no tiene una cuenta abierta: ya se cobró o se canceló.');
+            $cuentaId = (int) $cuenta['id'];
             if ($cuenta['estado'] !== 'abierta') throw new DomainException('La cuenta de la mesa ' . $cuenta['mesa'] . ' ya se cerró.');
 
             $lineas = Cuenta::lineasActivas($cuentaId);

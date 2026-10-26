@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Controller;
+use App\Core\DB;
 use App\Core\ErrorHttp;
 use App\Core\Peticion;
 use App\Core\Reloj;
@@ -41,7 +42,7 @@ final class CuentaController extends Controller
             'modulo' => 'mesero',
             'h1' => 'Pedidos',
             'css' => ['pos.css', 'mesero.css'],
-            'js' => ['carrito.js', 'motor-promociones.js', 'cuentas.js', 'mesero.js'],
+            'js' => ['carrito.js', 'motor-promociones.js', 'cola-ventas.js', 'cuentas.js', 'mesero.js'],
             'claseBody' => 'panel--mesero',
             'caja' => CajaService::abierta(),
             'productos' => $productos,
@@ -117,12 +118,21 @@ final class CuentaController extends Controller
 
     public function cerrar(Peticion $peticion): Respuesta
     {
-        return $this->json(static function () use ($peticion): array {
-            $f = CuentaService::cerrar((int) $peticion->parametro('id'), $peticion->datos);
-            $s = $f['snapshot'] ?? json_decode($f['snapshot_json'], true, 512, JSON_THROW_ON_ERROR);
-            return ['numero' => (int) $f['numero'], 'pedido' => $s['pedido'], 'total' => $s['total'], 'cambio' => $s['cambio'],
-                'tickets' => '/cuentas/' . (int) $peticion->parametro('id') . '/factura'];
-        });
+        return $this->json(static fn (): array => self::cobrada(CuentaService::cerrar((int) $peticion->parametro('id'), $peticion->datos)));
+    }
+
+    /** HU-35 sin red: el cobro guardado en el celular nombra la mesa, no la cuenta. */
+    public function cerrarMesa(Peticion $peticion): Respuesta
+    {
+        return $this->json(static fn (): array => self::cobrada(CuentaService::cerrarMesa($peticion->entrada('mesa'), $peticion->datos)));
+    }
+
+    private static function cobrada(array $f): array
+    {
+        $s = $f['snapshot'] ?? json_decode($f['snapshot_json'], true, 512, JSON_THROW_ON_ERROR);
+        $cuenta = (int) DB::valor('SELECT id FROM cuentas WHERE venta_id = ?', [(int) $f['venta_id']]);
+        return ['numero' => (int) $f['numero'], 'pedido' => $s['pedido'], 'mesa' => $s['mesa'], 'total' => $s['total'], 'cambio' => $s['cambio'],
+            'tickets' => '/cuentas/' . $cuenta . '/factura'];
     }
 
     /** Comanda de una ronda para cocina, con el perfil de cocina (HU-12). Caja la imprime. */

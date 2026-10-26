@@ -113,6 +113,7 @@ $router->get('/cuentas', [CuentaController::class, 'lista'], ['auth', 'permiso:c
 $router->post('/cuentas/rondas', [CuentaController::class, 'enviarRonda'], ['auth', 'permiso:cuentas.tomar']);
 $router->post('/cuentas/rondas/{id}/cancelar', [CuentaController::class, 'cancelarRonda'], ['auth', 'permiso:cuentas.ver']);
 $router->get('/cuentas/rondas/{id}/comanda', [CuentaController::class, 'comanda'], ['auth', 'permiso:cuentas.ver']);
+$router->post('/cuentas/cerrar', [CuentaController::class, 'cerrarMesa'], ['auth', 'permiso:cuentas.cobrar']);
 $router->post('/cuentas/{id}/cerrar', [CuentaController::class, 'cerrar'], ['auth', 'permiso:cuentas.cobrar']);
 $router->get('/cuentas/{id}/factura', [CuentaController::class, 'factura'], ['auth', 'permiso:cuentas.cobrar']);
 

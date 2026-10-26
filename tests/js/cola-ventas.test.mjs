@@ -166,6 +166,38 @@ prueba('Número provisional por día y la misma venta no entra dos veces', async
   deepStrictEqual(datos(cola.ventas().map((v) => v.provisional)), ['S-1', 'S-2', 'S-1']);
 });
 
+prueba('HU-35: la cola del mesero tiene su clave y su prefijo, y no se mezcla con la del POS', async () => {
+  const Cola = cargar();
+  const alm = almacen();
+  const pos = Cola.crear({ almacen: alm, usuario: '3', enviar: servidor().enviar });
+  const mesero = Cola.crear({ almacen: alm, usuario: '3', enviar: servidor().enviar, clave: 'pahuichi.hu35.cola', prefijo: 'M-' });
+  pos.agregar(venta(1), resumen);
+  mesero.agregar(venta(2), resumen);
+  mesero.agregar(venta(3), resumen);
+  deepStrictEqual(datos(pos.ventas().map((v) => v.provisional)), ['S-1']);
+  deepStrictEqual(datos(mesero.ventas().map((v) => v.provisional)), ['M-1', 'M-2']);
+  strictEqual(JSON.parse(alm.datos.get('pahuichi.hu35.cola')).length, 2);
+});
+
+prueba('HU-35: el envío real va a la dirección que se le indica', async () => {
+  let pedida = null;
+  const Cola = cargar(async (url) => { pedida = url; return { status: 200, ok: true, type: 'basic', json: async () => ({ numero: 1 }) }; });
+  await Cola.enviarAlServidor({ uuid: 'x' }, () => 't', '/cuentas/cerrar');
+  strictEqual(pedida, '/cuentas/cerrar');
+  await Cola.enviarAlServidor({ uuid: 'x' }, () => 't');
+  strictEqual(pedida, '/pos/cobrar');
+});
+
+prueba('Una venta rechazada por un descuento vencido conserva la marca', async () => {
+  const Cola = cargar();
+  const srv = servidor();
+  srv.conectado = true;
+  srv.responder = () => ({ rechazo: 'El permiso venció.', descuento: 'invalido' });
+  const cola = Cola.crear({ almacen: almacen(), usuario: '3', enviar: srv.enviar });
+  cola.agregar(venta(1), resumen);
+  strictEqual((await cola.procesar()).rechazadas[0].descuento, 'invalido');
+});
+
 prueba('El envío real interpreta la respuesta del servidor', async () => {
   const respuesta = (status, cuerpo, tipo = 'basic') => async () => ({
     status, ok: status >= 200 && status < 300, type: tipo,
