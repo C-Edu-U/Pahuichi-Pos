@@ -114,7 +114,7 @@ final class AuthController extends Controller
             'errores' => [],
             'resultado' => null,
             'salida' => null,
-            'demo' => Config::get('app.entorno') !== 'produccion',
+            'demo' => con_demostraciones(),
         ], $estado, 'layouts/acceso');
     }
 }

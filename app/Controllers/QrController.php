@@ -20,7 +20,7 @@ final class QrController extends Controller
     }
     private function pantalla(array $datos = [], int $estado = 200): Respuesta
     {
-        return $this->vista('qr/index', $datos + ['titulo' => 'QR del día', 'h1' => 'QR del día', 'modulo' => 'qr', 'css' => ['modulos.css', 'qr-dia.css'], 'js' => ['qr-dia.js', 'qr-comprobantes-demo.js'], 'erroresQr' => [], 'valoresQr' => []], $estado);
+        return $this->vista('qr/index', $datos + ['titulo' => 'QR del día', 'h1' => 'QR del día', 'modulo' => 'qr', 'css' => ['modulos.css', 'qr-dia.css'], 'js' => con_demostraciones() ? ['qr-dia.js', 'qr-comprobantes-demo.js'] : ['qr-dia.js'], 'erroresQr' => [], 'valoresQr' => []], $estado);
     }
     public function estado(Peticion $p): Respuesta
     {
@@ -35,6 +35,7 @@ final class QrController extends Controller
     }
     public function simular(Peticion $p): Respuesta
     {
+        if (!con_demostraciones()) throw ErrorHttp::noEncontrado();
         try {
             $accion = $p->entrada('accion');
             $id = filter_var($p->entrada('qr_id'), FILTER_VALIDATE_INT);
@@ -46,6 +47,7 @@ final class QrController extends Controller
     }
     public function demostrarComprobante(Peticion $p): Respuesta
     {
+        if (!con_demostraciones()) throw ErrorHttp::noEncontrado();
         try {
             $ref=$p->entrada('comprobante');$accion=$p->entrada('accion');
             if (!is_string($ref) || !is_string($accion)) throw new DomainException('Escribe el comprobante de una venta QR de hoy.');

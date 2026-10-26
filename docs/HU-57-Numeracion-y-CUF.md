@@ -22,7 +22,6 @@ El cliente impreso es S/N, NIT 0, fijo hasta implementar HU-32. Las dos leyendas
 | `app/Views/facturas/tickets.php` | Campos `factura` y `cuf` | Muestra la factura guardada, con la estructura y clases del ticket de la demo. No calcula números al abrir la pantalla. |
 | `app/Views/facturas/index.php` | Listado y enlace de factura | Permite volver a abrir hasta las 100 facturas más recientes autorizadas. Es consulta básica para QA, no el módulo completo de ventas/anulación. |
 | `database/migraciones/057_hu57_correlativos.sql` | `correlativos`, `facturas` e índices `UNIQUE` | Tablas de venta/pago/factura y unicidad de número por serie, CUF global y una factura por venta. Conserva el esquema anterior de HU-10 si ya está instalado. |
-| `tests/hu57.php` | Bloque de procesos `proc_open` y fallo forzado | Prueba dos conexiones concurrentes, persistencia, rollback, idempotencia, permisos, CSRF y compatibilidad de migración. Solo usa la base de pruebas. |
 
 Este documento también es nuevo.
 
@@ -55,7 +54,7 @@ El proyecto trabaja con parámetros fiscales simulados. Esto adapta el hash de l
 ## Validación de esta entrega
 
 - Suite del proyecto: **164 pruebas, 922 aserciones, todas correctas**, ajustando las dos expectativas afectadas por habilitar cobro.
-- Script `tests/hu57.php`: aprobados concurrencia, rollback, reintento, consulta MVC, conservación de snapshot, migración desde HU-10, CSRF, permisos, series separadas, efectivo insuficiente y formato CUF.
+- Script de QA de esa entrega (retirado del repositorio al cerrar el proyecto): aprobados concurrencia, rollback, reintento, consulta MVC, conservación de snapshot, migración desde HU-10, CSRF, permisos, series separadas, efectivo insuficiente y formato CUF.
 - Navegador: flujo de efectivo en escritorio 1440 px y móvil 390 px; factura sin desbordamiento horizontal; cero errores JavaScript.
 - Red: se simuló que el servidor confirma el cobro pero se pierde la respuesta; después de F5, reintentar recuperó la misma factura sin duplicarla.
 - Sintaxis PHP y JavaScript revisada.

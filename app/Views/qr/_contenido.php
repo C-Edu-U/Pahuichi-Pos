@@ -9,7 +9,7 @@ $valoresQr = $valoresQr ?? [];
   <p data-qr-dia-estado role="status"><?= e($qrDia['aviso']) ?><?php if ($qrDia['vigente']): ?> <?= (float) $qrDia['monto'] === 0.0 ? 'Importe libre' : 'Monto fijo: Bs ' . bs($qrDia['monto']) ?> · <?= e($qrDia['fecha']) ?><?php endif; ?></p>
   <img class="qr-dia-imagen" data-qr-dia-imagen alt="QR de cobro de hoy"<?php if ($qrDia['vigente']): ?> src="/qr/<?= (int) $qrDia['id'] ?>/imagen"<?php else: ?> hidden<?php endif; ?>>
  </div>
- <?php if (puede('qr.subir') && $qrDia['demo_disponible']): ?>
+ <?php if (puede('qr.subir') && $qrDia['demo_disponible'] && con_demostraciones()): ?>
  <div class="panel-bloque__cuerpo qr-demo" aria-labelledby="qr-demo-titulo">
   <h3 id="qr-demo-titulo">Demostración del vencimiento</h3>
   <p class="campo__ayuda">Hace vencer este QR en 5 segundos para comprobar el bloqueo en caja. No cambia la hora del equipo ni modifica las ventas. Usa «Restablecer vigencia» para volver al vencimiento habitual de hoy.</p>

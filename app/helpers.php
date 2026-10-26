@@ -25,6 +25,15 @@ function permisos_actuales(): array
     ));
 }
 
+/**
+ * ¿Se muestran los datos de prueba del login y los botones de demostración (simular el
+ * vencimiento del QR, los comprobantes, las copias)? Siempre, salvo con APP_ENTORNO=produccion.
+ */
+function con_demostraciones(): bool
+{
+    return Config::get('app.entorno') !== 'produccion';
+}
+
 /** Escapa texto para HTML. Toda salida variable pasa por aquí. */
 function e(mixed $valor): string
 {
