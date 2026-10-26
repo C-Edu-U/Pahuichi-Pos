@@ -1,0 +1,25 @@
+/* HU-60: consulta pública, sin controles de administración. */
+.verificacion--consulta .verificacion__cuerpo { max-width: 44.5rem; }
+.verificacion__academica { padding: 12px 16px; border: 1px solid var(--verde-200); border-radius: var(--radio); background: var(--verde-50); color: var(--verde-900); font-size: var(--texto-xs); font-weight: 600; text-align: center; }
+.verificacion__tarjeta { display: block; padding: 24px; border: 1px solid var(--color-borde); border-radius: var(--radio); background: var(--color-superficie); }
+.verificacion__resumen { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+.verificacion__estado { display: block; padding: 6px 10px; border-radius: var(--radio-sm); color: var(--verde-900); background: var(--verde-100); font-size: var(--texto-sm); }
+.verificacion__estado--anulada { color: var(--terracota-700); background: var(--terracota-100); }
+.verificacion__aviso { margin-bottom: 24px; color: var(--terracota-700); font-weight: 600; }
+.verificacion__datos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.verificacion__datos div { min-width: 0; }
+.verificacion__datos dt { margin-bottom: 4px; color: var(--color-texto-2); font-size: var(--texto-sm); }
+.verificacion__datos dd { overflow-wrap: anywhere; font-weight: 600; }
+.verificacion__datos .verificacion__total { font-size: var(--texto-lg); }
+.verificacion__cuf { grid-column: 1 / -1; padding-top: 16px; border-top: 1px solid var(--color-borde); }
+.verificacion__cuf dd { font-family: ui-monospace, monospace; }
+@media (max-width: 480px) {
+  .verificacion h1 { font-size: var(--texto-lg); }
+  .verificacion__tarjeta { padding: 16px; }
+  .verificacion__datos { grid-template-columns: 1fr; gap: 16px; }
+}
+@media print {
+  .verificacion { min-height: 0; background: white; }
+  .verificacion__cabeza { display: none; }
+  .verificacion__tarjeta { break-inside: avoid; }
+}

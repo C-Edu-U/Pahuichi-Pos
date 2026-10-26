@@ -79,8 +79,17 @@ final class FacturaController extends Controller
         $nit = $peticion->consulta('nit');
         $numero = $peticion->consulta('numero');
         $monto = $peticion->consulta('monto');
-        if (!preg_match('/^[A-F0-9]{28}$/D', $cuf) || !preg_match('/^\d{7,13}$/D', $nit) || !preg_match('/^[1-9]\d{0,17}$/D', $numero) || !preg_match('/^\d{1,8}\.\d{2}$/D', $monto)) throw ErrorHttp::noEncontrado();
-        $f = Factura::verificar($cuf, $nit, $numero, $monto) ?? throw ErrorHttp::noEncontrado('Los datos no corresponden a una factura.');
-        return $this->vista('facturas/verificar', ['titulo' => 'Verificar factura', 'f' => $f], 200, 'layouts/simple');
+        $formatoValido = preg_match('/^[A-F0-9]{28}$/D', $cuf)
+            && preg_match('/^\d{7,13}$/D', $nit)
+            && preg_match('/^[1-9]\d{0,17}$/D', $numero)
+            && preg_match('/^\d{1,8}\.\d{2}$/D', $monto);
+        $f = $formatoValido ? Factura::verificar($cuf, $nit, $numero, $monto) : null;
+        return $this->vista('facturas/verificar', [
+            'titulo' => $f ? 'Verificar factura' : 'Factura no encontrada',
+            'css' => ['verificar-factura.css'], 'f' => $f,
+        ], $f ? 200 : 404, 'layouts/simple')
+            ->cabecera('Cache-Control', 'private, no-store')
+            ->cabecera('Referrer-Policy', 'no-referrer')
+            ->cabecera('X-Robots-Tag', 'noindex, nofollow');
     }
 }
