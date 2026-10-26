@@ -10,6 +10,7 @@ use App\Core\Auth;
 require __DIR__ . '/_datos.php';
 ?>
     <main class="contenido contenido--pos" id="contenido">
+      <p class="qr-dia-aviso" id="qr-dia-aviso" role="alert">Consultando el QR del día…</p>
       <div class="pos" data-caja="<?= (int) $caja['id'] ?>" data-usuario="<?= (int) Auth::id() ?>" id="pos" data-productos="<?= e(json_encode($datos, JSON_UNESCAPED_UNICODE)) ?>" data-promociones="<?= e(json_encode($promos, JSON_UNESCAPED_UNICODE)) ?>" data-ahora="<?= e($ahora->format('Y-m-d\TH:i:s')) ?>">
 <?php $estadoCatalogo = '<p class="pos__turno" id="pos-turno"><span class="punto-estado" aria-hidden="true"></span>Caja abierta · ' . e(mb_strtolower($caja['turno'])) . ' desde las ' . e(substr($caja['abierta_en'], 11, 5)) . ' · ' . e($caja['cajero']) . '</p>'; ?>
 <?php require __DIR__ . '/_catalogo.php'; ?>

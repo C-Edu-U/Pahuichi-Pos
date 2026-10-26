@@ -247,9 +247,6 @@ $cufdVigente = !isset($errores['f-vigencia']) && ParametrosFiscales::cufdVigente
             <div class="panel-bloque__pie">
               <button class="boton boton--primario" type="submit">Guardar</button>
             </div>
-            <div class="panel-bloque__cuerpo">
-              <p class="config__nota">El monto fijo del QR del día llega con HU-38.</p>
-            </div>
           </form>
 
           <section class="panel-bloque config__seccion" id="seguridad" aria-labelledby="t-seguridad">
