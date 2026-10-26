@@ -41,6 +41,3 @@ Como Mesero, quiero tomar el pedido desde mi celular y enviarlo a caja, para que
 ## Cierre de caja
 
 La caja no se cierra mientras alguna mesa tenga la cuenta abierta: el conteo y el arqueo avisan qué mesas faltan y el servidor lo impide.
-
-## Pendiente
-
