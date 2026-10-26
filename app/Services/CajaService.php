@@ -27,6 +27,12 @@ final class CajaService
         return Caja::abierta();
     }
 
+    /** HU-20: el cajero opera y ve solo su caja; el administrador, todas. */
+    public static function esPropia(array $caja, array $usuario): bool
+    {
+        return $usuario['rol'] === 'administrador' || (int) $caja['cajero_id'] === (int) $usuario['id'];
+    }
+
     /** Turno que corresponde a la hora actual; si no hay, el próximo del día; si no, el primero. */
     public static function turnoSugerido(array $turnos): ?array
     {

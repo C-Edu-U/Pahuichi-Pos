@@ -1,6 +1,7 @@
 <?php
 /**
- * Caja. Variables: $abierta (caja abierta o null), $turnos, $cajeros, $usuario, $historial,
+ * Caja. Variables: $abierta (caja abierta o null), $propia (HU-20: el usuario puede operarla),
+ * $turnos, $cajeros, $usuario, $historial (del cajero, o todas para el administrador),
  * $errores, $bloqueo (motivo por el que no se pudo abrir), $viejo (turno_id, cajero_id, fondo,
  * tipo, monto, motivo), $movimientos, $totales.
  */
@@ -71,6 +72,14 @@ $fecha = static fn (string $momento): string => (new DateTimeImmutable($momento)
             </button>
           </div>
         </form>
+      </section>
+<?php elseif (!$propia): ?>
+      <!-- HU-20: la caja abierta es de otro cajero; solo él o un administrador la operan -->
+      <section class="panel-bloque" id="caja-ajena" aria-labelledby="t-caja-ajena">
+        <div class="panel-bloque__cuerpo">
+          <h2 class="panel-bloque__titulo" id="t-caja-ajena">La caja abierta es de <?= e($abierta['cajero']) ?></h2>
+          <p class="cabeza-pagina__texto">Turno <?= e(mb_strtolower($abierta['turno'])) ?>, abierta <?= e(fecha_corta($abierta['abierta_en'])) ?>. Solo <?= e($abierta['cajero']) ?> o un administrador pueden registrar movimientos, contar y cerrarla. Hay una sola caja abierta a la vez: podrás abrir la tuya cuando se cierre.</p>
+        </div>
       </section>
 <?php else: ?>
       <!-- Caja abierta -->
