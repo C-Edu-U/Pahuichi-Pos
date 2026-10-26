@@ -18,7 +18,7 @@ $modulos = array_filter(
 $aviso = Sesion::tomarFlash('aviso');
 $usuario = Auth::usuario();
 $js = $js ?? [];
-if (($modulo ?? '') === 'pos') {
+if (in_array($modulo ?? '', ['pos', 'mesero'], true)) {
     $js[] = 'producto-fotos-pos.js';
     $css[] = 'foto-producto.css';
 }

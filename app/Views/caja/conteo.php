@@ -20,6 +20,14 @@ $total = Arqueo::totalContado($conteoGuardado);
         <p class="aviso-pagina__datos">Caja: turno <strong><?= e($abierta['turno']) ?></strong> · <?= e($abierta['cajero']) ?></p>
       </div>
 
+<?php if (!empty($mesasAbiertas)): ?>
+      <div class="alerta alerta--aviso" role="alert" id="mesas-abiertas">
+        <?= icono('mesa') ?>
+        <p class="alerta__titulo">Todavía no se puede cerrar la caja</p>
+        <p class="alerta__texto"><?= e($mesasAbiertas) ?> Están en «Mesas», en el punto de venta.</p>
+      </div>
+<?php endif; ?>
+
 <?php if ($conteo !== null): ?>
       <section class="panel-bloque" aria-labelledby="t-conteo-guardado">
         <div class="panel-bloque__cabecera">

@@ -89,6 +89,10 @@ return [
         'factura.reimpresion' => ['Reimpresión de tickets', 'ventas', 'aviso'],
         'venta.anulacion' => ['Anulación de venta', 'ventas', 'peligro'],
         'venta.descuento_manual' => ['Descuento manual', 'ventas', 'aviso'],
+        'cuenta.apertura' => ['Cuenta de mesa abierta', 'ventas', 'neutra'],
+        'cuenta.ronda' => ['Pedido enviado a caja', 'ventas', 'neutra'],
+        'cuenta.cancelacion' => ['Pedido de mesa cancelado', 'ventas', 'aviso'],
+        'cuenta.cierre' => ['Cuenta de mesa cobrada', 'ventas', 'ok'],
         'impresion.reimpresion' => ['Reimpresión', 'ventas', 'aviso'],
         'qr.subir' => ['QR del día subido', 'qr', 'neutra'],
         'qr.confirmar' => ['Pago QR confirmado', 'qr', 'ok'],
@@ -116,6 +120,6 @@ return [
         'precio' => 'Precio', 'turno' => 'Turno', 'cajero' => 'Cajero', 'usuario' => 'Usuario',
         'rol' => 'Rol', 'modo' => 'Con', 'intentos' => 'Intentos', 'hasta' => 'Hasta',
         'ruta' => 'Ruta', 'metodo' => 'Método', 'permiso' => 'Permiso', 'favorito' => 'Favorito',
-        'agotado' => 'Agotado', 'borradas' => 'Cajas borradas', 'archivadas' => 'Cajas archivadas', 'accion' => 'Acción', 'autorizado_por' => 'Autorizó', 'subtotal' => 'Subtotal', 'aplica' => 'Se aplica a', 'cuando' => 'Cuándo', 'condiciones' => 'Condiciones', 'descuento' => 'Descuento', 'promociones' => 'Promociones', 'vendida_sin_red' => 'Vendida sin red', 'texto' => 'Texto', 'activo' => 'Activa', 'mediodia' => 'Medio día', 'noche' => 'Noche',
+        'agotado' => 'Agotado', 'borradas' => 'Cajas borradas', 'archivadas' => 'Cajas archivadas', 'accion' => 'Acción', 'autorizado_por' => 'Autorizó', 'subtotal' => 'Subtotal', 'aplica' => 'Se aplica a', 'cuando' => 'Cuándo', 'condiciones' => 'Condiciones', 'descuento' => 'Descuento', 'promociones' => 'Promociones', 'vendida_sin_red' => 'Vendida sin red', 'mesa' => 'Mesa', 'ronda' => 'Pedido', 'rondas' => 'Pedidos', 'cuenta' => 'Cuenta', 'factura' => 'Factura', 'texto' => 'Texto', 'activo' => 'Activa', 'mediodia' => 'Medio día', 'noche' => 'Noche',
     ],
 ];

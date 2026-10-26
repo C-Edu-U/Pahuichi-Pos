@@ -15,6 +15,7 @@ use App\Controllers\CajaController;
 use App\Controllers\CategoriaController;
 use App\Controllers\ClienteController;
 use App\Controllers\ConfigController;
+use App\Controllers\CuentaController;
 use App\Controllers\InicioController;
 use App\Controllers\ModuloController;
 use App\Controllers\PosController;
@@ -68,7 +69,8 @@ $catalogo = ['auth', 'permiso:modulo.catalogo'];
 $editarCatalogo = [...$catalogo, 'permiso:catalogo.editar'];
 $router->get('/catalogo', [InicioController::class, 'catalogo'], $catalogo);
 $router->get('/catalogo/productos', [ProductoController::class, 'index'], $catalogo);
-$router->get('/catalogo/productos/{id}/foto', [ProductoController::class, 'foto'], $catalogo);
+// Las fotos también las ve el mesero en su catálogo (HU-35)
+$router->get('/catalogo/productos/{id}/foto', [ProductoController::class, 'foto'], ['auth', 'permiso:catalogo.fotos']);
 $router->get('/catalogo/productos/nuevo', [ProductoController::class, 'nuevo'], $editarCatalogo);
 $router->post('/catalogo/productos/nuevo', [ProductoController::class, 'crear'], $editarCatalogo);
 $router->get('/catalogo/productos/{id}/editar', [ProductoController::class, 'editar'], $editarCatalogo);
@@ -103,6 +105,16 @@ $router->post('/pos/cobrar', [PosController::class, 'cobrar'], ['auth', 'permiso
 $router->post('/autorizaciones', [AutorizacionController::class, 'crear'], ['auth', 'permiso:modulo.pos']);
 $router->get('/ventas', [FacturaController::class, 'index'], ['auth', 'permiso:modulo.ventas']);
 $router->get('/facturas/{id}', [FacturaController::class, 'mostrar'], ['auth', 'permiso:modulo.ventas']);
+
+// Cuentas por mesa (HU-35): el mesero toma pedidos para la mesa y cobra al cerrar; caja ve
+// las mesas, imprime la comanda de cada pedido y también puede cobrar la cuenta
+$router->get('/mesero', [CuentaController::class, 'mesero'], ['auth', 'permiso:modulo.mesero']);
+$router->get('/cuentas', [CuentaController::class, 'lista'], ['auth', 'permiso:cuentas.ver']);
+$router->post('/cuentas/rondas', [CuentaController::class, 'enviarRonda'], ['auth', 'permiso:cuentas.tomar']);
+$router->post('/cuentas/rondas/{id}/cancelar', [CuentaController::class, 'cancelarRonda'], ['auth', 'permiso:cuentas.ver']);
+$router->get('/cuentas/rondas/{id}/comanda', [CuentaController::class, 'comanda'], ['auth', 'permiso:cuentas.ver']);
+$router->post('/cuentas/{id}/cerrar', [CuentaController::class, 'cerrar'], ['auth', 'permiso:cuentas.cobrar']);
+$router->get('/cuentas/{id}/factura', [CuentaController::class, 'factura'], ['auth', 'permiso:cuentas.cobrar']);
 
 // Tablero del día (HU-64): cifras para el administrador; su turno, sin montos, para el cajero
 $router->get('/tablero', [TableroController::class, 'index'], ['auth', 'permiso:modulo.tablero']);

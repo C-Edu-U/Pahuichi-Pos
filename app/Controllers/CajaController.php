@@ -157,6 +157,7 @@ final class CajaController extends Controller
             'conteo' => $conteo,
             'denominaciones' => Arqueo::DENOMINACIONES,
             'errores' => [],
+            'mesasAbiertas' => ArqueoService::bloqueoPorMesas(),
         ]);
     }
 
@@ -281,6 +282,7 @@ final class CajaController extends Controller
             'cerrada' => $cerrada,
             'observacion' => $observacion,
             'umbral' => ArqueoService::umbralObservacion(),
+            'mesasAbiertas' => $cerrada ? null : ArqueoService::bloqueoPorMesas(),
             'exigeObservacion' => !$cerrada && ArqueoService::exigeObservacion($diferencia),
             'errores' => $errores,
         ], $estado);
