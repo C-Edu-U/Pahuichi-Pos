@@ -8,7 +8,7 @@ Como Mesero, quiero tomar el pedido desde mi celular y enviarlo a caja, para que
 - **El primer pedido abre la cuenta de la mesa**; los siguientes se suman a la misma cuenta. Hay una sola cuenta abierta por mesa.
 - **Cada pedido llega a caja**: en el POS, el botón «Mesas» muestra las mesas abiertas con sus pedidos y avisa cuando llega uno nuevo. Caja abre la comanda de cada pedido en PDF para cocina, con las copias que diga el perfil de cocina (HU-12).
 - **Las promociones valen a la hora de cada pedido**: una mesa puede tener un pedido dentro del horario de una promoción y otro fuera.
-- **Cerrar y cobrar**: el mesero (o caja, si el cliente va al mostrador) cierra la cuenta y cobra. Sale una sola factura con todos los pedidos, más la copia de caja; las comandas no se repiten. El servidor acepta efectivo, QR y mixto (HU-39, HU-42); la pantalla de la cuenta todavía ofrece solo efectivo.
+- **Cerrar y cobrar**: el mesero (o caja, si el cliente va al mostrador) cierra la cuenta y cobra. Sale una sola factura con todos los pedidos, más la copia de caja; las comandas no se repiten. Se cobra en efectivo, por QR o mixto (HU-39, HU-42), con las reglas del POS: el QR tiene que estar vigente y, si es de monto fijo, ese es el monto por QR (con un QR de Bs 0,50, la mesa se cobra con mixto). El pago QR queda pendiente de verificación y solo la parte en efectivo suma al arqueo. El mesero también ve el QR del día para mostrárselo al cliente.
 - **La venta queda en la caja abierta**: el arqueo espera ese efectivo y el mesero lo entrega en caja. Sin caja abierta no se toman pedidos ni se cobran cuentas.
 - **El descuento manual con PIN** solo lo aplica caja al cobrar la cuenta.
 - **Cancelar un pedido**: el mesero cancela los que envió; caja, cualquiera. Siempre con motivo y en la bitácora. Si una cuenta se queda sin pedidos, se cancela y la mesa queda libre.
@@ -44,4 +44,3 @@ La caja no se cierra mientras alguna mesa tenga la cuenta abierta: el conteo y e
 
 ## Pendiente
 
-- **QR y mixto en la pantalla de cobro de la cuenta** (el servidor ya los acepta).

@@ -1,7 +1,7 @@
 <?php
 /**
  * Diálogos de las cuentas por mesa (HU-35), para el mesero y para caja: cobrar la cuenta y
- * cancelar un pedido. QR y mixto: el servidor ya los acepta; falta su pantalla en la cuenta. El descuento manual (con el PIN del
+ * cancelar un pedido. Se cobra en efectivo, por QR o mixto (HU-39, HU-42). El descuento manual (con el PIN del
  * administrador) se ve solo en caja ($conDescuento).
  */
 $conDescuento = $conDescuento ?? false;
@@ -21,16 +21,33 @@ $conDescuento = $conDescuento ?? false;
           </p>
           <p class="cuenta-cobro__descuento" id="cuenta-descuento-fila" hidden>Descuento <span id="cuenta-descuento-motivo"></span>: <strong class="num" id="cuenta-descuento">−0,00</strong></p>
 
-          <div class="metodos" role="group" aria-label="Medio de pago" aria-describedby="cuenta-metodos-nota">
-            <button class="metodos__opcion" type="button" aria-pressed="true">Efectivo</button>
-            <button class="metodos__opcion" type="button" disabled>QR</button>
-            <button class="metodos__opcion" type="button" disabled>Mixto</button>
+          <!-- HU-39 y HU-42: efectivo, QR (pendiente de confirmar) o mixto, como en el POS -->
+          <div class="metodos" role="group" aria-label="Medio de pago">
+            <button class="metodos__opcion" type="button" data-cuenta-metodo="efectivo" aria-pressed="true">Efectivo</button>
+            <button class="metodos__opcion" type="button" data-cuenta-metodo="qr" aria-pressed="false" disabled>QR</button>
+            <button class="metodos__opcion" type="button" data-cuenta-metodo="mixto" aria-pressed="false" disabled>Mixto</button>
           </div>
-          <p class="cuenta-cobro__nota" id="cuenta-metodos-nota">QR y mixto en la cuenta de mesa: próximamente. En el punto de venta ya están disponibles.</p>
 
           <div class="cobro__metodo">
+          <div class="cuenta-qr" id="cuenta-qr" hidden>
+            <p class="cuenta-cobro__nota" id="cuenta-qr-aviso" role="status">Consultando el QR del día…</p>
+            <img class="qr-dia-imagen" id="cuenta-qr-imagen" alt="QR de pago del día" hidden>
+            <div class="campo">
+              <label class="campo__etiqueta" for="cuenta-qr-monto">Monto pagado por QR</label>
+              <div class="control-grupo">
+                <span class="control-grupo__prefijo" aria-hidden="true">Bs</span>
+                <input class="control control--numero" id="cuenta-qr-monto" type="text" inputmode="decimal" autocomplete="off" readonly>
+              </div>
+            </div>
+            <p class="cuenta-cobro__nota" id="cuenta-mixto-parte" hidden></p>
+            <div class="campo"><label class="campo__etiqueta" for="cuenta-qr-comprobante">Número de comprobante</label><input class="control" id="cuenta-qr-comprobante" maxlength="80" autocomplete="off"></div>
+            <div class="campo"><label class="campo__etiqueta" for="cuenta-qr-pagador">Pagador (opcional)</label><input class="control" id="cuenta-qr-pagador" maxlength="120" autocomplete="off"></div>
+            <div class="campo"><label class="campo__etiqueta" for="cuenta-qr-foto">Foto del comprobante (opcional, hasta 1 MB)</label><input class="control" id="cuenta-qr-foto" type="file" accept="image/png,image/jpeg,image/webp"></div>
+            <p class="cuenta-cobro__nota">El pago QR queda pendiente de verificación y no suma al efectivo de caja.</p>
+          </div>
+          <div class="cuenta-efectivo" id="cuenta-efectivo">
           <div class="campo">
-            <label class="campo__etiqueta" for="cuenta-recibido">Monto recibido</label>
+            <label class="campo__etiqueta" for="cuenta-recibido" id="cuenta-recibido-etiqueta">Monto recibido</label>
             <div class="control-grupo">
               <span class="control-grupo__prefijo" aria-hidden="true">Bs</span>
               <input class="control control--numero control--grande" id="cuenta-recibido" type="text" inputmode="decimal" autocomplete="off" aria-describedby="cuenta-error">
@@ -46,6 +63,7 @@ $conDescuento = $conDescuento ?? false;
             <span class="cambio__etiqueta">Cambio</span>
             <output class="cambio__monto" id="cuenta-cambio" for="cuenta-recibido">Bs 0,00</output>
           </p>
+          </div>
 
           <details class="cuenta-cobro__cliente">
             <summary>Factura a nombre de… <span id="cuenta-cliente-resumen">S/N · NIT 0</span></summary>

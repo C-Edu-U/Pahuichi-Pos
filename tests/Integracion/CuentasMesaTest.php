@@ -298,6 +298,33 @@ final class CuentasMesaTest extends CasoPrueba
         $this->assertSame(422, $r->estado);
     }
 
+    /** El cobro de la cuenta ofrece QR y mixto: el mesero ve el QR del día para mostrárselo al cliente. */
+    public function testElMeseroVeElQrDelDiaYElCobroOfreceQrYMixto(): void
+    {
+        $qr = DB::insertar("INSERT INTO qr_diarios (fecha, monto, imagen, imagen_tipo, usuario_id, creado_en) VALUES ('2026-10-22', 0.50, 'imagen-del-qr', 'image/png', 1, '2026-10-22 10:00:00')");
+
+        $estado = json_decode($this->get('/qr/estado')->cuerpo, true);
+        $this->assertTrue($estado['vigente']);
+        $this->assertSame($qr, (int) $estado['id']);
+        $this->assertSame('imagen-del-qr', $this->get('/qr/' . $qr . '/imagen')->cuerpo);
+
+        foreach (['/mesero' => 'luis', '/pos' => 'mariela'] as $ruta => $usuario) {
+            $this->entrarComo($usuario, $usuario === 'mariela' ? 'pin' : 'clave');
+            $html = $this->get($ruta)->cuerpo;
+            $this->assertStringContainsString('data-cuenta-metodo="qr"', $html, $ruta);
+            $this->assertStringContainsString('data-cuenta-metodo="mixto"', $html, $ruta);
+            $this->assertStringContainsString('id="cuenta-qr-comprobante"', $html, $ruta);
+            $this->assertStringContainsString('/assets/css/qr-dia.css', $html, $ruta);
+        }
+        // Con un QR de monto fijo (Bs 0,50), una mesa de Bs 40 se cobra con mixto
+        $this->entrarComo('luis');
+        $this->ronda('3', [$this->majadito => 1], '40.00');
+        $r = $this->cerrar((int) $this->cuenta()['id'], '40.00', ['metodo' => 'mixto', 'qr_id' => (string) $qr, 'qr_monto' => '0.50', 'comprobante' => 'FIJO-001',
+            'efectivo_monto' => '39.50', 'exacto' => '0', 'recibido' => '40.00']);
+        $this->assertSame(200, $r->estado, $r->cuerpo);
+        $this->assertSame('0.50', json_decode($r->cuerpo, true)['cambio']);
+    }
+
     public function testUnCobroRepetidoNoFacturaDosVeces(): void
     {
         $this->ronda('3', [$this->majadito => 1], '40.00');
