@@ -66,6 +66,8 @@ final class QrSimulacionTest extends CasoPrueba
         $this->assertSame(422, $this->post('/qr/simular', ['accion'=>'restablecer','qr_id'=>(string)$this->qr])->estado);
         $this->assertSame($nuevo, QrDiarioService::estado()['id']);
         Reloj::fijar('2026-10-23 00:00:00');
+        // Medianoche: la sesión del administrador ya venció por inactividad; se vuelve a entrar
+        $this->entrarComo('admin');
         $this->assertSame(422, $this->post('/qr/simular', ['accion'=>'restablecer','qr_id'=>(string)$nuevo])->estado);
     }
 }
