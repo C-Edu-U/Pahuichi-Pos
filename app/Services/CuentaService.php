@@ -121,7 +121,7 @@ final class CuentaService
     }
 
     /**
-     * Cierra la cuenta y la cobra en efectivo: una factura con todas sus rondas, en la caja
+     * Cierra la cuenta y la cobra (efectivo, QR o mixto): una factura con todas sus rondas, en la caja
      * abierta. El descuento manual solo lo aplica caja (con el PIN del administrador).
      */
     public static function cerrar(int $cuentaId, array $d): array
@@ -141,19 +141,19 @@ final class CuentaService
     private static function cerrarCuenta(?int $cuentaId, ?string $mesa, array $d): array
     {
         $uuid = VentaService::uuid($d['uuid'] ?? '');
-        $exacto = ($d['exacto'] ?? '') === '1';
-        $recibido = $exacto ? null : VentaService::centavos($d['recibido'] ?? null);
+        // HU-39 y HU-42: la cuenta se cobra en efectivo, por QR o mixto, como en el POS
+        $pagoPedido = VentaService::pagoDe($d);
         $esperado = VentaService::centavos($d['total_esperado'] ?? null);
         $descuento = ($d['descuento'] ?? '') === '' ? 0 : VentaService::centavos($d['descuento']);
         $token = is_string($d['autorizacion'] ?? null) ? $d['autorizacion'] : '';
         if ($descuento > 0 && !puede('cuentas.descuento')) throw new DomainException('El descuento manual se aplica en caja.');
         $cliente = ClienteService::normalizar($d['cliente_doc'] ?? '0', $d['cliente_nombre'] ?? '', $d['cliente_tipo'] ?? 'NIT');
-        $datosHash = [$cuentaId !== null ? ['cuenta' => $cuentaId] : ['mesa' => $mesa], $exacto, $recibido, $esperado, $descuento];
+        $datosHash = [$cuentaId !== null ? ['cuenta' => $cuentaId] : ['mesa' => $mesa], $pagoPedido['exacto'], $pagoPedido['recibido'], $esperado, $descuento, ...$pagoPedido['hash']];
         if ($cliente['doc'] !== '0') $datosHash[] = $cliente;
         $hash = hash('sha256', json_encode($datosHash, JSON_THROW_ON_ERROR));
         $gastar = false;
 
-        $factura = DB::transaccion(static function () use ($cuentaId, $mesa, $uuid, $hash, $exacto, $recibido, $esperado, $descuento, $token, $cliente, &$gastar): array {
+        $factura = DB::transaccion(static function () use ($cuentaId, $mesa, $uuid, $hash, $pagoPedido, $esperado, $descuento, $token, $cliente, &$gastar): array {
             $caja = self::cajaAbierta();
             $previa = Venta::porUuid($uuid);
             if ($previa !== null) {
@@ -184,13 +184,12 @@ final class CuentaService
             if ($subtotal !== $esperado) throw new DomainException('Cambiaron los pedidos de la mesa ' . $cuenta['mesa'] . '. Revisa el total antes de cobrar.');
             $permiso = VentaService::permisoDescuento($descuento, $token, $subtotal);
             $total = $subtotal - ($permiso !== null ? $descuento : 0);
-            $rec = $exacto ? $total : $recibido;
-            if ($rec < $total) throw new DomainException('El efectivo recibido no cubre el total.');
+            $pago = VentaService::cobrarPago($pagoPedido, $total);
 
             $rondas = (int) DB::valor("SELECT COUNT(*) FROM cuenta_rondas WHERE cuenta_id = ? AND estado = 'enviada'", [$cuentaId]);
             $id = VentaService::emitir(['uuid' => $uuid, 'hash' => $hash, 'caja_id' => (int) $caja['id'], 'tipo' => 'mesa', 'mesa' => $cuenta['mesa'],
                 'lineas' => $lineas, 'promo' => $promo, 'subtotal' => $subtotal, 'descuento' => $permiso !== null ? $descuento : 0, 'permiso' => $permiso,
-                'total' => $total, 'recibido' => $rec, 'cliente' => $cliente, 'vendida' => Reloj::ahora(),
+                'total' => $total, 'pago' => $pago, 'cliente' => $cliente, 'vendida' => Reloj::ahora(),
                 // Las comandas ya salieron con cada ronda: los tickets de esta venta no las repiten
                 'snapshot' => ['cuenta' => ['id' => $cuentaId, 'rondas' => $rondas]],
                 'bitacora' => ['cuenta' => (int) $cuentaId, 'mesa' => $cuenta['mesa']]]);

@@ -1,7 +1,7 @@
 <?php
 /**
  * Diálogos de las cuentas por mesa (HU-35), para el mesero y para caja: cobrar la cuenta y
- * cancelar un pedido. QR y mixto llegan con HU-39. El descuento manual (con el PIN del
+ * cancelar un pedido. QR y mixto: el servidor ya los acepta; falta su pantalla en la cuenta. El descuento manual (con el PIN del
  * administrador) se ve solo en caja ($conDescuento).
  */
 $conDescuento = $conDescuento ?? false;
@@ -26,7 +26,7 @@ $conDescuento = $conDescuento ?? false;
             <button class="metodos__opcion" type="button" disabled>QR</button>
             <button class="metodos__opcion" type="button" disabled>Mixto</button>
           </div>
-          <p class="cuenta-cobro__nota" id="cuenta-metodos-nota">QR y mixto: próximamente (HU-39).</p>
+          <p class="cuenta-cobro__nota" id="cuenta-metodos-nota">QR y mixto en la cuenta de mesa: próximamente. En el punto de venta ya están disponibles.</p>
 
           <div class="cobro__metodo">
           <div class="campo">

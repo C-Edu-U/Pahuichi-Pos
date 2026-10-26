@@ -82,8 +82,8 @@
               cambiar(siguiente.uuid, {estado: 'enviada', factura: r.datos});
               resultado.enviadas.push(Object.assign({}, siguiente, {factura: r.datos}));
             } else if (r.rechazo !== undefined) {
-              cambiar(siguiente.uuid, {estado: 'rechazada', motivo: r.rechazo, descuento: r.descuento || null});
-              resultado.rechazadas.push(Object.assign({}, siguiente, {motivo: r.rechazo, descuento: r.descuento || null}));
+              cambiar(siguiente.uuid, {estado: 'rechazada', motivo: r.rechazo, descuento: r.descuento || null, respuesta: r.respuesta || null});
+              resultado.rechazadas.push(Object.assign({}, siguiente, {motivo: r.rechazo, descuento: r.descuento || null, respuesta: r.respuesta || null}));
             } else {
               resultado.detenido = r.sesion ? 'sesion' : 'red';
               break;
@@ -134,7 +134,7 @@
     if (cuerpo && cuerpo.recargar) return {sesion: true};
     if (r.ok && cuerpo) return {ok: true, datos: cuerpo};
     // 422 (pedido inválido), 409 (sin caja), 403 (sin permiso): no se arregla reintentando
-    if (r.status >= 400 && r.status < 500 && cuerpo && cuerpo.error) return {rechazo: cuerpo.error, descuento: cuerpo.descuento};
+    if (r.status >= 400 && r.status < 500 && cuerpo && cuerpo.error) return {rechazo: cuerpo.error, descuento: cuerpo.descuento, respuesta: cuerpo};
     // 5xx, respuesta cortada o un proxy sin red: se reintenta después
     return {red: true};
   }

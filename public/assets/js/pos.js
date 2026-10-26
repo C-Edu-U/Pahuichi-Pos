@@ -416,6 +416,7 @@
     $('cobro-error').hidden = !texto;
     $('recibido-error').textContent = texto;
     $('recibido-error').hidden = !texto;
+    if (window.PahuichiQr) window.PahuichiQr.error(texto);
   }
   function bloquearPedido(valor) {
     document.querySelector('.pos__catalogo').inert = valor;
@@ -429,6 +430,7 @@
     $('confirmar-cobro').disabled = enviando;
     $('recibido').disabled = valor;
     document.querySelector('.billetes').inert = valor;
+    if (window.PahuichiQr) window.PahuichiQr.bloquear(valor);
   }
   /* HU-30: mesa (con su número) o para llevar. El número no trae valor por
      defecto: se escribe en cada pedido para no cobrar en la mesa equivocada. */
@@ -479,6 +481,7 @@
     if (!exigirMesa() || !promocionesAlDia()) return;
     $('cobro-total').textContent = P.bs(aCobrar());
     $('recibido').value = aCobrar().toFixed(2);
+    if (window.PahuichiQr) window.PahuichiQr.abrir(aCobrar());
     errorCobro(''); cambio(); dialogoCobro.showModal(); $('recibido').focus();
   });
   /* HU-49: una promoción puede empezar o terminar mientras se arma el pedido (horario,
@@ -528,9 +531,17 @@
     descuento = null;
     carrito.vaciar(); notasAbiertas.clear();
     window.PahuichiCliente.reset();
+    if (window.PahuichiQr) window.PahuichiQr.reset();
     if (dialogoCobro.open) dialogoCobro.close();
     $('mesa').value = ''; P.mesa($('mesa')); elegirTipo('mesa');
     pintar();
+  }
+
+  // Lo que se ve al cobrar: el cambio, o las partes del pago QR o mixto (HU-39, HU-42)
+  function detalleCobro(f) {
+    return 'Factura N° ' + f.numero + (f.pago_qr
+      ? (f.pago_efectivo ? ' · Efectivo Bs ' + P.bs(f.pago_efectivo.monto) + ' · cambio Bs ' + P.bs(f.cambio) : '') + ' · QR Bs ' + P.bs(f.pago_qr.monto) + ' pendiente de verificación'
+      : ' · cambio Bs ' + P.bs(f.cambio)) + ' · lista para imprimir';
   }
 
   async function cobrar(exacto) {
@@ -552,10 +563,13 @@
       descuento: descuento ? (descuento.centavos / 100).toFixed(2) : '', autorizacion: descuento ? descuento.token : '',
       a_cobrar: aCobrar().toFixed(2), momento: c.fecha + 'T' + c.hora,
       lineas: JSON.stringify(carrito.lineas.map(function (l) { return {id: Number(l.producto.id), cantidad: l.cantidad, nota: l.nota || ''}; }))};
+    // HU-39 y HU-42: QR o mixto (comprobante, monto y foto); en efectivo no agrega nada
+    try { if (!exacto && window.PahuichiQr) Object.assign(datos, window.PahuichiQr.datos()); }
+    catch (e) { errorCobro(e.message); return; }
     Object.assign(datos, cliente);
     var venta;
     try { venta = cola.agregar(datos, {total: aCobrar().toFixed(2), items: carrito.unidades(), hora: c.hora.slice(0, 5)}); }
-    catch (e) { errorCobro('No se pudo guardar la venta en este equipo. Libera espacio o permite el almacenamiento y vuelve a cobrar.'); return; }
+    catch (e) { errorCobro(datos.foto_qr ? 'La foto del comprobante no cabe en este equipo. Quítala y vuelve a cobrar.' : 'No se pudo guardar la venta en este equipo. Libera espacio o permite el almacenamiento y vuelve a cobrar.'); return; }
 
     enviando = true; bloquearPedido(true);
     var r = await cola.procesar();
@@ -571,7 +585,7 @@
       usadas.forEach(function (id) { usos[id] = (usos[id] || 0) + 1; });
       pedidoNuevo(); bloquearPedido(false);
       ventaLista('Pedido ' + enviada.factura.pedido + ' cobrado',
-        'Factura N° ' + enviada.factura.numero + ' · cambio Bs ' + P.bs(enviada.factura.cambio) + ' · lista para imprimir', enviada.factura.tickets);
+        detalleCobro(enviada.factura), enviada.factura.tickets);
       anunciar('Venta guardada. Abre Ver tickets para consultar comanda, copia de caja y factura.');
       $('venta-lista-ver').focus();
       return;
@@ -581,6 +595,8 @@
       cola.quitar(datos.uuid);
       bloquearPedido(false);
       if (rechazada.descuento === 'invalido') { descuento = null; pintar(); }
+      // HU-40: el comprobante QR ya se usó; se muestra la venta original
+      if (window.PahuichiQr) window.PahuichiQr.duplicado((rechazada.respuesta || {}).comprobante_duplicado || null);
       errorCobro(rechazada.motivo);
       return;
     }

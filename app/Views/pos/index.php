@@ -141,6 +141,8 @@ require __DIR__ . '/_datos.php';
 
           <div class="metodos" role="tablist" aria-label="Medio de pago">
             <button class="metodos__opcion" type="button" role="tab" id="tab-efectivo" aria-selected="true" aria-controls="cobro-efectivo" data-metodo="efectivo">Efectivo</button>
+            <button class="metodos__opcion" type="button" role="tab" id="tab-qr" aria-selected="false" aria-controls="cobro-qr" data-metodo="qr" disabled>Cobrar con QR</button>
+            <button class="metodos__opcion" type="button" role="tab" id="tab-mixto" aria-selected="false" aria-controls="cobro-qr" data-metodo="mixto" disabled>Mixto</button>
           </div>
 
           <!-- Efectivo (también la parte en efectivo del mixto) -->
@@ -166,6 +168,21 @@ require __DIR__ . '/_datos.php';
             </p>
           </div>
 
+          <div class="cobro__metodo qr-dia-panel" id="cobro-qr" role="tabpanel" aria-labelledby="tab-qr" hidden>
+            <p id="qr-cobro-aviso" role="status">Consulta el QR vigente del día.</p>
+            <img class="qr-dia-imagen" id="qr-cobro-imagen" alt="QR de pago del día" hidden>
+            <div class="campo"><label class="campo__etiqueta" for="qr-cobro-monto">Monto pagado por QR (Bs)</label><input class="control" id="qr-cobro-monto" inputmode="decimal" readonly></div>
+            <div id="cobro-mixto" hidden>
+              <div class="campo"><label class="campo__etiqueta" for="mixto-efectivo">Parte en efectivo (Bs, automático)</label><input class="control" id="mixto-efectivo" inputmode="decimal" readonly aria-describedby="mixto-calculo"><p class="campo__ayuda" id="mixto-calculo">Total del pedido menos el monto pagado por QR.</p></div>
+              <div class="campo"><label class="campo__etiqueta" for="mixto-recibido">Efectivo recibido (Bs)</label><input class="control" id="mixto-recibido" inputmode="decimal" autocomplete="off"></div>
+              <p class="campo__ayuda" id="mixto-resumen" role="status" aria-live="polite"></p>
+            </div>
+            <p class="campo__error" id="qr-cobro-error" role="alert" hidden></p>
+            <div class="campo"><label class="campo__etiqueta" for="qr-comprobante">Número de comprobante</label><input class="control" id="qr-comprobante" maxlength="80" autocomplete="off" inputmode="text"></div>
+            <div class="campo"><label class="campo__etiqueta" for="qr-pagador">Pagador (opcional)</label><input class="control" id="qr-pagador" maxlength="120" autocomplete="off"></div>
+            <div class="campo"><label class="campo__etiqueta" for="qr-foto">Foto del comprobante (opcional, hasta 1 MB)</label><input class="control" id="qr-foto" type="file" accept="image/png,image/jpeg,image/webp"></div>
+            <p class="campo__ayuda">Se registra como pendiente de verificación. No suma al efectivo de caja.</p>
+          </div>
           <div class="modal__acciones"><button class="boton boton--primario" id="confirmar-cobro" type="button">Confirmar cobro</button></div>
         </div>
       </dialog>

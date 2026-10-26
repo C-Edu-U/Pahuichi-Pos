@@ -24,7 +24,6 @@ return [
     ],
     'conciliacion' => [
         'grupo' => 2, 'ruta' => '/conciliacion', 'icono' => 'check', 'texto' => 'Conciliación QR',
-        'pendiente' => ['historias' => 'HU-41, HU-43', 'texto' => 'Bandeja para confirmar o rechazar los pagos QR desde el celular.'],
     ],
     'qr' => [
         'grupo' => 2, 'ruta' => '/qr', 'icono' => 'qr', 'texto' => 'QR del día',

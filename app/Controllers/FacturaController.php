@@ -34,6 +34,30 @@ final class FacturaController extends Controller
             'facturas' => Factura::ultimas(puede('ventas.todas') ? null : Auth::id())]);
     }
 
+    public function anular(Peticion $peticion): Respuesta
+    {
+        $f=$this->permitida((int)$peticion->parametro('id'));
+        $pin=$peticion->entrada('pin');$motivo=$peticion->entrada('motivo');
+        try {
+            if (!is_string($pin) || !is_string($motivo)) throw new DomainException('Escribe el PIN y el motivo.');
+            return Respuesta::json(\App\Services\AnulacionVentaService::anular((int)$f['id'],$pin,$motivo))->cabecera('Cache-Control','no-store');
+        } catch (DomainException $e) {
+            return Respuesta::json(['error'=>$e->getMessage()],422)->cabecera('Cache-Control','no-store');
+        }
+    }
+
+    public function cobrarSaldo(Peticion $peticion): Respuesta
+    {
+        $f=$this->permitida((int)$peticion->parametro('id'));
+        $importe=$peticion->entrada('importe');$recibido=$peticion->entrada('recibido');
+        try {
+            if (!is_string($importe) || !is_string($recibido)) throw new DomainException('Escribe el efectivo recibido.');
+            return Respuesta::json(\App\Services\SaldoQrService::cobrar((int)$f['id'],$importe,$recibido))->cabecera('Cache-Control','no-store');
+        } catch (DomainException $e) {
+            return Respuesta::json(['error'=>$e->getMessage()],422)->cabecera('Cache-Control','no-store');
+        }
+    }
+
     public function mostrar(Peticion $peticion): Respuesta
     {
         $f = $this->permitida((int) $peticion->parametro('id'));
@@ -66,7 +90,10 @@ final class FacturaController extends Controller
         $s = $f['snapshot'];
         return $this->vista('facturas/tickets', ['titulo' => 'Factura N° ' . $f['numero'], 'h1' => 'Pedido ' . $s['pedido'] . ' · factura N° ' . $f['numero'],
             'modulo' => 'ventas', 'claseBody' => 'panel--tickets', 'css' => ['modulos.css', 'tickets.css', 'tickets-hu10.css'],
-            'js' => ['qrcode.js', 'tickets.js', 'anular.js'], 'f' => $f, 's' => $s,
+            'js' => ['qrcode.js', 'tickets.js', 'anular.js', 'cobro-saldo.js'], 'f' => $f, 's' => $s,
+            'anulada' => $f['estado'] === 'anulada', 'anulacion' => \App\Services\AnulacionVentaService::detalle((int) $f['id']),
+            'recuperacionSaldo' => \App\Services\SaldoQrService::detalle((int) $f['id']),
+            'cajaSaldoAbierta' => (\App\Models\Caja::buscar((int) $f['caja_id'])['estado'] ?? '') === 'abierta',
             'perfilesTickets' => ConfiguracionTickets::todas(), 'reimpresion' => $reimpresion]);
     }
 
@@ -82,6 +109,7 @@ final class FacturaController extends Controller
     public function pdf(Peticion $peticion): Respuesta
     {
         $f = $this->permitida((int) $peticion->parametro('id'));
+        if ($f['estado'] !== 'emitida') throw new ErrorHttp(422, 'La factura está anulada. Consulta la venta para ver su estado.');
         $destino = $peticion->consulta('destino', 'caja');
         $soloFactura = $peticion->consulta('solo') === 'factura';
         $modo = $peticion->consulta('reimpresion', '0');

@@ -17,7 +17,8 @@ use DateTimeImmutable;
 use DomainException;
 
 /**
- * Soporte de HU-57: cobro en efectivo, sin promociones ni QR de pago.
+ * HU-57, HU-39 y HU-42: cobro en efectivo, QR pendiente o mixto, con reintento idempotente.
+ * HU-40: el comprobante QR no se repite; se reserva dentro de la misma transacción.
  * HU-06: descuento manual con el permiso de un solo uso que entregó el PIN del
  * administrador (AutorizacionService); el permiso se gasta recién al guardar la venta.
  * HU-46: las promociones activas descuentan por línea (PromocionService). El navegador
@@ -162,6 +163,71 @@ final class VentaService
         return ['lineas' => $lineas, 'bruto' => $total, 'promo' => $promo, 'regalos' => $regalos, 'subtotal' => $subtotal];
     }
 
+    /**
+     * Cómo se paga, tal como llega de la pantalla (HU-39, HU-42): efectivo, QR (queda
+     * pendiente de confirmar, con su comprobante y una foto opcional) o mixto (una parte en
+     * efectivo y otra por QR). Lo usan el cobro del POS y el de las cuentas por mesa.
+     *
+     * @return array{metodo: string, qr: ?array, efectivo_mixto: ?int, exacto: bool, recibido: ?int, hash: array}
+     */
+    public static function pagoDe(array $d): array
+    {
+        $metodo = $d['metodo'] ?? 'efectivo';
+        if (!in_array($metodo, ['efectivo', 'qr', 'mixto'], true)) throw new DomainException('Elige efectivo, QR o mixto.');
+        $qr = null;
+        if ($metodo !== 'efectivo') {
+            $ref = is_string($d['comprobante'] ?? null) ? trim($d['comprobante']) : '';
+            $pagador = is_string($d['pagador'] ?? null) ? trim($d['pagador']) : '';
+            if (!preg_match('/^[\p{L}\p{N}\-\/_.]{1,80}$/uD', $ref)) throw new DomainException('Escribe el número de comprobante QR (hasta 80 caracteres, sin espacios).');
+            if (mb_strlen($pagador) > 120) throw new DomainException('El nombre del pagador admite hasta 120 caracteres.');
+            $qrId = filter_var($d['qr_id'] ?? null, FILTER_VALIDATE_INT);
+            if (!$qrId || $qrId < 1) throw new DomainException('Consulta el QR vigente antes de cobrar.');
+            $foto = is_string($d['foto_qr'] ?? null) ? $d['foto_qr'] : '';
+            if (strlen($foto) > 1400000) throw new DomainException('La foto del comprobante admite hasta 1 MB.');
+            $bytes = $foto === '' ? null : base64_decode($foto, true);
+            if ($bytes === false) throw new DomainException('No se pudo leer la foto del comprobante.');
+            $fotoTipo = $bytes === null ? null : QrDiarioService::imagen($bytes, 1048576);
+            $qr = ['id' => $qrId, 'monto' => self::centavos($d['qr_monto'] ?? null), 'comprobante' => $ref, 'pagador' => $pagador, 'foto' => $bytes, 'foto_tipo' => $fotoTipo];
+        }
+        $efectivoMixto = $metodo === 'mixto' ? self::centavos($d['efectivo_monto'] ?? null) : null;
+        $exacto = $metodo === 'qr' || ($metodo === 'efectivo' && ($d['exacto'] ?? '') === '1');
+        $recibido = $exacto ? null : self::centavos($d['recibido'] ?? null);
+        // Lo que identifica el pago en el reintento (el resto lo agrega quien cobra)
+        $hash = [];
+        if ($qr !== null) $hash[] = [$metodo, $qr['id'], $qr['monto'], $qr['comprobante'], $qr['pagador'], hash('sha256', $qr['foto'] ?? '')];
+        if ($metodo === 'mixto') $hash[] = $efectivoMixto;
+        return ['metodo' => $metodo, 'qr' => $qr, 'efectivo_mixto' => $efectivoMixto, 'exacto' => $exacto, 'recibido' => $recibido, 'hash' => $hash];
+    }
+
+    /**
+     * Valida el pago contra el total, dentro de la transacción: el QR tiene que ser el vigente
+     * y respetar su importe fijo; en el mixto, las dos partes suman el total; el comprobante
+     * QR se reserva para que no se repita (HU-40). Devuelve lo que se guarda.
+     *
+     * @return array{metodo: string, qr: ?array, parte_efectivo: int, recibido: int, cambio: int}
+     */
+    public static function cobrarPago(array $pago, int $total): array
+    {
+        $metodo = $pago['metodo'];
+        $qr = $pago['qr'];
+        $efectivoMixto = $pago['efectivo_mixto'];
+        $ahora = Reloj::ahora();
+        if ($qr !== null) {
+            $vigente = QrDiarioService::estado(true);
+            if (!$vigente['vigente'] || $vigente['id'] !== $qr['id']) throw new DomainException('El QR venció o fue reemplazado. Consulta el QR de hoy antes de cobrar.');
+            $fijo = self::centavos($vigente['monto']);
+            if ($qr['monto'] <= 0 || ($fijo > 0 && $fijo !== $qr['monto'])) throw new DomainException('El monto pagado por QR debe ser positivo y respetar el importe fijo del QR, si tiene uno.');
+            if ($metodo === 'qr' && $qr['monto'] !== $total) throw new DomainException('El monto pagado por QR debe cubrir el total del pedido.');
+            if ($metodo === 'mixto' && ($efectivoMixto <= 0 || $efectivoMixto + $qr['monto'] !== $total)) throw new DomainException('La parte en efectivo y la parte QR deben ser positivas y sumar exactamente el total del pedido.');
+            ComprobanteQrService::reservar($qr['comprobante'], $ahora->format('Y-m-d'));
+        }
+        $parteEfectivo = $metodo === 'mixto' ? $efectivoMixto : ($qr === null ? $total : 0);
+        $rec = $pago['exacto'] ? $total : $pago['recibido'];
+        if ($qr === null && $rec < $total) throw new DomainException('El efectivo recibido no cubre el total.');
+        if ($metodo === 'mixto' && $rec < $parteEfectivo) throw new DomainException('El efectivo recibido no cubre la parte en efectivo del pedido.');
+        return ['metodo' => $metodo, 'qr' => $qr, 'parte_efectivo' => $parteEfectivo, 'recibido' => $rec, 'cambio' => $metodo === 'qr' ? 0 : $rec - $parteEfectivo];
+    }
+
     /** Descuento manual (HU-06): el permiso de un solo uso que entregó el PIN del administrador. */
     public static function permisoDescuento(int $descuento, string $token, int $subtotal): ?array
     {
@@ -182,8 +248,9 @@ final class VentaService
         }
         $mesa = $tipo === 'mesa' ? $mesa : null;
         $cantidades = self::cantidades($d['lineas'] ?? []);
-        $exacto = ($d['exacto'] ?? '') === '1';
-        $recibido = $exacto ? null : self::centavos($d['recibido'] ?? null);
+        $pagoPedido = self::pagoDe($d);
+        $exacto = $pagoPedido['exacto'];
+        $recibido = $pagoPedido['recibido'];
         $esperado = self::centavos($d['total_esperado'] ?? null);
         $cajaId = filter_var($d['caja_id'] ?? null, FILTER_VALIDATE_INT);
         if (!$cajaId || $cajaId < 1) throw new DomainException('Recarga el punto de venta para revisar la caja.');
@@ -192,14 +259,14 @@ final class VentaService
         $promoEsperada = ($d['promociones'] ?? '') === '' ? 0 : self::centavos($d['promociones']);
         $regalosEsperados = ($d['regalos'] ?? '') === '' ? 0 : self::centavos($d['regalos']);
         $clientePedido = ClienteService::normalizar($d['cliente_doc'] ?? '0', $d['cliente_nombre'] ?? '', $d['cliente_tipo'] ?? 'NIT');
-        $datosHash = [$cajaId, $tipo, $mesa, $cantidades, $exacto, $recibido, $esperado, $descuento, $promoEsperada, $regalosEsperados];
+        $datosHash = [$cajaId, $tipo, $mesa, $cantidades, $exacto, $recibido, $esperado, $descuento, $promoEsperada, $regalosEsperados, ...$pagoPedido['hash']];
         if ($clientePedido['doc'] !== '0') $datosHash[] = $clientePedido;
         // HU-36: el reintento de una venta sin red repite su hora; otra hora es otro pedido
         $momentoPedido = is_string($d['momento'] ?? null) ? $d['momento'] : null;
         if ($momentoPedido !== null) $datosHash[] = ['momento' => $momentoPedido];
         $hash = hash('sha256', json_encode($datosHash, JSON_THROW_ON_ERROR));
         $gastar = false;
-        $factura = DB::transaccion(static function () use ($uuid, $hash, $tipo, $mesa, $cantidades, $exacto, $recibido, $esperado, $cajaId, $descuento, $token, $promoEsperada, $regalosEsperados, $clientePedido, $momentoPedido, &$gastar): array {
+        $factura = DB::transaccion(static function () use ($uuid, $hash, $tipo, $mesa, $cantidades, $exacto, $recibido, $esperado, $cajaId, $descuento, $token, $promoEsperada, $regalosEsperados, $clientePedido, $momentoPedido, $pagoPedido, &$gastar): array {
             // Serializa cobros y cierre sobre la misma fila, y evita cambiar de caja silenciosamente.
             $caja = Venta::cajaParaCobrar($cajaId);
             $previa = Venta::porUuid($uuid);
@@ -215,11 +282,10 @@ final class VentaService
             $armado = self::armarLineas($cantidades, $vendida, $esperado, $promoEsperada, $regalosEsperados);
             $permiso = self::permisoDescuento($descuento, $token, $armado['subtotal']);
             $total = $armado['subtotal'] - ($permiso !== null ? $descuento : 0);
-            $rec = $exacto ? $total : $recibido;
-            if ($rec < $total) throw new DomainException('El efectivo recibido no cubre el total.');
+            $pago = self::cobrarPago($pagoPedido, $total);
             $id = self::emitir(['uuid' => $uuid, 'hash' => $hash, 'caja_id' => $cajaId, 'tipo' => $tipo, 'mesa' => $mesa, 'lineas' => $armado['lineas'],
                 'promo' => $armado['promo'] + $armado['regalos'], 'subtotal' => $armado['subtotal'], 'descuento' => $permiso !== null ? $descuento : 0, 'permiso' => $permiso,
-                'total' => $total, 'recibido' => $rec, 'cliente' => $clientePedido, 'vendida' => $vendida]);
+                'total' => $total, 'pago' => $pago, 'cliente' => $clientePedido, 'vendida' => $vendida]);
             $gastar = $permiso !== null;
             return Factura::buscar($id);
         });
@@ -233,7 +299,7 @@ final class VentaService
      * la transacción de quien cobra, con la caja ya bloqueada. Devuelve el id de la factura.
      *
      * @param array{uuid: string, hash: string, caja_id: int, tipo: string, mesa: ?string, lineas: list<array>, promo: int,
-     *              subtotal: int, descuento: int, permiso: ?array, total: int, recibido: int, cliente: array, vendida: DateTimeImmutable,
+     *              subtotal: int, descuento: int, permiso: ?array, total: int, pago: array, cliente: array, vendida: DateTimeImmutable,
      *              snapshot?: array, bitacora?: array} $v montos en centavos
      */
     public static function emitir(array $v): int
@@ -249,7 +315,9 @@ final class VentaService
         $fecha = Reloj::sql($ahora);
         $permiso = $v['permiso'];
         $total = $v['total'];
-        $rec = $v['recibido'];
+        $pago = $v['pago'];
+        $rec = $pago['recibido'];
+        $qr = $pago['qr'];
         $ventaId = Venta::crear(['uuid' => $v['uuid'], 'solicitud_hash' => $v['hash'], 'caja_id' => $v['caja_id'], 'usuario_id' => Auth::id(), 'tipo_pedido' => $v['tipo'], 'mesa' => $v['mesa'],
             'subtotal' => self::decimal($v['subtotal']), 'descuento' => self::decimal($v['descuento']), 'descuento_motivo' => $permiso['motivo'] ?? null,
             'descuento_autorizado_por' => $permiso['admin_id'] ?? null, 'total' => self::decimal($total), 'creado_en' => $fecha]);
@@ -257,15 +325,27 @@ final class VentaService
             $detalleId = Venta::detalle($ventaId, $l);
             foreach ($l['promociones'] as $pr) Venta::promocion($ventaId, $detalleId, $pr, $pr['monto']);
         }
-        Venta::pago($ventaId, self::decimal($total), self::decimal($rec), self::decimal($rec - $total));
+        // HU-42: la parte en efectivo y la parte QR (pendiente de confirmar) son pagos aparte
+        if ($pago['parte_efectivo'] > 0) {
+            Venta::pago($ventaId, self::decimal($pago['parte_efectivo']), self::decimal($rec), self::decimal($pago['cambio']));
+        }
+        if ($qr !== null) {
+            $pagoId = DB::insertar("INSERT INTO pagos (venta_id, metodo, monto, recibido, cambio, estado) VALUES (?, 'qr', ?, ?, 0, 'pendiente')", [$ventaId, self::decimal($qr['monto']), self::decimal($qr['monto'])]);
+            ComprobanteQrService::asignar($qr['comprobante'], $ahora->format('Y-m-d'), $pagoId);
+            DB::insertar('INSERT INTO qr_pagos (pago_id, qr_diario_id, comprobante, pagador, foto, foto_tipo) VALUES (?, ?, ?, ?, ?, ?)', [$pagoId, $qr['id'], $qr['comprobante'], $qr['pagador'] ?: null, $qr['foto'], $qr['foto_tipo']]);
+        }
         $s = ['pedido' => str_pad((string) $ventaId, 3, '0', STR_PAD_LEFT), 'factura' => $numero, 'tipo' => $v['tipo'], 'mesa' => $v['mesa'],
             'cliente' => $cliente, 'cajero' => Auth::usuario()['nombre'], 'negocio' => $negocio, 'fiscal' => $fiscal,
             'cuf' => Cuf::generar($negocio, $fiscal, $numero, $ahora), 'fecha_emision' => $fecha, 'fecha_larga' => $ahora->format('d/m/Y H:i'),
             'lineas' => $v['lineas'], 'promociones' => self::decimal($v['promo']), 'subtotal' => self::decimal($v['subtotal']), 'descuento' => self::decimal($v['descuento']), 'total' => self::decimal($total),
             'literal' => NumeroALetras::convertir($total),
-            'recibido' => self::decimal($rec), 'cambio' => self::decimal($rec - $total), 'leyenda' => $leyenda['texto']] + ($v['snapshot'] ?? []);
+            'recibido' => self::decimal($pago['metodo'] === 'mixto' ? $rec + $qr['monto'] : $rec), 'cambio' => self::decimal($pago['cambio']), 'leyenda' => $leyenda['texto']] + ($v['snapshot'] ?? []);
+        if ($qr !== null) $s['pago_qr'] = ['estado' => 'pendiente', 'monto' => self::decimal($qr['monto']), 'comprobante' => $qr['comprobante'], 'pagador' => $qr['pagador']];
+        if ($pago['metodo'] === 'mixto') $s['pago_efectivo'] = ['monto' => self::decimal($pago['parte_efectivo']), 'recibido' => self::decimal($rec), 'cambio' => self::decimal($pago['cambio'])];
         $id = Factura::crear($ventaId, $s, (int) $leyenda['id']);
-        Bitacora::registrar('venta.cobro', 'ventas', $ventaId, ['factura_id' => $id, 'total' => $s['total'], 'metodo' => 'efectivo', 'leyenda_id' => $leyenda['id']]
+        Bitacora::registrar('venta.cobro', 'ventas', $ventaId, ['factura_id' => $id, 'total' => $s['total'], 'metodo' => $pago['metodo'], 'leyenda_id' => $leyenda['id']]
+            + ($qr !== null ? ['estado_pago' => 'pendiente', 'comprobante' => $qr['comprobante'], 'qr' => self::decimal($qr['monto'])] : [])
+            + ($pago['metodo'] === 'mixto' ? ['efectivo' => self::decimal($pago['parte_efectivo']), 'cambio' => self::decimal($pago['cambio'])] : [])
             + ($v['promo'] > 0 ? ['promociones' => $s['promociones']] : [])
             // HU-36: vendida sin red y enviada después
             + ($ahora->getTimestamp() - $v['vendida']->getTimestamp() >= 60 ? ['vendida_sin_red' => $v['vendida']->format('d/m/Y H:i:s')] : [])

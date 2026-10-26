@@ -7,7 +7,7 @@
    - Fotos de productos: desde la caché al instante y se actualizan por detrás. El POS
      pide guardar las de todo el catálogo al abrirse.
    - Otras páginas sin conexión: la página «Sin conexión». Nunca se guardan: traen datos. */
-const VERSION = 'pahuichi-v5';
+const VERSION = 'pahuichi-v6';
 const PAGINAS = 'pahuichi-paginas';
 const FOTOS = 'pahuichi-fotos';
 const RECURSOS = [
@@ -22,6 +22,7 @@ const RECURSOS = [
   '/assets/css/pos.css',
   '/assets/css/mesero.css',
   '/assets/css/qr-dia.css',
+  '/assets/css/qr-avisos.css',
   '/assets/css/foto-producto.css',
   '/assets/js/app.js',
   '/assets/js/carrito.js',
@@ -31,6 +32,8 @@ const RECURSOS = [
   '/assets/js/cuentas.js',
   '/assets/js/mesero.js',
   '/assets/js/qr-dia.js',
+  '/assets/js/qr-cobro.js',
+  '/assets/js/qr-avisos.js',
   '/assets/js/pos.js',
   '/assets/js/producto-fotos-pos.js',
   '/assets/img/icono.svg',

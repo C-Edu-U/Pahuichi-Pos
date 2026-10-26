@@ -269,6 +269,35 @@ final class CuentasMesaTest extends CasoPrueba
         $this->assertStringContainsString('id="m-cola"', $html);
     }
 
+    /**
+     * Escenario (HU-39 y HU-42 en las cuentas): la mesa paga por QR o mixto
+     *   Dado la mesa 3 consumió Bs 40 y el QR del día es de importe libre
+     *   Cuando se cobra con QR, o Bs 10 en efectivo y Bs 30 por QR
+     *   Entonces el QR queda pendiente de confirmar y el arqueo espera solo el efectivo
+     */
+    public function testLaCuentaSeCobraPorQrOMixto(): void
+    {
+        $qr = DB::insertar("INSERT INTO qr_diarios (fecha, monto, imagen, imagen_tipo, usuario_id, creado_en) VALUES ('2026-10-22', 0.00, 'imagen', 'image/png', 1, '2026-10-22 10:00:00')");
+        $this->ronda('3', [$this->majadito => 1], '40.00');
+        $this->ronda('4', [$this->majadito => 1], '40.00');
+
+        $r = $this->cerrar((int) $this->cuenta('3')['id'], '40.00', ['metodo' => 'qr', 'qr_id' => (string) $qr, 'qr_monto' => '40.00', 'comprobante' => 'MESA3-001']);
+        $this->assertSame(200, $r->estado, $r->cuerpo);
+        $r = $this->cerrar((int) $this->cuenta('4')['id'], '40.00', ['metodo' => 'mixto', 'qr_id' => (string) $qr, 'qr_monto' => '30.00', 'comprobante' => 'MESA4-001',
+            'efectivo_monto' => '10.00', 'exacto' => '0', 'recibido' => '20.00']);
+        $this->assertSame(200, $r->estado, $r->cuerpo);
+        $this->assertSame('10.00', json_decode($r->cuerpo, true)['cambio']);
+
+        $this->assertSame([['qr', '40.00', 'pendiente'], ['efectivo', '10.00', 'confirmado'], ['qr', '30.00', 'pendiente']],
+            array_map(static fn (array $p): array => [$p['metodo'], $p['monto'], $p['estado']], DB::filas('SELECT metodo, monto, estado FROM pagos ORDER BY id')));
+        // 200 de fondo + 10 en efectivo: los QR pendientes no suman
+        $this->assertSame(210.0, ArqueoService::esperado(DB::fila('SELECT * FROM cajas WHERE id = ?', [$this->caja])));
+        // HU-40: el comprobante no se repite
+        $this->ronda('5', [$this->majadito => 1], '40.00');
+        $r = $this->cerrar((int) $this->cuenta('5')['id'], '40.00', ['metodo' => 'qr', 'qr_id' => (string) $qr, 'qr_monto' => '40.00', 'comprobante' => 'MESA3-001']);
+        $this->assertSame(422, $r->estado);
+    }
+
     public function testUnCobroRepetidoNoFacturaDosVeces(): void
     {
         $this->ronda('3', [$this->majadito => 1], '40.00');

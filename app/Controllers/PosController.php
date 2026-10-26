@@ -43,7 +43,7 @@ final class PosController extends Controller
             'modulo' => 'pos',
             'h1' => 'Punto de venta',
             'css' => ['pos.css', 'qr-dia.css'],
-            'js' => ['carrito.js', 'motor-promociones.js', 'cliente-pos.js', 'cola-ventas.js', 'cuentas.js', 'pos.js', 'qr-dia.js'],
+            'js' => ['carrito.js', 'motor-promociones.js', 'cliente-pos.js', 'cola-ventas.js', 'cuentas.js', 'pos.js', 'qr-dia.js', 'qr-cobro.js'],
             'claseBody' => 'panel--pos',
             'rielPlegado' => true,
             'caja' => CajaService::abierta(),
@@ -63,8 +63,9 @@ final class PosController extends Controller
             $d['lineas'] = json_decode($d['lineas'], true, 32, JSON_THROW_ON_ERROR);
             $f = VentaService::cobrar($d);
             $s = isset($f['snapshot']) ? $f['snapshot'] : json_decode($f['snapshot_json'], true, 512, JSON_THROW_ON_ERROR);
-            $tickets = '/facturas/' . $f['id'];
-            return Respuesta::json(['id' => (int) $f['id'], 'numero' => (int) $f['numero'], 'pedido' => $s['pedido'], 'cambio' => $s['cambio'], 'tickets' => $tickets]);
+            return Respuesta::json(['id' => (int) $f['id'], 'numero' => (int) $f['numero'], 'pedido' => $s['pedido'], 'cambio' => $s['cambio'], 'pago_qr' => $s['pago_qr'] ?? null, 'pago_efectivo' => $s['pago_efectivo'] ?? null, 'tickets' => '/facturas/' . $f['id']]);
+        } catch (\App\Services\ComprobanteQrDuplicado $e) {
+            return Respuesta::json(['error' => $e->getMessage(), 'comprobante_duplicado' => $e->original], 422);
         } catch (AutorizacionInvalida $e) {
             // El POS quita el descuento para pedir el PIN otra vez
             return Respuesta::json(['error' => $e->getMessage(), 'descuento' => 'invalido'], 422);

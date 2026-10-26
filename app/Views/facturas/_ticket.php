@@ -2,6 +2,7 @@
 <?php if ($tipoTicket === 'comanda'): ?>
           <article class="ticket ticket--comanda" id="ticket-comanda<?= isset($pdfCopia) ? '-' . (int) $pdfCopia : '' ?>">
             <p class="ticket__reimpresion"<?= empty($reimpresion) ? ' hidden' : '' ?>>REIMPRESIÓN</p>
+<?php if (!empty($anulada)): ?><p class="ticket__reimpresion">ANULADA</p><?php endif; ?>
             <p class="comanda__pedido">N° <span data-campo="pedido"><?= e($s['pedido']) ?></span></p>
             <p class="comanda__destino" data-campo="destino"><?= e($s['tipo'] === 'mesa' ? 'MESA ' . $s['mesa'] : 'PARA LLEVAR') ?></p>
             <p class="comanda__hora" data-campo="hora-larga"><?= e($s['fecha_larga']) ?></p>
@@ -16,6 +17,7 @@ $cocina = array_filter($s['lineas'], static fn (array $l): bool => $l['cocina'] 
 <?php if ($tipoTicket === 'copia'): ?>
           <article class="ticket ticket--copia" id="ticket-copia<?= isset($pdfCopia) ? '-' . (int) $pdfCopia : '' ?>">
             <p class="ticket__reimpresion"<?= empty($reimpresion) ? ' hidden' : '' ?>>REIMPRESIÓN</p>
+<?php if (!empty($anulada)): ?><p class="ticket__reimpresion">ANULADA</p><?php endif; ?>
             <p class="ticket__centro ticket__fuerte"><?= e($s['negocio']['nombre_comercial']) ?></p>
             <p class="ticket__centro">COPIA DE CAJA</p>
             <div class="ticket__separador"></div>
@@ -33,13 +35,30 @@ $cocina = array_filter($s['lineas'], static fn (array $l): bool => $l['cocina'] 
             <div class="ticket__separador"></div>
             <dl class="ticket__totales"><div><dt>Subtotal</dt><dd><?= bs($s['subtotal']) ?></dd></div><?php if ((float) $s['descuento'] > 0): ?><div><dt>Descuento</dt><dd><?= bs($s['descuento']) ?></dd></div><?php endif; ?><div class="ticket__fuerte"><dt>TOTAL Bs</dt><dd><?= bs($s['total']) ?></dd></div></dl>
             <div class="ticket__separador"></div>
+<?php if (!empty($s['pago_qr'])): ?>
+<?php if (!empty($s['pago_efectivo'])): ?>
+            <dl class="ticket__totales">
+              <div><dt>Recibió el cajero en efectivo</dt><dd><?= bs($s['pago_efectivo']['recibido']) ?></dd></div>
+              <div><dt>Pago QR registrado</dt><dd><?= bs($s['pago_qr']['monto']) ?></dd></div>
+              <div><dt>Total recibido registrado</dt><dd><?= bs($s['recibido']) ?></dd></div>
+              <div><dt>Cambio en efectivo</dt><dd><?= bs($s['pago_efectivo']['cambio']) ?></dd></div>
+              <div><dt>Efectivo neto en caja</dt><dd><?= bs($s['pago_efectivo']['monto']) ?></dd></div>
+            </dl>
+            <p class="ticket__centro ticket__chico">QR pendiente de verificación</p>
+            <dl class="ticket__totales"><div><dt>Comprobante QR</dt><dd><?= e($s['pago_qr']['comprobante']) ?></dd></div></dl>
+<?php else: ?>
+            <dl class="ticket__totales"><div><dt>QR · PENDIENTE</dt><dd><?= bs($s['pago_qr']['monto']) ?></dd></div><div><dt>Comprobante</dt><dd><?= e($s['pago_qr']['comprobante']) ?></dd></div></dl>
+<?php endif; ?>
+<?php else: ?>
             <dl class="ticket__totales"><div><dt>Efectivo</dt><dd><?= bs($s['total']) ?></dd></div><div><dt>Recibido</dt><dd><?= bs($s['recibido']) ?></dd></div><div class="ticket__fuerte"><dt>Cambio</dt><dd><?= bs($s['cambio']) ?></dd></div></dl>
+<?php endif; ?>
           </article>
 <?php endif; ?>
 <?php if ($tipoTicket === 'factura'): ?>
           <article class="ticket ticket--factura" id="ticket-factura<?= isset($pdfCopia) ? '-' . (int) $pdfCopia : '' ?>">
             <p class="ticket__reimpresion"<?= empty($reimpresion) ? ' hidden' : '' ?>>REIMPRESIÓN</p>
             <p class="factura__academica">DOCUMENTO SIN VALOR FISCAL - PROYECTO ACADÉMICO</p>
+<?php if (!empty($anulada)): ?><p class="ticket__reimpresion">ANULADA</p><?php endif; ?>
             <p class="ticket__centro ticket__fuerte">FACTURA</p>
             <p class="ticket__centro">(Con Derecho a Crédito Fiscal)</p>
             <p class="ticket__centro ticket__fuerte" data-campo="razon"><?= e($s['negocio']['razon_social']) ?></p>
@@ -67,6 +86,17 @@ $cocina = array_filter($s['lineas'], static fn (array $l): bool => $l['cocina'] 
             </ul>
             <div class="ticket__separador"></div>
             <dl class="ticket__totales"><div><dt>SUBTOTAL Bs</dt><dd><?= bs($s['subtotal']) ?></dd></div><div><dt>DESCUENTO Bs</dt><dd><?= bs($s['descuento']) ?></dd></div><div class="ticket__fuerte"><dt>TOTAL Bs</dt><dd><?= bs($s['total']) ?></dd></div><div><dt>MONTO GIFT CARD Bs</dt><dd>0,00</dd></div><div class="ticket__fuerte"><dt>MONTO A PAGAR Bs</dt><dd><?= bs($s['total']) ?></dd></div><div><dt>IMPORTE BASE CRÉDITO FISCAL Bs</dt><dd><?= bs($s['total']) ?></dd></div></dl>
+<?php if (!empty($s['pago_efectivo'])): ?>
+            <dl class="ticket__totales">
+              <div><dt>Recibió el cajero en efectivo</dt><dd><?= bs($s['pago_efectivo']['recibido']) ?></dd></div>
+              <div><dt>Pago QR registrado</dt><dd><?= bs($s['pago_qr']['monto']) ?></dd></div>
+              <div><dt>Total recibido registrado</dt><dd><?= bs($s['recibido']) ?></dd></div>
+              <div><dt>Cambio en efectivo</dt><dd><?= bs($s['pago_efectivo']['cambio']) ?></dd></div>
+              <div><dt>Efectivo neto en caja</dt><dd><?= bs($s['pago_efectivo']['monto']) ?></dd></div>
+            </dl>
+            <p class="ticket__centro ticket__chico">QR pendiente de verificación</p>
+            <dl class="ticket__totales"><div><dt>Comprobante QR</dt><dd><?= e($s['pago_qr']['comprobante']) ?></dd></div></dl>
+<?php elseif (!empty($s['pago_qr'])): ?><p class="ticket__centro">QR · PENDIENTE · Comprobante <?= e($s['pago_qr']['comprobante']) ?></p><?php endif; ?>
 <?php if (isset($s['literal'])): ?><p class="ticket__literal"><?= e('Son: ' . $s['literal']) ?></p><?php endif; ?>
             <div class="ticket__separador"></div>
             <p class="ticket__centro ticket__fuerte ticket__chico">ESTA FACTURA CONTRIBUYE AL DESARROLLO DEL PAÍS. EL USO ILÍCITO DE ÉSTA SERÁ SANCIONADO DE ACUERDO A LEY</p>

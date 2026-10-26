@@ -19,6 +19,7 @@ use App\Controllers\CuentaController;
 use App\Controllers\InicioController;
 use App\Controllers\ModuloController;
 use App\Controllers\QrController;
+use App\Controllers\ConciliacionController;
 use App\Controllers\PosController;
 use App\Controllers\PromocionController;
 use App\Controllers\ReporteController;
@@ -57,9 +58,16 @@ $config = ['auth', 'permiso:modulo.config'];
 $router->get('/config', [ConfigController::class, 'index'], $config);
 $router->get('/config/respaldos/estado', [ConfigController::class, 'estadoRespaldos'], $config);
 $router->post('/config/respaldos/simular', [ConfigController::class, 'simularRespaldo'], $config);
+// HU-41: conciliacion del administrador y avisos privados a caja.
+$router->get('/conciliacion', [ConciliacionController::class, 'index'], ['auth','permiso:conciliacion.resolver']);
+$router->post('/conciliacion/{id}/resolver', [ConciliacionController::class, 'resolver'], ['auth','permiso:conciliacion.resolver']);
+$router->get('/conciliacion/{id}/foto', [ConciliacionController::class, 'foto'], ['auth','permiso:conciliacion.resolver']);
+$router->get('/conciliacion/avisos', [ConciliacionController::class, 'avisos'], ['auth','permiso:modulo.caja']);
+$router->post('/conciliacion/avisos/{id}/visto', [ConciliacionController::class, 'enterado'], ['auth','permiso:modulo.caja']);
 $router->get('/qr', [QrController::class, 'index'], ['auth', 'permiso:modulo.qr']);
 $router->post('/qr/subir', [QrController::class, 'subir'], ['auth', 'permiso:qr.subir']);
 $router->post('/qr/simular', [QrController::class, 'simular'], ['auth', 'permiso:qr.subir']);
+$router->post('/qr/comprobantes/demostrar', [QrController::class, 'demostrarComprobante'], ['auth', 'permiso:qr.subir']);
 $router->get('/qr/estado', [QrController::class, 'estado'], ['auth', 'permiso:modulo.caja']);
 $router->get('/qr/{id}/imagen', [QrController::class, 'imagen'], ['auth', 'permiso:modulo.caja']);
 $router->post('/config/negocio', [ConfigController::class, 'negocio'], $config);
@@ -127,6 +135,8 @@ $router->get('/cuentas/rondas/{id}/comanda', [CuentaController::class, 'comanda'
 $router->post('/cuentas/cerrar', [CuentaController::class, 'cerrarMesa'], ['auth', 'permiso:cuentas.cobrar']);
 $router->post('/cuentas/{id}/cerrar', [CuentaController::class, 'cerrar'], ['auth', 'permiso:cuentas.cobrar']);
 $router->get('/cuentas/{id}/factura', [CuentaController::class, 'factura'], ['auth', 'permiso:cuentas.cobrar']);
+$router->post('/facturas/{id}/anular', [FacturaController::class, 'anular'], ['auth', 'permiso:ventas.anular']);
+$router->post('/facturas/{id}/cobrar-saldo', [FacturaController::class, 'cobrarSaldo'], ['auth', 'permiso:modulo.ventas']);
 
 // Tablero del día (HU-64): cifras para el administrador; su turno, sin montos, para el cajero
 $router->get('/tablero', [TableroController::class, 'index'], ['auth', 'permiso:modulo.tablero']);

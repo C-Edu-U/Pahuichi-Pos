@@ -18,6 +18,10 @@ $modulos = array_filter(
 $aviso = Sesion::tomarFlash('aviso');
 $usuario = Auth::usuario();
 $js = $js ?? [];
+if (in_array($modulo ?? '', ['pos','caja'], true)) {
+    $js[] = 'qr-avisos.js';
+    $css[] = 'qr-avisos.css';
+}
 if (in_array($modulo ?? '', ['pos', 'mesero'], true)) {
     $js[] = 'producto-fotos-pos.js';
     $css[] = 'foto-producto.css';
@@ -91,6 +95,7 @@ if (in_array($modulo ?? '', ['pos', 'mesero'], true)) {
       </div>
     </header>
 
+<?php if (in_array($modulo ?? '', ['pos','caja'], true)): ?><aside id="qr-avisos-caja" class="qr-avisos-caja" aria-label="Avisos de pagos QR rechazados" hidden></aside><?php endif; ?>
 <?= $contenido ?>
   </div>
 

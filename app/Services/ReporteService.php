@@ -225,16 +225,20 @@ final class ReporteService
     private static function anulaciones(array $f): array
     {
         [$donde, $p] = self::donde($f, 'anulada');
-        $filas = DB::filas('SELECT v.id, v.creado_en, v.total, u.nombre AS cajero, t.nombre AS turno, f.numero
+        // HU-44: el motivo y quién anuló quedan en venta_anulaciones
+        $filas = DB::filas('SELECT v.id, v.creado_en, v.total, u.nombre AS cajero, t.nombre AS turno, f.numero, a.motivo, ua.nombre AS anulo
             FROM ventas v JOIN cajas c ON c.id = v.caja_id JOIN turnos t ON t.id = c.turno_id JOIN usuarios u ON u.id = v.usuario_id
-            LEFT JOIN facturas f ON f.venta_id = v.id' . $donde . ' ORDER BY v.creado_en, v.id', $p);
+            LEFT JOIN facturas f ON f.venta_id = v.id LEFT JOIN venta_anulaciones a ON a.venta_id = v.id LEFT JOIN usuarios ua ON ua.id = a.usuario_id'
+            . $donde . ' ORDER BY v.creado_en, v.id', $p);
 
         return self::seccion('anulaciones', 'Anulaciones', [
             ['Fecha y hora', 'texto'], ['Pedido', 'texto'], ['Factura', 'texto'], ['Turno', 'texto'], ['Cobró', 'texto'], ['Monto', 'monto'],
+            ['Motivo', 'texto'], ['Anuló', 'texto'],
         ], array_map(static fn (array $r): array => [
             (new DateTimeImmutable($r['creado_en']))->format('d/m/Y H:i'), str_pad((string) $r['id'], 3, '0', STR_PAD_LEFT),
             $r['numero'] !== null ? (string) $r['numero'] : '—', $r['turno'], $r['cajero'], self::monto($r['total']),
-        ], $filas), [5], 'El motivo y quién autorizó la anulación se agregan con HU-44.');
+            $r['motivo'] ?? '—', $r['anulo'] ?? '—',
+        ], $filas), [5]);
     }
 
     /**

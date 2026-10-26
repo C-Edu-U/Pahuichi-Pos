@@ -1,0 +1,8 @@
+.qr-avisos-caja{position:fixed;inset:calc(var(--barra-alto,64px) + 12px) 16px auto auto;z-index:40;box-sizing:border-box;width:min(400px,calc(100vw - 32px));max-height:min(360px,50dvh);overflow-y:auto;overscroll-behavior:contain;display:grid;gap:10px;}
+.qr-avisos-caja[hidden]{display:none;}
+.qr-aviso{box-sizing:border-box;min-width:0;padding:16px;border:1px solid var(--color-borde-fuerte,#c8a498);border-left:4px solid var(--color-peligro,#a13b22);border-radius:var(--radio,8px);background:var(--blanco,#fff);color:var(--color-texto,#16392b);box-shadow:var(--sombra-2,0 4px 20px #0002);overflow-wrap:anywhere;}
+.qr-aviso strong{display:block;color:var(--color-peligro,#a13b22);}
+.qr-aviso p{margin:8px 0 12px;}
+.qr-aviso__acciones{display:flex;flex-wrap:wrap;gap:8px;}
+.qr-aviso__acciones .boton{min-height:44px;white-space:normal;flex:1;}
+@media(max-width:640px){.qr-avisos-caja{inset:calc(var(--barra-alto,64px) + 8px) 12px auto;width:calc(100vw - 24px);max-height:40dvh;}.qr-aviso{padding:12px;}}

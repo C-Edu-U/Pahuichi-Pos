@@ -205,8 +205,8 @@ prueba('El envío real interpreta la respuesta del servidor', async () => {
   });
   const casos = [
     [respuesta(200, { numero: 5 }), { ok: true, datos: { numero: 5 } }],
-    [respuesta(422, { error: 'Cambió una promoción.', descuento: 'invalido' }), { rechazo: 'Cambió una promoción.', descuento: 'invalido' }],
-    [respuesta(409, { error: 'No hay una caja abierta.' }), { rechazo: 'No hay una caja abierta.', descuento: undefined }],
+    [respuesta(422, { error: 'Cambió una promoción.', descuento: 'invalido' }), { rechazo: 'Cambió una promoción.', descuento: 'invalido', respuesta: { error: 'Cambió una promoción.', descuento: 'invalido' } }],
+    [respuesta(409, { error: 'No hay una caja abierta.' }), { rechazo: 'No hay una caja abierta.', descuento: undefined, respuesta: { error: 'No hay una caja abierta.' } }],
     [respuesta(401, { error: 'Tu sesión terminó.' }), { sesion: true }],
     [respuesta(403, { error: 'La página venció.', recargar: true }), { sesion: true }],
     [respuesta(0, undefined, 'opaqueredirect'), { sesion: true }],
