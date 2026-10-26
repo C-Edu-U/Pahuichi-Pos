@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Core\DB;
-use App\Core\Reloj;
 
 /** Turnos de caja (HU-11): medio día y noche, con horario configurable. */
 final class Turno
@@ -30,21 +29,22 @@ final class Turno
         DB::consulta('UPDATE turnos SET hora_inicio = ?, hora_fin = ? WHERE id = ?', [$inicio, $fin, $id]);
     }
 
-    /** «11:00 a 16:00»; el fin 24:00:00 se muestra como 24:00. */
+    /** «11:00 a 16:00»; la medianoche (24:00:00 en la base) se ve 23:59 en todas las pantallas. */
     public static function horario(array $t): string
     {
         return self::hora($t['hora_inicio']) . ' a ' . self::hora($t['hora_fin']);
     }
 
+    /** «18:00»; 24:00:00 se ve 23:59, que es lo que el administrador marca. */
     public static function hora(string $hora): string
     {
-        return substr($hora, 0, 5);
+        return $hora === '24:00:00' ? '23:59' : substr($hora, 0, 5);
     }
 
-    /** Valor para <input type="time">, que no admite 24:00: se muestra 23:59. */
+    /** Valor para <input type="time">, que no admite 24:00. */
     public static function horaControl(string $hora): string
     {
-        return $hora === '24:00:00' ? '23:59' : substr($hora, 0, 5);
+        return self::hora($hora);
     }
 
     public static function crear(string $clave, string $nombre, string $hora_inicio, string $hora_fin, int $orden): int
@@ -60,22 +60,9 @@ final class Turno
         DB::consulta('DELETE FROM turnos WHERE id = ?', [$id]);
     }
 
-    public static function tieneCajasHoy(int $id): bool
+    /** Un turno con cajas (de cualquier día) no se borra: las cajas lo siguen nombrando. */
+    public static function tieneCajas(int $id): bool
     {
-        $hoy = Reloj::ahora()->format('Y-m-d');
-        return (int) DB::valor('SELECT COUNT(*) FROM cajas WHERE turno_id = ? AND fecha = ?', [$id, $hoy]) > 0;
-    }
-
-    /** El turno está en curso ahora (la base no admite turnos que crucen la medianoche). */
-    public static function estaEnCurso(int $id): bool
-    {
-        $t = self::buscar($id);
-        if ($t === null) {
-            return false;
-        }
-        $hora = Reloj::ahora()->format('H:i:s');
-        $inicio = $t['hora_inicio'];
-        $fin = $t['hora_fin'] === '24:00:00' ? '23:59:59' : $t['hora_fin'];
-        return $hora >= $inicio && $hora < $fin;
+        return (int) DB::valor('SELECT COUNT(*) FROM cajas WHERE turno_id = ?', [$id]) > 0;
     }
 }

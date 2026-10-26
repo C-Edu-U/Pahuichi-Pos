@@ -3,6 +3,8 @@
  * Tablero del día (HU-64). Variables: $esCajero, $t (TableroService::delDia() o delCajero()),
  * $ahora. tablero.js vuelve a pedir la página cada minuto y reemplaza #tablero.
  */
+use App\Models\Turno;
+
 $hora = static fn (string $momento): string => substr($momento, 11, 5);
 ?>
     <main class="contenido" id="contenido">
@@ -91,7 +93,7 @@ $hora = static fn (string $momento): string => substr($momento, 11, 5);
         <section class="panel-bloque" aria-labelledby="t-turno">
           <h2 class="visualmente-oculto" id="t-turno">Tu turno</h2>
           <dl class="resumen resumen--sin-borde">
-            <div class="resumen__fila"><dt>Turno</dt><dd><?= e($c['turno']) ?> · <?= e(substr($c['hora_inicio'], 0, 5)) ?> a <?= e($c['hora_fin'] === '24:00:00' ? '24:00' : substr($c['hora_fin'], 0, 5)) ?></dd></div>
+            <div class="resumen__fila"><dt>Turno</dt><dd><?= e($c['turno']) ?> · <?= e(Turno::horario($c)) ?></dd></div>
             <div class="resumen__fila"><dt>Caja abierta</dt><dd class="num">Desde las <?= e($hora($c['abierta_en'])) ?></dd></div>
             <div class="resumen__fila"><dt>Ventas cobradas</dt><dd class="num" id="ventas-cantidad"><?= (int) $t['ventas'] ?></dd></div>
             <div class="resumen__fila"><dt>Pagos QR por confirmar</dt><dd class="num"><?= (int) $t['qr']['cantidad'] ?></dd></div>

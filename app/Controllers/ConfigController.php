@@ -214,12 +214,8 @@ final class ConfigController extends Controller
                     $errores["e{$id}"] = 'No se puede eliminar el único turno que queda.';
                     continue;
                 }
-                if (Turno::tieneCajasHoy($id)) {
-                    $errores["e{$id}"] = "El turno de {$t['nombre']} ya tiene cajas hoy y no se puede eliminar.";
-                    continue;
-                }
-                if (Turno::estaEnCurso($id)) {
-                    $errores["e{$id}"] = "El turno de {$t['nombre']} está en curso y no se puede eliminar.";
+                if (Turno::tieneCajas($id)) {
+                    $errores["e{$id}"] = "El turno de {$t['nombre']} ya tiene cajas y no se puede eliminar: sus cajas y reportes lo nombran.";
                     continue;
                 }
                 Turno::eliminar($id);
@@ -242,7 +238,8 @@ final class ConfigController extends Controller
             $enviado = $enviados[$id] ?? [];
             $inicio = trim((string) ($enviado['inicio'] ?? ''));
             $fin = trim((string) ($enviado['fin'] ?? ''));
-            $nuevos[$id] = ['inicio' => '', 'fin' => '', 'nombre' => $t['nombre'], 'clave' => $t['clave']];
+            // Si hay errores, la pantalla vuelve con lo que se escribió, no con los campos vacíos
+            $nuevos[$id] = ['inicio' => '', 'fin' => '', 'escrito_inicio' => $inicio, 'escrito_fin' => $fin, 'nombre' => $t['nombre'], 'clave' => $t['clave']];
 
             if (!preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $inicio)) {
                 $errores["t{$id}-ini"] = 'Elige la hora de inicio.';
@@ -252,10 +249,6 @@ final class ConfigController extends Controller
             }
             if (!isset($errores["t{$id}-ini"]) && !isset($errores["t{$id}-fin"]) && !self::horarioValido($inicio, $fin)) {
                 $errores["t{$id}-fin"] = 'Debe terminar después de empezar.';
-            }
-            // Un turno en curso no cambia de horario.
-            if (!isset($errores["t{$id}-ini"]) && !isset($errores["t{$id}-fin"]) && Turno::estaEnCurso($id)) {
-                $errores["t{$id}-ini"] = "El turno de {$t['nombre']} está en curso y su horario no se puede cambiar ahora.";
             }
             if (!isset($errores["t{$id}-ini"]) && !isset($errores["t{$id}-fin"])) {
                 $nuevos[$id]['inicio'] = "{$inicio}:00";
@@ -279,7 +272,7 @@ final class ConfigController extends Controller
         if ($errores) {
             $mostrar = array_map(static function (array $t) use ($nuevos): array {
                 $n = $nuevos[(int) $t['id']];
-                return ['hora_inicio' => $n['inicio'], 'hora_fin' => $n['fin']] + $t;
+                return ['hora_inicio' => $n['escrito_inicio'], 'hora_fin' => $n['escrito_fin']] + $t;
             }, $turnos);
             return $this->pantalla(['errores' => $errores, 'turnos' => $mostrar], 422);
         }

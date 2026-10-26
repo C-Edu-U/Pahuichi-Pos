@@ -9,7 +9,9 @@ use App\Core\DB;
 /** Cajas por turno (HU-20). Cierre y arqueo llegan en el Sprint 2 (HU-23, HU-24). */
 final class Caja
 {
-    private const SELECT = 'SELECT c.*, t.nombre AS turno, t.hora_inicio, t.hora_fin, u.nombre AS cajero, a.nombre AS abierta_por_nombre
+    // El horario es el que el turno tenía al abrir la caja (HU-11); si faltara, el del turno.
+    private const SELECT = 'SELECT c.*, t.nombre AS turno, COALESCE(c.turno_inicio, t.hora_inicio) AS hora_inicio,
+        COALESCE(c.turno_fin, t.hora_fin) AS hora_fin, u.nombre AS cajero, a.nombre AS abierta_por_nombre
         FROM cajas c
         JOIN turnos t ON t.id = c.turno_id
         JOIN usuarios u ON u.id = c.cajero_id
@@ -48,11 +50,13 @@ final class Caja
         return DB::fila(self::SELECT . ' WHERE c.id = ?', [$id]);
     }
 
+    /** La caja copia el horario que el turno tiene al abrirse (HU-11). */
     public static function crear(int $turnoId, string $fecha, int $cajeroId, int $abiertaPor, float $fondo, string $abiertaEn): int
     {
         return DB::insertar(
-            'INSERT INTO cajas (turno_id, fecha, cajero_id, abierta_por, fondo_inicial, abierta_en) VALUES (?, ?, ?, ?, ?, ?)',
-            [$turnoId, $fecha, $cajeroId, $abiertaPor, $fondo, $abiertaEn],
+            'INSERT INTO cajas (turno_id, turno_inicio, turno_fin, fecha, cajero_id, abierta_por, fondo_inicial, abierta_en)
+             SELECT id, hora_inicio, hora_fin, ?, ?, ?, ?, ? FROM turnos WHERE id = ?',
+            [$fecha, $cajeroId, $abiertaPor, $fondo, $abiertaEn, $turnoId],
         );
     }
 
