@@ -20,6 +20,7 @@ use App\Models\Turno;
 use App\Models\ConfiguracionTickets;
 use App\Services\TicketsPdf;
 use App\Services\Imagenes;
+use App\Services\RespaldosService;
 use DomainException;
 use Throwable;
 
@@ -414,14 +415,29 @@ final class ConfigController extends Controller
         return $this->redirigirConAviso('/config#impresoras', 'Configuración de tickets en PDF guardada.');
     }
 
+    public function estadoRespaldos(Peticion $peticion): Respuesta
+    {
+        return Respuesta::json((new RespaldosService())->estado((string) $peticion->consulta('solicitud')))->cabecera('Cache-Control', 'no-store');
+    }
+
+    public function simularRespaldo(Peticion $peticion): Respuesta
+    {
+        try {
+            $solicitud = (new RespaldosService())->solicitar((string) $peticion->entrada('accion'), (string) $peticion->entrada('archivo'));
+            return Respuesta::json($solicitud, 202)->cabecera('Cache-Control', 'no-store');
+        } catch (DomainException $e) {
+            return Respuesta::json(['error' => $e->getMessage()], 422);
+        }
+    }
+
     private function pantalla(array $datos = [], int $estado = 200): Respuesta
     {
         return $this->vista('config/index', $datos + [
             'titulo' => 'Configuración',
             'modulo' => 'config',
             'h1' => 'Configuración',
-            'css' => ['modulos.css'],
-            'js' => ['config.js', 'leyendas.js'],
+            'css' => ['modulos.css', 'respaldos.css'],
+            'js' => ['config.js', 'leyendas.js', 'respaldos.js'],
             'errores' => [],
             'viejo' => [],
             'negocio' => Negocio::obtener(),

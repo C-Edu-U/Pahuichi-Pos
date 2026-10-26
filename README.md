@@ -141,3 +141,78 @@ Más detalle del diseño en [DESIGN.md](DESIGN.md).
 - Imagen de PHP: [php](https://hub.docker.com/_/php) oficial; extensiones con [docker-php-extension-installer](https://github.com/mlocati/docker-php-extension-installer), MIT.
 - Base de datos: [MariaDB](https://mariadb.org/), GPL v2.
 - Pruebas: [PHPUnit](https://phpunit.de/), BSD-3.
+
+
+## HU-07: copias diarias y restauracion
+
+`docker compose up -d` inicia tambien `backup`, usando la misma imagen MariaDB.
+Copia diaria a las 02:00, zona America/La_Paz. `BACKUP_HORA=HH:MM` permite
+cambiar el horario en `.env` (recrear app y backup para aplicar el cambio).
+Docker y la PC deben estar activos. Si se inicia despues de la hora, se
+recupera la copia pendiente de ese dia; no se inventan copias de dias apagados.
+
+Los SQL quedan en `respaldos/`, fuera de public y excluidos de Git. Los nombres
+incluyen fecha, hora y un sufijo unico. Se escriben primero en un temporal y
+solo se publican si `mariadb-dump` termina correctamente. La retencion borra
+archivos administrados de mas de 30 dias solo despues de una copia exitosa.
+Incluye tablas, datos, triggers, rutinas y eventos de la base configurada.
+Las fotos son archivos separados y no forman parte del respaldo de base.
+
+En Configuracion > Copias de seguridad, el administrador ve las ultimas diez.
+
+Comprobaciones desde la carpeta del proyecto (PowerShell):
+
+```powershell
+docker compose -p pahuichi logs --tail 30 backup
+Get-ChildItem .\respaldos\*.sql
+# Copia adicional manual (no cambia el horario):
+docker compose -p pahuichi exec -T backup sh /scripts/copiar.sh
+```
+
+Restaurar en otra base vacia, indicando un nombre de copia existente:
+
+```powershell
+docker compose -p pahuichi exec -T backup sh /scripts/restaurar.sh NOMBRE_DE_LA_COPIA.sql pahuichi_restaurada
+```
+
+El comando rechaza la base habitual y cualquier destino con tablas, rutinas o
+eventos; no borra datos. El destino creado conserva los triggers y recibe
+permisos para la cuenta existente de la aplicacion. Para probar el sistema en
+esa base se puede iniciar otra instancia sin sustituir la de trabajo:
+
+```powershell
+docker compose -p pahuichi run -d --no-deps --name pahuichi-hu07-revision -e DB_NOMBRE=pahuichi_restaurada -e PUERTO_HTTPS=8444 -p 127.0.0.1:8444:443 app
+```
+
+Abrir https://localhost:8444, iniciar sesion con un usuario restaurado y revisar
+ventas y tickets. La instancia habitual continua en https://localhost:8443.
+Al terminar se puede retirar solo el contenedor de prueba con
+`docker rm -f pahuichi-hu07-revision`; la base restaurada queda conservada.
+
+
+### HU-07: restauracion desde la pantalla
+
+En Configuracion > Copias de seguridad, cada copia tiene Probar restauracion.
+El contenedor backup crea una base nueva y vacia por solicitud, importa el SQL,
+comprueba usuarios/productos/ventas/facturas/pagos y publica el resultado.
+No se vacia, reemplaza ni migra la base habitual. Las pruebas anteriores quedan
+conservadas; repetir el boton crea otro destino.
+
+Abrir sistema restaurado lleva a https://localhost:8445 (puerto configurable
+con PUERTO_RESTAURACION). La instancia restaurada usa el mismo codigo, una
+sesion propia por restauracion y un volumen separado para fotos de prueba.
+Iniciar sesion, revisar ventas y PDF y realizar un cobro demuestra su uso.
+La instancia habitual permanece en 8443 y la revision manual anterior en 8444
+no se modifica. El servicio restaurada arranca con docker compose up y espera
+la primera restauracion; no ejecuta migraciones ni seeds en los datos importados.
+La web encola solicitudes acotadas; no usa la clave root ni Docker socket.
+
+
+### Archivos de operacion de HU-07
+
+`respaldos/` contiene las copias SQL. El estado del servicio, las solicitudes
+pendientes y el resultado de la ultima restauracion se guardan en
+`var/respaldos/`, fuera de public y excluidos de Git. Esta separacion no cambia
+la programacion diaria, la retencion ni las bases restauradas. El contenedor
+backup comparte esa carpeta como /estado; la web solo consulta y encola las
+operaciones permitidas. El SQL no se mueve al cambiar esta organizacion.
