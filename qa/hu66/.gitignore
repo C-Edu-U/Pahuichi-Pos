@@ -1,0 +1,4 @@
+/evidencias/*
+!/evidencias/.gitkeep
+/.ejecutando
+/__pycache__/

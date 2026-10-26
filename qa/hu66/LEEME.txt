@@ -1,0 +1,76 @@
+HU-66 - PRUEBAS AUTOMATIZADAS, SEGURIDAD Y CARGA
+
+ABRIR EL MENU
+Doble clic en qa\hu66\Abrir-Pruebas.cmd dentro del proyecto.
+No necesitas instalar PHP, ZAP ni k6 en Windows; solo Docker Desktop activo.
+El menu permite escoger escenario 1, 2 o 3. Tambien permite ejecutar los tres.
+El resultado abre un informe HTML al terminar y conserva la salida original.
+
+1. COBERTURA
+Ejecuta toda la suite PHPUnit, incluyendo integracion, con PCOV.
+Exige al menos 60% de cobertura de lineas en cada area: promociones, arqueo y
+facturacion. areas.json enumera los archivos medidos, incluyendo los servicios
+de anulacion, consulta/reimpresion y recuperacion del saldo. Los archivos no
+recorridos cuentan: no se eliminan para aumentar artificialmente el resultado.
+PHPUnit tambien debe terminar correctamente. Se guardan el HTML por archivo,
+clover.xml, junit.xml, phpunit.log, cobertura.txt y resultado-cobertura.html/json.
+El develop recibido ya contiene las correcciones previas de las pruebas de
+permisos y simulacion QR: este paquete no reemplaza ninguna prueba existente.
+
+2. SEGURIDAD
+Ejecuta OWASP ZAP real en la instancia aislada. Revisa las rutas publicas y
+sesiones de administrador/cajero, hace spider, escaneo activo y analisis pasivo.
+Solo permite el servicio https://app de la red de QA. No acepta sitios externos.
+Comprueba la autenticacion al inicio y final del escaneo de cada rol. Se excluye
+/salir para mantener las sesiones. Se incluyen semillas GET y POST de validacion.
+Muestra progreso mientras espera: puede tardar varios minutos por rol.
+Exige escaneo completo y cero alertas altas. No silencia ni elimina alertas.
+Las medias/bajas quedan visibles y deben revisarse. Un fallo de autenticacion,
+tiempo agotado o motor incompleto deja el escenario pendiente, nunca aprobado.
+Conserva zap.json, zap-original.html, zap-motor.log y resultado-seguridad.html/json.
+ZAP cubre las rutas registradas por el motor, no garantiza ausencia de fallos en
+todo el sistema. Si detecta altas, revisarlas y corregirlas antes de cerrar la HU.
+
+3. CARGA
+Ejecuta k6 real: hasta 5 usuarios virtuales durante 50 segundos, con tiempo de
+salida de hasta 10 segundos para iteraciones pendientes. Inicia sesion como cajero,
+consulta el POS, cobra efectivo con UUID distintos, abre tickets y verifica una
+factura publica. Compara los cobros confirmados con ventas, facturas y numeros
+unicos en la base. Una venta de referencia se crea antes y se contabiliza aparte.
+Registra tiempos, percentiles, errores y comprobaciones en k6.json y el HTML.
+Como validacion del ensayo se exigen checks=100% y errores HTTP<1%. No se fija un
+limite arbitrario de segundos: el criterio recibido solo exige registrar evidencia.
+Los tiempos se revisan con el ERS y con Eduardo. Esto no sustituye las mediciones
+humanas de la HU-67 ni una prueba con impresora fisica.
+
+INSTANCIA Y DATOS SEPARADOS
+Proyecto Docker: pahuichi-hu66; acceso local opcional https://localhost:9443.
+Volumen de codigo y MariaDB propios. Preparacion copia una instantanea del codigo
+actual a un volumen y monta el proyecto original solo para lectura. Se excluyen
+.env, .git, fotos privadas, respaldos, certificados y evidencias anteriores.
+PHPUnit usa pahuichi_qa_pruebas. Seguridad y carga regeneran solo pahuichi_qa,
+que es DESECHABLE. No se usan las bases normales ni la demo de la HU-65.
+La instancia habitual en 8443 y la demo en 8446 siguen conservadas. Para liberar
+recursos puedes detenerlas desde Docker Desktop antes de ejecutar la carga.
+No cambies archivos durante la prueba. Guarda instantanea.sha256 y las imagenes
+Docker/dependencias junto con los resultados para identificar lo que se probo.
+La primera ejecucion descarga imagenes y necesita internet. ZAP es grande.
+
+EVIDENCIAS
+qa\hu66\evidencias\<fecha-hora-escenario> guarda los informes de cada ejecucion.
+El menu abre la carpeta con opcion 5. Copiar la carpeta completa al compartirla.
+El .gitignore evita subir las salidas voluminosas por accidente; las herramientas
+si se versionan. Adjuntar a Jira los informes de la version revisada.
+El estado En revision requiere resultados reales de los tres escenarios.
+No marcar aprobados ZAP o k6 solo por instalar este paquete.
+
+COMANDOS OPCIONALES (EL MENU LOS EVITA)
+powershell -NoProfile -ExecutionPolicy Bypass -File .\qa\hu66\Probar-HU66.ps1 -Accion Cobertura
+El mismo comando acepta Seguridad, Carga, Todo, Preparar y Detener.
+Detener conserva los volumenes y las evidencias; nunca usa down -v.
+
+REFERENCIAS TECNICAS
+https://docs.phpunit.de/en/11.5/code-coverage.html
+https://www.zaproxy.org/docs/desktop/addons/replacer/
+https://www.zaproxy.org/docs/api/
+https://grafana.com/docs/k6/latest/results-output/end-of-test/custom-summary/

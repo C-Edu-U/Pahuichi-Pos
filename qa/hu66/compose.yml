@@ -1,0 +1,92 @@
+name: pahuichi-hu66
+x-php: &php
+  image: pahuichi-hu66-app
+  build:
+    context: ../..
+    dockerfile: qa/hu66/Dockerfile
+  environment: &entorno
+    HU66_AISLADO: '1'
+    APP_ENTORNO: pruebas
+    PUERTO_HTTPS: '9443'
+    DB_HOST: db
+    DB_PUERTO: '3306'
+    DB_NOMBRE: pahuichi_qa
+    DB_USUARIO: pahuichi_qa
+    DB_CLAVE: hu66_solo_pruebas
+  volumes:
+    - codigo:/var/www/pahuichi
+    - .:/qa:ro
+    - type: bind
+      source: ${HU66_EVIDENCIAS:-./evidencias}
+      target: /evidencias
+  depends_on:
+    db:
+      condition: service_healthy
+services:
+  db:
+    image: mariadb:11.4
+    environment:
+      MARIADB_DATABASE: pahuichi_qa
+      MARIADB_USER: pahuichi_qa
+      MARIADB_PASSWORD: hu66_solo_pruebas
+      MARIADB_ROOT_PASSWORD: hu66_root_solo_pruebas
+    volumes:
+      - datos:/var/lib/mysql
+      - ../../docker/db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: [CMD, healthcheck.sh, --connect, --innodb_initialized]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+  preparar:
+    <<: *php
+    entrypoint: [bash, /qa/preparar.sh]
+    volumes:
+      - codigo:/var/www/pahuichi
+      - ../..:/origen:ro
+      - .:/qa:ro
+      - type: bind
+        source: ${HU66_EVIDENCIAS:-./evidencias}
+        target: /evidencias
+  app:
+    <<: *php
+    ports:
+      - '127.0.0.1:9443:443'
+    healthcheck:
+      test: [CMD, php, -r, "exit(@fsockopen('127.0.0.1',443)?0:1);"]
+      interval: 3s
+      timeout: 3s
+      retries: 50
+      start_period: 60s
+  pruebas:
+    <<: *php
+    entrypoint: [bash, /qa/cobertura.sh]
+  datos:
+    <<: *php
+    entrypoint: [php, /qa/datos.php]
+  evaluar:
+    <<: *php
+    entrypoint: [php, /qa/evaluar.php]
+  carga:
+    image: grafana/k6:latest
+    user: '0:0'
+    environment:
+      BASE_URL: https://app
+    volumes:
+      - .:/qa:ro
+      - type: bind
+        source: ${HU66_EVIDENCIAS:-./evidencias}
+        target: /evidencias
+    entrypoint: [k6, run, /qa/carga.js]
+  zap:
+    image: ghcr.io/zaproxy/zaproxy:stable
+    user: '0:0'
+    volumes:
+      - .:/qa:ro
+      - type: bind
+        source: ${HU66_EVIDENCIAS:-./evidencias}
+        target: /evidencias
+    entrypoint: [python3, /qa/seguridad.py]
+volumes:
+  datos:
+  codigo:

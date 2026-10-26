@@ -1,0 +1,31 @@
+{
+  "Promociones": [
+    "app/Controllers/PromocionController.php",
+    "app/Models/Promocion.php",
+    "app/Services/PromocionService.php"
+  ],
+  "Arqueo": [
+    "app/Controllers/CajaController.php",
+    "app/Models/Arqueo.php",
+    "app/Models/Caja.php",
+    "app/Models/MovimientoCaja.php",
+    "app/Services/ArqueoService.php",
+    "app/Services/ConteoService.php",
+    "app/Services/CajaService.php",
+    "app/Services/MovimientoCajaService.php"
+  ],
+  "Facturacion": [
+    "app/Controllers/FacturaController.php",
+    "app/Models/Factura.php",
+    "app/Services/VentaService.php",
+    "app/Services/TicketsPdf.php",
+    "app/Services/Cuf.php",
+    "app/Services/NumeroALetras.php",
+    "app/Models/Venta.php",
+    "app/Models/ConfiguracionTickets.php",
+    "app/Services/EntregaInicialService.php",
+    "app/Services/ReimpresionService.php",
+    "app/Services/AnulacionVentaService.php",
+    "app/Services/SaldoQrService.php"
+  ]
+}
