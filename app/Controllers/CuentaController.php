@@ -41,7 +41,7 @@ final class CuentaController extends Controller
             'titulo' => 'Pedidos',
             'modulo' => 'mesero',
             'h1' => 'Pedidos',
-            'css' => ['pos.css', 'mesero.css'],
+            'css' => ['pos.css', 'qr-dia.css', 'mesero.css'],
             'js' => ['carrito.js', 'motor-promociones.js', 'cola-ventas.js', 'cuentas.js', 'mesero.js'],
             'claseBody' => 'panel--mesero',
             'caja' => CajaService::abierta(),

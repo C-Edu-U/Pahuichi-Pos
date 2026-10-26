@@ -49,4 +49,6 @@ return [
     'cuentas.cobrar' => ['administrador', 'cajero', 'mesero'],
     'cuentas.descuento' => $caja,
     'catalogo.fotos' => ['administrador', 'cajero', 'mesero'],
+    // El mesero también muestra el QR del día al cobrar la cuenta de una mesa
+    'qr.cobrar' => ['administrador', 'cajero', 'mesero'],
 ];

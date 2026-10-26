@@ -1345,3 +1345,20 @@
   gap: var(--esp-1) var(--esp-2);
   margin-top: var(--esp-1);
 }
+
+/* HU-35 con HU-39 y HU-42: bloques de QR y de efectivo en el cobro de la cuenta */
+.cuenta-qr,
+.cuenta-efectivo {
+  display: grid;
+  gap: var(--esp-2);
+}
+
+.cuenta-qr[hidden],
+.cuenta-efectivo[hidden] {
+  display: none;
+}
+
+.cuenta-qr .qr-dia-imagen {
+  width: 240px;
+  margin: 0 auto;
+}
