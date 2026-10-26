@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
+use App\Core\Config;
 use App\Services\FotoProducto;
 use DomainException;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -53,6 +54,22 @@ final class FotoProductoTest extends TestCase
     {
         $im = imagecreatetruecolor(100, 80); ob_start(); imagewebp($im); $webp = ob_get_clean(); imagedestroy($im);
         $this->assertSame('image/jpeg', getimagesizefromstring(FotoProducto::comprimir($webp))['mime']);
+    }
+
+    public function testCreaLaCarpetaDeFotosSiFalta(): void
+    {
+        // En un hosting, el FTP puede no subir storage/subidas si va vacía
+        $antes = Config::get('app.subidas');
+        $carpeta = sys_get_temp_dir() . '/pahuichi-' . bin2hex(random_bytes(4)) . '/subidas';
+        Config::fijar('app.subidas', $carpeta);
+        try {
+            $im = imagecreatetruecolor(10, 10); ob_start(); imagejpeg($im); $jpeg = ob_get_clean(); imagedestroy($im);
+            $nombre = FotoProducto::guardar($jpeg);
+            $this->assertFileExists($carpeta . '/' . $nombre);
+            unlink($carpeta . '/' . $nombre); rmdir($carpeta); rmdir(dirname($carpeta));
+        } finally {
+            Config::fijar('app.subidas', $antes);
+        }
     }
 
     public static function invalidos(): array

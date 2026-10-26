@@ -33,7 +33,7 @@ final class Imagenes
         }
 
         $nombre = $prefijo . '-' . bin2hex(random_bytes(8)) . '.' . self::TIPOS[$tipo];
-        if (!move_uploaded_file($archivo['tmp_name'], self::carpeta() . '/' . $nombre)) {
+        if (!@move_uploaded_file($archivo['tmp_name'], self::carpeta() . '/' . $nombre)) {
             throw new DomainException('No se pudo guardar la imagen. Avisa al administrador del sistema.');
         }
         return $nombre;
@@ -63,8 +63,13 @@ final class Imagenes
         return (bool) preg_match('/^[a-z]+-[0-9a-f]{16}\.(png|jpg|webp)$/', $nombre);
     }
 
-    private static function carpeta(): string
+    /** storage/subidas; se crea si falta (en un hosting, el FTP puede no subir carpetas vacías). */
+    public static function carpeta(): string
     {
-        return Config::get('app.subidas');
+        $carpeta = Config::get('app.subidas');
+        if (!is_dir($carpeta) && !@mkdir($carpeta, 0775, true) && !is_dir($carpeta)) {
+            throw new DomainException('No se pudo crear la carpeta de imágenes. Avisa al administrador del sistema.');
+        }
+        return $carpeta;
     }
 }
