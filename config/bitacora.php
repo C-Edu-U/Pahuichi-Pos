@@ -45,6 +45,8 @@ return [
 
         'config.negocio' => ['Datos del negocio', 'configuracion', 'neutra'],
         'config.fiscal' => ['Parámetros fiscales', 'configuracion', 'aviso'],
+        'config.tickets_originales' => ['Permiso de cajeros para consultar documentos emitidos', 'configuracion', 'aviso'],
+        'factura.consulta_original' => ['Consulta de documentos emitidos', 'ventas', 'aviso'],
         'config.tickets' => ['Configuración de tickets en PDF', 'configuracion', 'neutra'],
         'config.turnos' => ['Horario de turnos', 'configuracion', 'neutra'],
         'config.turnos.agregar' => ['Turno agregado', 'configuracion', 'neutra'],
@@ -87,6 +89,7 @@ return [
         // Llegan con sus historias (Sprint 3 a 5)
         'venta.cobro' => ['Venta cobrada', 'ventas', 'ok'],
         'factura.reimpresion' => ['Reimpresión de tickets', 'ventas', 'aviso'],
+        'factura.entrada_reimpresion' => ['Entró a Reimpresión', 'ventas', 'neutra'],
         'venta.anulacion' => ['Anulación de venta', 'ventas', 'peligro'],
         'venta.descuento_manual' => ['Descuento manual', 'ventas', 'aviso'],
         'cuenta.apertura' => ['Cuenta de mesa abierta', 'ventas', 'neutra'],

@@ -107,6 +107,9 @@ $router->post('/pos/cobrar', [PosController::class, 'cobrar'], ['auth', 'permiso
 $router->post('/autorizaciones', [AutorizacionController::class, 'crear'], ['auth', 'permiso:modulo.pos']);
 $router->get('/ventas', [FacturaController::class, 'index'], ['auth', 'permiso:modulo.ventas']);
 $router->get('/facturas/{id}', [FacturaController::class, 'mostrar'], ['auth', 'permiso:modulo.ventas']);
+$router->get('/facturas/{id}/originales', [FacturaController::class, 'originales'], ['auth', 'permiso:modulo.ventas']);
+$router->post('/facturas/{id}/original', [FacturaController::class, 'original'], ['auth', 'permiso:modulo.ventas']);
+$router->post('/facturas/{id}/acceso-original', [FacturaController::class, 'accesoOriginal'], ['auth', 'permiso:modulo.ventas']);
 
 // Cuentas por mesa (HU-35): el mesero toma pedidos para la mesa y cobra al cerrar; caja ve
 // las mesas, imprime la comanda de cada pedido y también puede cobrar la cuenta

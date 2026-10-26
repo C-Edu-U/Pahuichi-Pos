@@ -11,6 +11,7 @@ body { margin: 0; color: #000; font-family: "DejaVu Sans Mono", monospace; font-
 p, dl, dt, dd, ul { margin: 0; padding: 0; }
 ul { list-style: none; }
 [hidden] { display: none; }
+.ticket__reimpresion { margin-bottom: 2mm; padding: 1mm 0; border-top: 1pt solid #000; border-bottom: 1pt solid #000; text-align: center; font-weight: bold; font-size: 115%; }
 .ticket__centro, .ticket__datos--apilado { text-align: center; }
 .ticket__fuerte, dt, .ticket__codigo, .ticket__sub { font-weight: bold; }
 .ticket__chico { font-size: 90%; }
@@ -39,8 +40,11 @@ a { color: #000; }
 .comanda__cantidad { margin-right: 1mm; }
 .comanda__nota { display: block; }
 </style></head><body>
-<?php foreach ($tipos as $tipoTicket): for ($pdfCopia = 1; $pdfCopia <= (int) $perfil['copias']; $pdfCopia++): ?>
-<section class="pdf-hoja">
+<?php foreach ($tipos as $tipoTicket):
+    $perfilTicket = isset($perfiles) ? $perfiles[$tipoTicket === 'comanda' ? 'cocina' : 'caja'] : $perfil;
+    $fuenteTicket = ((int) $perfilTicket['ancho'] - 6) * 72 / 25.4 / (int) $perfilTicket['columnas'] / 0.602;
+    for ($pdfCopia = 1; $pdfCopia <= (int) $perfilTicket['copias']; $pdfCopia++): ?>
+<section class="pdf-hoja"<?php if (isset($perfiles)): ?> style="width: <?= (int) $perfilTicket['ancho'] - 6 ?>mm; font-size: <?= $fuenteTicket ?>pt;"<?php endif; ?>>
 <?php require __DIR__ . '/_ticket.php'; ?>
 </section>
 <?php endfor; endforeach; ?>

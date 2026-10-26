@@ -55,6 +55,31 @@ final class TicketsPdf
         return ['perfil' => $p, 'tipos' => $tipos];
     }
 
+    public const SELECCIONES = [
+        'comanda' => 'Solo comanda',
+        'copia' => 'Solo copia de caja',
+        'factura' => 'Solo factura',
+        'caja' => 'Copia de caja y factura',
+        'todos' => 'Los tres tickets',
+    ];
+
+    /** Selección explícita: cada documento usa ancho, columnas y copias de su perfil. */
+    public static function prepararSeleccion(string $seleccion): array
+    {
+        $tipos = match ($seleccion) {
+            'comanda' => ['comanda'], 'copia' => ['copia'], 'factura' => ['factura'],
+            'caja' => ['copia', 'factura'], 'todos' => ['comanda', 'copia', 'factura'],
+            default => throw new DomainException('Elige una opción de la lista de documentos.'),
+        };
+        $perfiles = ConfiguracionTickets::todas();
+        $perfil = $perfiles[$tipos[0] === 'comanda' ? 'cocina' : 'caja'];
+        foreach ($tipos as $tipo) {
+            $candidato = $perfiles[$tipo === 'comanda' ? 'cocina' : 'caja'];
+            if ($candidato['ancho'] > $perfil['ancho']) $perfil = $candidato;
+        }
+        return ['perfil' => $perfil, 'perfiles' => $perfiles, 'tipos' => $tipos, 'seleccion' => $seleccion];
+    }
+
     /** El snapshot aporta los datos; el perfil vigente define la presentación. */
     public static function generar(array $snapshot, array $salida): string
     {
@@ -78,18 +103,42 @@ final class TicketsPdf
         // Primero mide el contenido, después crea las hojas del rollo sin recortar los tickets.
         $medida = self::motor($ancho, 14400);
         $alto = 0.0;
-        $medida->setCallbacks([['event' => 'end_frame', 'f' => static function ($frame) use (&$alto): void {
+        $altosTickets = [];
+        $medida->setCallbacks([['event' => 'end_frame', 'f' => static function ($frame) use (&$alto, &$altosTickets): void {
             $nodo = $frame->get_node();
             if ($nodo instanceof \DOMElement && $nodo->tagName === 'article') {
-                $alto = max($alto, (float) $frame->get_border_box()['h']);
+                $altoTicket = (float) $frame->get_border_box()['h'];
+                $altosTickets[] = ceil($altoTicket + 8 * 72 / 25.4);
+                $alto = max($alto, $altoTicket);
             }
         }]]);
         $medida->loadHtml($html, 'UTF-8');
         $medida->render();
         unset($medida);
-        $pdf = self::motor($ancho, min(14400, max(100, ceil($alto + 8 * 72 / 25.4))));
+        $altoComun = min(14400, max(100, ceil($alto + 8 * 72 / 25.4)));
+        $pdf = self::motor($ancho, $altoComun);
         $pdf->loadHtml($html, 'UTF-8');
         $pdf->render();
+        $anchos = [];
+        foreach ($salida['tipos'] as $tipo) {
+            $p = isset($salida['perfiles']) ? $salida['perfiles'][$tipo === 'comanda' ? 'cocina' : 'caja'] : $salida['perfil'];
+            for ($copia = 0; $copia < $p['copias']; $copia++) $anchos[] = $p['ancho'] * 72 / 25.4;
+        }
+        if ($pdf->getCanvas()->get_page_count() !== count($anchos) || count($altosTickets) !== count($anchos)) {
+            throw new DomainException('El documento supera el tamaño admitido. Genera cada ticket por separado.');
+        }
+        $cpdf = $pdf->getCanvas()->get_cpdf();
+        foreach ($cpdf->objects as &$objeto) {
+            if ($objeto['t'] === 'page') {
+                $indice = $objeto['info']['pageNum'] - 1;
+                $altoPagina = min($altoComun, max(36, $altosTickets[$indice]));
+                // Las coordenadas PDF parten desde abajo. Elevar el borde inferior
+                // elimina solo el papel vacío sin desplazar textos, QR ni enlaces.
+                // Cada MediaBox conserva 3 mm arriba y aproximadamente 5 mm abajo.
+                $objeto['info']['mediaBox'] = [0, $altoComun - $altoPagina, $anchos[$indice], $altoComun];
+            }
+        }
+        unset($objeto);
         return $pdf->output();
     }
 

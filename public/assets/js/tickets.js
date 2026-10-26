@@ -8,14 +8,11 @@
     var qr = window.qrcode(0, 'M'); qr.addData(enlace.href); qr.make();
     document.querySelector('[data-campo="qr"]').innerHTML = qr.createSvgTag({ cellSize: 3, margin: 0, scalable: true });
   }
-  document.querySelectorAll('[data-ancho]').forEach(function (b) {
-    b.addEventListener('click', function () {
-      tickets.classList.toggle('tickets--58', b.dataset.ancho === '58');
-      document.querySelectorAll('[data-ancho]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+  var menu = document.querySelector('.tickets-menu');
+  if (menu) {
+    document.addEventListener('click', function (evento) { if (!menu.contains(evento.target)) menu.open = false; });
+    document.addEventListener('keydown', function (evento) {
+      if (evento.key === 'Escape' && menu.open) { menu.open = false; menu.querySelector('summary').focus(); }
     });
-  });
-  // HU-12: el servidor aplica ancho, columnas, selección y copias vigentes.
-  document.getElementById('descargar-pdf').addEventListener('click', function () {
-    window.location.assign('/facturas/' + tickets.dataset.factura + '/pdf?destino=caja&solo=factura');
-  });
+  }
 })();
