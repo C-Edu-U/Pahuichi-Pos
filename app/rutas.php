@@ -83,7 +83,6 @@ $router->post('/catalogo/categorias/{id}/estado', [CategoriaController::class, '
 // Caja (HU-20)
 $router->get('/caja', [CajaController::class, 'index'], ['auth', 'permiso:modulo.caja']);
 $router->post('/caja/abrir', [CajaController::class, 'abrir'], ['auth', 'permiso:modulo.caja']);
-$router->post('/caja/cerrar', [CajaController::class, 'cerrar'], ['auth', 'permiso:modulo.caja']);
 $router->post('/caja/movimientos', [CajaController::class, 'movimiento'], ['auth', 'permiso:caja.movimiento']);
 $router->get('/caja/cierre', [CajaController::class, 'cierre'], ['auth', 'permiso:modulo.caja']);
 $router->post('/caja/conteo', [CajaController::class, 'conteo'], ['auth', 'permiso:modulo.caja']);

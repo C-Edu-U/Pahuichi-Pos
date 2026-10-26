@@ -107,6 +107,31 @@ final class CierreCiegoTest extends CasoPrueba
         $this->assertSame(1, (int) DB::valor('SELECT COUNT(*) FROM arqueos'));
     }
 
+    /**
+     * Escenario: No se cierra sin contar
+     *   Dado una caja abierta
+     *   Cuando alguien intenta cerrarla sin el conteo y el arqueo (por la dirección directa)
+     *   Entonces la caja sigue abierta: cerrar es contar y arquear en un solo paso (RN-02)
+     */
+    public function testNoSeCierraSinContarNiArquear(): void
+    {
+        $r = $this->post('/caja/cerrar');
+
+        $this->assertContains($r->estado, [404, 405]);
+        $this->assertSame('abierta', DB::valor("SELECT estado FROM cajas ORDER BY id DESC LIMIT 1"));
+        $this->assertRedirige('/caja/cierre', $this->post('/caja/arqueo', ['observacion' => '']));   // sin conteo no hay arqueo
+        $this->assertSame('abierta', DB::valor("SELECT estado FROM cajas ORDER BY id DESC LIMIT 1"));
+    }
+
+    public function testUnaCantidadAbsurdaSeRechaza(): void
+    {
+        $r = $this->post('/caja/conteo', ['conteo' => ['200' => '10000']]);
+
+        $this->assertSame(422, $r->estado);
+        $this->assertStringContainsString('Revisa las cantidades: cada una va de 0 a 9999.', $r->cuerpo);
+        $this->assertSame(0, (int) DB::valor('SELECT COUNT(*) FROM arqueos'));
+    }
+
     public function testSinCajaAbiertaNoHayConteo(): void
     {
         DB::consulta("UPDATE cajas SET estado = 'cerrada'");

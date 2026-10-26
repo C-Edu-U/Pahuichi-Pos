@@ -318,18 +318,6 @@ final class CajaController extends Controller
         ], 200, 'layouts/simple');
     }
 
-    public function cerrar(Peticion $peticion): Respuesta
-    {
-        $usuario = Auth::usuario();
-        try {
-            (new CajaService())->cerrar((int) $usuario['id'], $usuario['rol']);
-        } catch (DomainException $e) {
-            Sesion::flash('bloqueo', $e->getMessage());
-            return $this->redirigir('/caja');
-        }
-        return $this->redirigirConAviso('/caja', 'Caja cerrada.');
-    }
-
     /** Reabre una caja cerrada para repetir el turno (solo administrador). */
     public function reabrir(Peticion $peticion): Respuesta
     {

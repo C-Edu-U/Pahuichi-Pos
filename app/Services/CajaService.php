@@ -95,26 +95,6 @@ final class CajaService
         return $id;
     }
 
-    /** Cierra la caja abierta. Solo el cajero que la abrió o un administrador. */
-    public function cerrar(int $quienCierraId, string $quienCierraRol): void
-    {
-        $abierta = Caja::abierta();
-        if ($abierta === null) {
-            throw new DomainException('No hay una caja abierta para cerrar.');
-        }
-        if ($quienCierraRol !== 'administrador' && (int) $abierta['cajero_id'] !== $quienCierraId) {
-            throw new DomainException('Solo puedes cerrar tu propia caja.');
-        }
-
-        Caja::cerrar((int) $abierta['id'], Reloj::sql());
-
-        Bitacora::registrar('caja.cierre', 'cajas', (int) $abierta['id'], [
-            'turno' => $abierta['turno'],
-            'cajero' => $abierta['cajero'],
-            'fondo_inicial' => number_format((float) $abierta['fondo_inicial'], 2, '.', ''),
-        ]);
-    }
-
     /**
      * Reabre una caja cerrada para que su turno se pueda volver a usar (solo administrador).
      *
