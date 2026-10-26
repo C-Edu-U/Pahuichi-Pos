@@ -1,0 +1,86 @@
+HU-65 - DATOS DE PRUEBA PARA LA DEMOSTRACION
+
+Desde la carpeta del proyecto, con Docker Desktop iniciado:
+  powershell -NoProfile -ExecutionPolicy Bypass -File .\bin\Preparar-Demo.ps1
+
+Este es el comando unico de carga, tambien en la PC de Eduardo. Crea el proyecto
+Docker pahuichi-demo-hu65: base, fotos y dependencias en volumenes independientes.
+No combina archivos Compose ni usa los volumenes de la instancia habitual.
+La primera ejecucion descarga/construye las imagenes y requiere internet.
+
+Demo: https://localhost:8446 (HTTP 8086 redirige a HTTPS).
+Si el certificado es autofirmado, el navegador pedira aceptar el certificado local.
+Si el puerto esta ocupado, definir $env:HU65_HTTPS = '8447' antes del comando.
+La instancia habitual conserva su direccion, por ejemplo https://localhost:8443.
+
+USUARIOS FICTICIOS
+admin / Pahuichi2026 (administrador, PIN de autorizacion 1234)
+mariela / Pahuichi2026 (cajera, PIN 4821)
+jorge / Pahuichi2026 (cajero, PIN 7350)
+luis / Pahuichi2026 (mesero)
+teresa (cocina, acceso segun los permisos habituales del proyecto)
+
+ESCENARIO 1 - CARGA INICIAL
+1. Ejecutar el comando anterior. En una instalacion nueva crea una base vacia,
+   aplica las migraciones e importa database/demo/datos.sql en una transaccion.
+2. Entrar como admin y abrir Catalogo > Productos. Hay 25 productos con foto,
+   nombre completo, nombre corto, precio, descripcion, unidad y disponibilidad.
+   Categorias: 10 Platos, 3 Refrescos, 3 Sodas, 2 Vinos, 3 Postres y 4 Extra.
+3. Abrir Promociones. Hay 5 activas: descuento en majadito batido, descuento en
+   refrescos, descuento en postres, arroz de regalo por dos picantes de pollo,
+   combo de keperi con mocochinchi. Las cinco tienen ventas de ejemplo.
+4. En Caja > Historial, consultar 25/10/2026. Hay dos turnos completos y cerrados:
+   Medio dia de Mariela y Noche de Jorge, con 20 ventas cada uno.
+   Ambos tienen apertura, ingreso de Bs 50, egreso de Bs 30, conteo y arqueo.
+   El primero cuadra; el segundo tiene faltante de Bs 10 con observacion.
+5. En Ventas y facturas y Reportes, seleccionar 25/10/2026 cuando corresponda.
+   Hay 40 ventas con facturas, detalles, pagos en efectivo, notas, descuentos y
+   regalos. Una venta de cada turno esta anulada y conserva su correlativo.
+   Son 38 ventas vigentes y 2 anuladas. La caja esperada por turno es Bs 1856,20.
+   Los tickets y las cinco selecciones PDF funcionan con los perfiles existentes.
+
+ESCENARIO 2 - REPETIR SIN DUPLICAR
+1. Sin realizar operaciones desde otras sesiones, ejecutar de nuevo
+   bin\Preparar-Demo.ps1. El resultado indica: Registros nuevos: 0.
+2. Siguen los mismos 25 productos, 5 promociones, 40 ventas y 2 cierres.
+3. Para comparar todas las filas automaticamente:
+   powershell -NoProfile -ExecutionPolicy Bypass -File .\bin\Comprobar-Demo.ps1
+   No borra ni restaura nada; compara la huella completa antes y despues de cargar.
+
+FOTOS Y SQL
+Las 25 JPG originales se versionan en database/demo/fotos. productos.json indica
+que archivo corresponde a cada producto. El cargador usa FotoProducto::comprimir,
+igual que el formulario: JPEG cuadrada de 480 px y hasta 200 KB.
+La base guarda solo foto-<hash>.jpg. No guarda rutas de Windows. Los archivos se
+copian al volumen storage de la demo y se sirven por las rutas existentes.
+Al volver a cargar se reponen fotos faltantes; los registros no se vuelven a insertar.
+
+El SQL contiene usuarios ficticios, negocio de ejemplo, productos, promociones,
+ventas, detalles, pagos, facturas y sus snapshots, movimientos, arqueos y bitacora.
+Las operaciones fueron generadas con los servicios de cobro, promociones, caja,
+conteo, arqueo y anulacion del mismo develop, y luego exportadas respetando las
+claves foraneas. No se desactivan esas claves ni se importan columnas generadas.
+Se ejecuta con bin/demo.php, que aplica las migraciones primero y protege la carga.
+No importar manualmente el SQL en la base de uso habitual.
+Los precios y datos son de demostracion; ningun documento tiene valor fiscal.
+
+SEGURIDAD Y REPETICION
+El cargador solo admite APP_DEMO_HU65=1 y la base pahuichi_demo_hu65. Rechaza una
+base poblada sin su marca de carga; nunca elimina ni trunca tablas o registros.
+Una marca demo_hu65 se crea solo en la base demo. Guarda la version completada,
+no cada ejecucion. Un bloqueo impide dos cargas concurrentes; la transaccion evita
+ventas a medias. Una nueva version no reemplaza una demo ya cargada.
+No cambia .env, docker-compose.yml, fotos ni datos de la instancia habitual.
+Si despues se hacen ventas o cambios en la demo, repetir la carga los conserva.
+
+DETENER SIN BORRAR
+Desde el proyecto:
+  docker compose -p pahuichi-demo-hu65 -f docker-compose.demo.yml stop
+El comando Preparar-Demo.ps1 la vuelve a levantar con los mismos datos.
+
+VALIDACION REALIZADA
+Carga desde esquema vacio y segunda carga con huella de todas las filas identica;
+rechazo de otra base; 25 fotos por las rutas HTTP del sistema; 40 vistas de tickets;
+5 opciones PDF; arqueos contrastados con los movimientos y ventas; nueva factura
+con correlativo 41. Se probaron PHP 8.3 y MariaDB 10.11 en el entorno de revision.
+El arranque con Docker Desktop / MariaDB 11.4 debe comprobarse en Windows.

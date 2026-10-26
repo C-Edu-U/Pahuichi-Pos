@@ -1,0 +1,52 @@
+# HU-65: instancia independiente. No combinar con docker-compose.yml.
+name: pahuichi-demo-hu65
+services:
+  app:
+    build: ./docker/app
+    image: pahuichi-demo-hu65-app
+    entrypoint: ["/bin/sh", "/var/www/pahuichi/docker/demo/entrypoint.sh"]
+    command: ["apache2-foreground"]
+    ports:
+      - "${HU65_HTTPS:-8446}:443"
+      - "${HU65_HTTP:-8086}:80"
+    environment:
+      APP_ENTORNO: desarrollo
+      APP_DEMO_HU65: "1"
+      PUERTO_HTTPS: ${HU65_HTTPS:-8446}
+      DB_HOST: db
+      DB_PUERTO: "3306"
+      DB_NOMBRE: pahuichi_demo_hu65
+      DB_USUARIO: demo_hu65
+      DB_CLAVE: demo_hu65_local
+    volumes:
+      - .:/var/www/pahuichi
+      - demo-vendor:/var/www/pahuichi/vendor
+      - demo-storage:/var/www/pahuichi/storage
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@fsockopen('127.0.0.1',443)?0:1);"]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+      start_period: 30s
+  db:
+    image: mariadb:11.4
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci", "--default-time-zone=-04:00"]
+    environment:
+      MARIADB_DATABASE: pahuichi_demo_hu65
+      MARIADB_USER: demo_hu65
+      MARIADB_PASSWORD: demo_hu65_local
+      MARIADB_ROOT_PASSWORD: demo_hu65_root_local
+    volumes:
+      - demo-db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 24
+volumes:
+  demo-db:
+  demo-vendor:
+  demo-storage:
