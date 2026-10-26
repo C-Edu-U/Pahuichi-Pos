@@ -32,13 +32,25 @@ final class FacturaController extends Controller
             'facturas' => Factura::ultimas(puede('ventas.todas') ? null : Auth::id())]);
     }
 
+    public function cobrarSaldo(Peticion $peticion): Respuesta
+    {
+        $f=$this->permitida((int)$peticion->parametro('id'));
+        $importe=$peticion->entrada('importe');$recibido=$peticion->entrada('recibido');
+        try {
+            if (!is_string($importe) || !is_string($recibido)) throw new DomainException('Escribe el efectivo recibido.');
+            return Respuesta::json(\App\Services\SaldoQrService::cobrar((int)$f['id'],$importe,$recibido))->cabecera('Cache-Control','no-store');
+        } catch (DomainException $e) {
+            return Respuesta::json(['error'=>$e->getMessage()],422)->cabecera('Cache-Control','no-store');
+        }
+    }
+
     public function mostrar(Peticion $peticion): Respuesta
     {
         $f = $this->permitida((int) $peticion->parametro('id'));
         $s = $f['snapshot'];
         return $this->vista('facturas/tickets', ['titulo' => 'Factura N° ' . $f['numero'], 'h1' => 'Pedido ' . $s['pedido'] . ' · factura N° ' . $f['numero'],
             'modulo' => 'ventas', 'claseBody' => 'panel--tickets', 'css' => ['modulos.css', 'tickets.css', 'tickets-hu10.css'],
-            'js' => ['qrcode.js', 'tickets.js', 'anular.js'], 'f' => $f, 's' => $s, 'perfilesTickets' => ConfiguracionTickets::todas()]);
+            'js' => ['qrcode.js', 'tickets.js', 'anular.js', 'cobro-saldo.js'], 'f' => $f, 's' => $s, 'recuperacionSaldo' => \App\Services\SaldoQrService::detalle((int)$f['id']), 'cajaSaldoAbierta' => (\App\Models\Caja::buscar((int)$f['caja_id'])['estado'] ?? '') === 'abierta', 'perfilesTickets' => ConfiguracionTickets::todas()]);
     }
 
     /** Entrega un PDF real; nunca abre un diálogo ni envía trabajos a una impresora. */

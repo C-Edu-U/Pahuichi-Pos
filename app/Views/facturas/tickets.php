@@ -26,12 +26,7 @@
         </div>
       </div>
 
-<?php if ((float) ($f['saldo_por_cobrar'] ?? 0) > 0): ?>
-      <aside class="alerta alerta--peligro" id="saldo-por-cobrar" role="status">
-        <strong>Saldo por cobrar: Bs <?= bs($f['saldo_por_cobrar']) ?></strong>
-        <p>El pago QR fue rechazado. Este importe sigue pendiente de cobro y no cuenta como QR confirmado. El efectivo ya cobrado se conserva.</p>
-      </aside>
-<?php endif; ?>
+<?php require __DIR__ . '/_saldo_qr.php'; ?>
 
       <!-- HU-06: el PIN del administrador autoriza la anulación; anular la venta llega con HU-44 -->
       <dialog class="modal" id="modal-anular" aria-labelledby="anular-titulo" aria-describedby="anular-texto">
