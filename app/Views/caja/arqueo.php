@@ -117,8 +117,8 @@ $sobrante = $diferencia > 0;
           </div>
           <div class="panel-bloque__cuerpo">
             <div class="campo campo--ancho">
-              <label class="campo__etiqueta" for="observacion">Observación</label>
-              <input class="control" id="observacion" name="observacion" type="text" maxlength="255" value="<?= e($observacion) ?>"<?= campo_error($errores, 'observacion') ?>>
+              <label class="campo__etiqueta" for="observacion">Observación<?= $exigeObservacion ? ' (obligatoria)' : '' ?></label>
+              <input class="control" id="observacion" name="observacion" type="text" maxlength="255" value="<?= e($observacion) ?>"<?= $exigeObservacion ? ' required' : '' ?><?= campo_error($errores, 'observacion', 'observacion-ayuda') ?>>
               <p class="campo__ayuda" id="observacion-ayuda">Explica la diferencia entre lo contado y lo esperado. Es obligatoria cuando la diferencia es de Bs <?= bs($umbral ?? 10) ?> o más.</p>
               <?= mensaje_error($errores, 'observacion') ?>
             </div>

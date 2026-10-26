@@ -243,8 +243,13 @@ final class CajaController extends Controller
         $observacion = trim((string) $peticion->entrada('observacion'));
 
         // HU-26: una diferencia igual o mayor al umbral obliga a explicar.
+        $errores = [];
         if ($observacion === '' && ArqueoService::exigeObservacion($diferencia)) {
             $errores['observacion'] = ArqueoService::pedidoObservacion($diferencia);
+        } elseif (mb_strlen($observacion) > ArqueoService::OBSERVACION_MAXIMA) {
+            $errores['observacion'] = 'La observación admite hasta ' . ArqueoService::OBSERVACION_MAXIMA . ' caracteres.';
+        }
+        if ($errores) {
             return $this->pantallaArqueo($abierta, $conteo, $esperado, $diferencia, false, $errores, $observacion, 422);
         }
 
@@ -276,6 +281,7 @@ final class CajaController extends Controller
             'cerrada' => $cerrada,
             'observacion' => $observacion,
             'umbral' => ArqueoService::umbralObservacion(),
+            'exigeObservacion' => !$cerrada && ArqueoService::exigeObservacion($diferencia),
             'errores' => $errores,
         ], $estado);
     }
