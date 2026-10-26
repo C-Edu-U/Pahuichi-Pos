@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Core\Config;
 use DomainException;
 use finfo;
 
@@ -66,8 +65,8 @@ final class FotoProducto
     public static function guardar(string $jpeg): string
     {
         $nombre = 'foto-' . bin2hex(random_bytes(8)) . '.jpg';
-        $ruta = Config::get('app.subidas') . '/' . $nombre;
-        if (strlen($jpeg) > self::MAX_SALIDA || file_put_contents($ruta, $jpeg, LOCK_EX) !== strlen($jpeg)) {
+        $ruta = Imagenes::carpeta() . '/' . $nombre;
+        if (strlen($jpeg) > self::MAX_SALIDA || @file_put_contents($ruta, $jpeg, LOCK_EX) !== strlen($jpeg)) {
             if (is_file($ruta)) unlink($ruta);
             throw new DomainException('No se pudo guardar la foto. Avisa al administrador.');
         }

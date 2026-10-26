@@ -26,6 +26,9 @@ final class InstalacionTest extends CasoPrueba
         $this->assertGreaterThanOrEqual(1, $datos['migraciones']);
         $this->assertSame(5, $datos['usuarios']);
         $this->assertSame(25, $datos['productos']);
+        $this->assertSame('ok', $datos['subidas']);
+        $this->assertTrue($datos['gd']);
+        $this->assertTrue($datos['fileinfo']);
     }
 
     public function testLaBaseUsaLaHoraDeBolivia(): void
