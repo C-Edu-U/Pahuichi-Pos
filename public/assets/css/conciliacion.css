@@ -1,0 +1,10 @@
+.conciliacion-filtros{display:flex;align-items:flex-end;flex-wrap:wrap;gap:16px;margin:20px 0;}
+.conciliacion-filtros .campo{flex:1 1 180px;min-width:0;}
+.conciliacion-filtros .campo__ayuda{margin-bottom:0;}
+.conciliacion-lista{display:grid;gap:16px;}
+.conciliacion-datos{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:20px;}
+.conciliacion-datos>*{min-width:0;overflow-wrap:anywhere;}
+.conciliacion-acciones{display:flex;flex-direction:column;align-items:flex-end;gap:16px;}
+.conciliacion-enlaces,.conciliacion-paginas{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:12px;}
+.conciliacion-acciones .boton,.conciliacion-enlaces .boton{min-height:44px;white-space:normal;}
+@media(max-width:640px){.conciliacion-datos{grid-template-columns:minmax(0,1fr);}.conciliacion-acciones{align-items:stretch;}.conciliacion-acciones .acciones-qr{display:flex;gap:12px;}.conciliacion-acciones button{flex:1;}.conciliacion-filtros .campo{flex-basis:100%;}.conciliacion-enlaces .boton{max-width:100%;}.conciliacion-acciones .insignia{align-self:flex-start;}}

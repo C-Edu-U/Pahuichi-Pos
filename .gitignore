@@ -1,17 +1,35 @@
-# Credenciales locales (sprint 1 en PHP)
-config/config.local.php
+# Credenciales y certificados locales
+.env
+docker/certs/*.crt
+docker/certs/*.key
+docker/certs/*.pem
 
-# Base de datos local y registros
-storage/*.sqlite
-storage/logs/*
+# Dependencias y archivos que genera el sistema
+vendor/
+storage/subidas/*
+!storage/subidas/.gitkeep
+.phpunit.cache/
+.phpunit.result.cache
 
-# Ajustes y capturas locales de herramientas
-.claude/settings.local.json
-.impeccable/review/
-.impeccable/config.local.json
+# Configuración local del editor y de herramientas
+.claude/
+.impeccable/
+.kilo/
+skills-lock.json
+PRODUCT.md
+.vscode/
 
 # Sistema
 Thumbs.db
 .DS_Store
 node_modules/
-.impeccable/hook.cache.json
+
+# Documentos internos de planificación
+HANDOFF.md
+docs/ERS_POS.pdf
+
+# HU-07: copias locales con datos; nunca se suben a GitHub.
+/respaldos/
+
+# HU-07: estado y solicitudes internos, separados de las copias SQL.
+/var/respaldos/

@@ -1,0 +1,146 @@
+/* ==========================================================================
+   Pahuichi POS · Tokens del sistema de diseño
+   Base: blanco y el verde de la bandera cruceña; terracota y ámbar solo
+   para estados.
+   Espaciado en múltiplos de 8 (4 px solo para separaciones internas).
+   ========================================================================== */
+
+:root {
+  /* --- Verde bandera (riel, acción primaria, estado correcto) --- */
+  --verde-950: #082a1b;
+  --verde-900: #0c3b26;
+  --verde-800: #0f4a30;
+  --verde-700: #13603e; /* riel lateral */
+  --verde-600: #177448; /* botón primario, enlaces · 5,7:1 sobre blanco */
+  --verde-500: #2a8c5c;
+  --verde-300: #8cc5a6;
+  --verde-200: #c3e2d0;
+  --verde-100: #e2f1e8;
+  --verde-50: #f1f8f4;
+
+  /* --- Terracota de horno (peligro, error, eliminar) --- */
+  --terracota-700: #8f3415;
+  --terracota-600: #b2431e; /* 5,6:1 sobre blanco */
+  --terracota-200: #f0c6b5;
+  --terracota-100: #f9e4db;
+  --terracota-50: #fcf2ed;
+
+  /* --- Ámbar (aviso, por vencer, agotado hoy) --- */
+  --ambar-800: #6e4700; /* texto sobre ámbar claro · 7,4:1 */
+  --ambar-500: #d99a1e;
+  --ambar-200: #f6dc9f;
+  --ambar-100: #fcefcf;
+  --ambar-50: #fef8ea;
+
+  /* --- Neutros: grises con un punto de verde, nunca crema --- */
+  --tinta-900: #16201b; /* texto principal · 16:1 */
+  --tinta-800: #26312b;
+  --tinta-700: #3b4741;
+  --tinta-600: #55615a; /* texto secundario · 6,4:1 */
+  --tinta-500: #69756e; /* placeholder, ayudas · 4,8:1 */
+  --tinta-300: #b4bdb8;
+  --linea-fuerte: #c9d1cc;
+  --linea: #dfe5e1;
+  --linea-suave: #ecf0ee;
+  --fondo-alterno: #f6f8f7;
+  --blanco: #ffffff;
+
+  /* --- Series de datos (validadas para daltonismo: ΔE 16,2) --- */
+  --serie-efectivo: #177448;
+  --serie-qr: #4a6fb5;
+
+  /* --- Categorías del menú: color de botón con texto blanco AA (6,0 a 10,4:1) --- */
+  --cat-platos: #8a5300;
+  --cat-refrescos: #1062a8;
+  --cat-sodas: #8e2c7c;
+  --cat-vinos: #6e2a1e;
+  --cat-postres: #3f6f1f;
+  --cat-prueba: #4f5a54;
+
+  /* --- Roles semánticos --- */
+  --color-texto: var(--tinta-900);
+  --color-texto-2: var(--tinta-600);
+  --color-texto-3: var(--tinta-500);
+  --color-fondo: var(--blanco);
+  --color-superficie: var(--blanco);
+  --color-superficie-2: var(--fondo-alterno);
+  --color-borde: var(--linea);
+  --color-borde-fuerte: var(--linea-fuerte);
+  --color-primario: var(--verde-600);
+  --color-primario-hover: var(--verde-700);
+  --color-primario-activo: var(--verde-800);
+  --color-enlace: var(--verde-600);
+  --color-foco: #1c6fd1; /* azul de foco: distinto de todo estado, visible sobre verde y blanco */
+  --color-peligro: var(--terracota-600);
+  --color-peligro-hover: var(--terracota-700);
+  --color-ok: var(--verde-600);
+  --color-aviso: var(--ambar-800);
+  --color-riel: var(--verde-700);
+  --color-riel-texto: #e9f4ee; /* 6,9:1 sobre el riel */
+  --color-riel-texto-2: #b9d8c7;
+
+  /* --- Tipografía: fuente del sistema para trabajar, Archivo para la marca.
+         Cifras tabulares en todo número. --- */
+  --fuente-marca: "Archivo", var(--fuente-display);
+  --fuente:"Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Roboto, Arial, sans-serif;
+  --fuente-display: "Segoe UI Variable Display", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Roboto, Arial, sans-serif;
+
+  --texto-xs: 0.8125rem;  /* 13 · metadatos */
+  --texto-sm: 0.875rem;   /* 14 · ayudas, celdas densas */
+  --texto-base: 1rem;     /* 16 · cuerpo */
+  --texto-md: 1.125rem;   /* 18 · subtítulos */
+  --texto-lg: 1.375rem;   /* 22 · títulos de sección */
+  --texto-xl: 1.75rem;    /* 28 · título de página */
+  --texto-2xl: 2.25rem;   /* 36 · montos destacados */
+  --texto-3xl: 3.5rem;    /* 56 · solo portada */
+
+  --interlineado-ajustado: 1.15;
+  --interlineado-titulo: 1.25;
+  --interlineado-base: 1.5;
+
+  --peso-normal: 400;
+  --peso-medio: 500;
+  --peso-semi: 600;
+  --peso-negrita: 700;
+
+  /* --- Espaciado (8 px) --- */
+  --esp-05: 0.25rem; /* 4 */
+  --esp-1: 0.5rem;   /* 8 */
+  --esp-2: 1rem;     /* 16 */
+  --esp-3: 1.5rem;   /* 24 */
+  --esp-4: 2rem;     /* 32 */
+  --esp-5: 2.5rem;   /* 40 */
+  --esp-6: 3rem;     /* 48 */
+  --esp-8: 4rem;     /* 64 */
+  --esp-10: 5rem;    /* 80 */
+
+  /* --- Forma: una sola regla. Controles y paneles 6 px, insignias 4 px. --- */
+  --radio: 6px;
+  --radio-sm: 4px;
+  --radio-redondo: 999px;
+
+  /* --- Profundidad: dos niveles, sombra teñida de verde --- */
+  --sombra-1: 0 1px 2px rgba(12, 59, 38, 0.06), 0 1px 1px rgba(12, 59, 38, 0.04);
+  --sombra-2: 0 12px 32px rgba(12, 59, 38, 0.16), 0 2px 6px rgba(12, 59, 38, 0.08);
+
+  /* --- Tamaños --- */
+  --alto-control: 3rem;       /* 48 · todo botón y campo */
+  --riel-ancho: 15.5rem;      /* 248 */
+  --riel-plegado: 4.5rem;     /* 72 */
+  --barra-alto: 4rem;         /* 64 */
+  --contenido-max: 80rem;     /* 1280 */
+
+  /* --- Movimiento: corto, con propósito --- */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-cajon: cubic-bezier(0.32, 0.72, 0, 1);
+  --dur-presion: 120ms;
+  --dur-corta: 180ms;
+  --dur-media: 240ms;
+
+  /* --- Capas --- */
+  --z-barra: 20;
+  --z-riel: 30;
+  --z-velo: 40;
+  --z-modal: 50;
+}

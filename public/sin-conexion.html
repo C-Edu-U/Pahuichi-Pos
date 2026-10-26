@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="es-BO">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sin conexión · Pahuichi POS</title>
+  <meta name="theme-color" content="#13603e">
+  <link rel="icon" href="/assets/img/icono.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/css/tokens.css">
+  <link rel="stylesheet" href="/assets/css/base.css">
+  <link rel="stylesheet" href="/assets/css/components.css">
+  <link rel="stylesheet" href="/assets/css/layout.css">
+  <link rel="stylesheet" href="/assets/css/pages.css">
+</head>
+<!-- HU-36: la entrega el service worker cuando una página que necesita la red no responde -->
+<body class="pagina-suelta">
+  <main class="contenido" id="contenido">
+    <section class="aviso-pagina" aria-labelledby="t-sin-red">
+      <p class="aviso-pagina__codigo">Sin conexión</p>
+      <h1 class="aviso-pagina__titulo" id="t-sin-red">No hay conexión con el servidor</h1>
+      <p class="aviso-pagina__texto">Esta pantalla necesita la red. El punto de venta sí sigue funcionando: las ventas se guardan en este equipo y se envían solas al volver la conexión.</p>
+      <div class="aviso-pagina__acciones">
+        <a class="boton boton--primario" href="/pos">Ir al punto de venta</a>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

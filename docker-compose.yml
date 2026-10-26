@@ -1,0 +1,116 @@
+# Pahuichi POS: todo el sistema con un solo «docker compose up».
+# Las variables se leen de .env (ver .env.example); sin .env se usan los valores por defecto.
+name: pahuichi
+
+services:
+  app:
+    build: ./docker/app
+    image: pahuichi-app
+    restart: unless-stopped
+    ports:
+      - "${PUERTO_HTTPS:-8443}:443"
+      - "${PUERTO_HTTP:-8080}:80"
+    environment:
+      PUERTO_RESTAURACION: ${PUERTO_RESTAURACION:-8445}
+      BACKUP_HORA: ${BACKUP_HORA:-02:00}
+      APP_ENTORNO: ${APP_ENTORNO:-desarrollo}
+      PUERTO_HTTPS: ${PUERTO_HTTPS:-8443}
+      DB_HOST: db
+      DB_PUERTO: 3306
+      DB_NOMBRE: ${DB_NOMBRE:-pahuichi}
+      DB_USUARIO: ${DB_USUARIO:-pahuichi}
+      DB_CLAVE: ${DB_CLAVE:-pahuichi_local}
+    volumes:
+      - .:/var/www/pahuichi
+      - vendor:/var/www/pahuichi/vendor
+    depends_on:
+      db:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@fsockopen('127.0.0.1',443)?0:1);"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
+
+  db:
+    image: mariadb:11.4
+    restart: unless-stopped
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=-04:00
+    environment:
+      MARIADB_DATABASE: ${DB_NOMBRE:-pahuichi}
+      MARIADB_USER: ${DB_USUARIO:-pahuichi}
+      MARIADB_PASSWORD: ${DB_CLAVE:-pahuichi_local}
+      MARIADB_ROOT_PASSWORD: ${DB_CLAVE_ROOT:-pahuichi_root_local}
+    ports:
+      # Solo desde esta PC, para revisar la base con un cliente SQL
+      - "127.0.0.1:${PUERTO_DB:-3307}:3306"
+    volumes:
+      - db-datos:/var/lib/mysql
+      - ./docker/db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  backup:
+    image: mariadb:11.4
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "/scripts/programar.sh"]
+    environment:
+      BACKUP_ESTADO_DIR: /estado
+      RESTAURACION_HOST: restaurada
+      TZ: America/La_Paz
+      BACKUP_HORA: ${BACKUP_HORA:-02:00}
+      DB_HOST: db
+      DB_PUERTO: 3306
+      DB_USUARIO: ${DB_USUARIO:-pahuichi}
+      DB_NOMBRE: ${DB_NOMBRE:-pahuichi}
+      DB_CLAVE_ROOT: ${DB_CLAVE_ROOT:-pahuichi_root_local}
+    volumes:
+      - ./docker/backup:/scripts:ro
+      - ./respaldos:/respaldos
+      - ./var/respaldos:/estado
+    depends_on:
+      db:
+        condition: service_healthy
+      app:
+        condition: service_healthy
+
+  restaurada:
+    image: pahuichi-app
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "/var/www/pahuichi/docker/backup/iniciar-restaurada.sh"]
+    ports:
+      - "127.0.0.1:${PUERTO_RESTAURACION:-8445}:443"
+    environment:
+      APP_ENTORNO: ${APP_ENTORNO:-desarrollo}
+      PUERTO_HTTPS: ${PUERTO_RESTAURACION:-8445}
+      DB_HOST: db
+      DB_PUERTO: 3306
+      APP_RESTAURADA: "1"
+      DB_NOMBRE: pahuichi_hu07_sin_restaurar
+      DB_HABITUAL: ${DB_NOMBRE:-pahuichi}
+      DB_USUARIO: ${DB_USUARIO:-pahuichi}
+      DB_CLAVE: ${DB_CLAVE:-pahuichi_local}
+    volumes:
+      - .:/var/www/pahuichi:ro
+      - vendor:/var/www/pahuichi/vendor:ro
+      - ./storage/subidas:/fotos-originales:ro
+      - restauracion-subidas:/var/www/pahuichi/storage/subidas
+    depends_on:
+      db:
+        condition: service_healthy
+      app:
+        condition: service_healthy
+
+volumes:
+  db-datos:
+  vendor:
+  restauracion-subidas:

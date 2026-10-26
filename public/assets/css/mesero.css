@@ -1,0 +1,68 @@
+/* ==========================================================================
+   Pahuichi POS · Pedidos del mesero (HU-35), pensado para el celular
+   Usa el catálogo y las líneas del punto de venta (pos.css); aquí solo el orden
+   de la pantalla: mesas abiertas arriba, pedido nuevo abajo.
+   ========================================================================== */
+
+.contenido--mesero {
+  max-width: 48rem;
+}
+
+.mesero {
+  display: grid;
+  gap: var(--esp-4);
+}
+
+.mesero__mesas,
+.mesero__nuevo {
+  display: grid;
+  gap: var(--esp-2);
+}
+
+.mesero__mesa {
+  display: grid;
+  gap: var(--esp-05);
+}
+
+.mesero .mesas--pedido {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--esp-1);
+}
+
+.mesero .mesas--pedido .mesa-opcion,
+.mesero .mesas__otra {
+  min-height: var(--alto-control);
+  font-size: var(--texto-md);
+}
+
+/* El catálogo ocupa su alto natural: la página es la que se desplaza */
+.mesero .pos__catalogo {
+  padding: 0;
+}
+
+.pos__turno--sin-caja {
+  color: var(--ambar-800);
+}
+
+.mesero__pedido .totales__lista {
+  display: grid;
+  gap: var(--esp-05);
+}
+
+.mesero__pedido .totales__lista > div {
+  display: flex;
+  justify-content: space-between;
+}
+
+.mesero__cobradas summary {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-1);
+  min-height: 2.75rem;
+  font-weight: var(--peso-semi);
+  cursor: pointer;
+}
+
+.mesero__cobradas .cuentas {
+  margin-top: var(--esp-1);
+}

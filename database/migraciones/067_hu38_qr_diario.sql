@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS qr_diarios (
+ id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ fecha DATE NOT NULL,
+ monto DECIMAL(10,2) NOT NULL DEFAULT 0.50,
+ imagen MEDIUMBLOB NOT NULL,
+ imagen_tipo VARCHAR(30) NOT NULL,
+ usuario_id BIGINT UNSIGNED NOT NULL,
+ creado_en DATETIME NOT NULL,
+ INDEX ix_qr_fecha (fecha, id),
+ CONSTRAINT ck_qr_diario_monto CHECK (monto > 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
