@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Core\DB;
 use App\Core\Reloj;
 use App\Models\Arqueo;
 use App\Models\Bitacora;
@@ -18,6 +19,9 @@ use DomainException;
  *
  * Efectivo esperado = fondo inicial + ingresos del turno - egresos del turno
  * + ventas cobradas en efectivo. Las ventas por QR pendientes o rechazadas no suman.
+ *
+ * El cierre bloquea la fila de la caja, como el cobro y los egresos: una venta que llega
+ * mientras se confirma espera, o entra antes y ya cuenta en el esperado que se guarda.
  */
 final class ArqueoService
 {
@@ -49,6 +53,13 @@ final class ArqueoService
         return abs($diferencia) >= self::umbralObservacion();
     }
 
+    /** Lo que se le pide al cajero cuando falta la observación. */
+    public static function pedidoObservacion(float $diferencia): string
+    {
+        return 'La diferencia es de Bs ' . number_format(abs($diferencia), 2, ',', '.')
+            . '. Escribe una observación para explicar el ' . ($diferencia < 0 ? 'faltante' : 'sobrante') . '.';
+    }
+
     /** Resumen del turno: ventas, medios de pago, QR, descuentos y anulaciones. */
     public static function resumen(int $cajaId): array
     {
@@ -60,26 +71,44 @@ final class ArqueoService
     }
 
     /**
-     * Confirma el cierre: guarda el esperado, la diferencia y el resumen, y cierra la caja.
+     * Confirma el cierre: con la caja bloqueada, calcula el esperado, la diferencia y el
+     * resumen, los guarda y cierra la caja. Devuelve el esperado y la diferencia guardados.
      *
-     * @throws DomainException si la caja no tiene conteo
+     * @return array{esperado: float, diferencia: float}
+     * @throws DomainException si la caja ya está cerrada, no tiene conteo o falta la observación
      */
-    public function confirmarCierre(int $cajaId, float $esperado, float $diferencia, array $resumen, string $observacion = ''): void
+    public function confirmarCierre(int $cajaId, string $observacion = ''): array
     {
-        $conteo = Arqueo::porCaja($cajaId);
-        if ($conteo === null) {
-            throw new DomainException('Cuenta el efectivo antes de cerrar la caja.');
-        }
+        return DB::transaccion(static function () use ($cajaId, $observacion): array {
+            $caja = DB::fila('SELECT * FROM cajas WHERE id = ? FOR UPDATE', [$cajaId]);
+            if ($caja === null || $caja['estado'] !== 'abierta') {
+                throw new DomainException('La caja ya está cerrada.');
+            }
+            $conteo = Arqueo::porCaja($cajaId);
+            if ($conteo === null) {
+                throw new DomainException('Cuenta el efectivo antes de cerrar la caja.');
+            }
 
-        $cerradoEn = Reloj::sql();
-        Arqueo::guardarCierre($cajaId, $esperado, $diferencia, $resumen, $observacion, $cerradoEn);
-        Caja::cerrar($cajaId, $cerradoEn);
+            $esperado = self::esperado($caja);
+            $diferencia = self::diferencia((float) $conteo['total_contado'], $esperado);
+            // Se vuelve a mirar aquí: una venta de último momento puede cambiar la diferencia
+            if ($observacion === '' && self::exigeObservacion($diferencia)) {
+                throw new DomainException(self::pedidoObservacion($diferencia));
+            }
+            $resumen = self::resumen($cajaId);
 
-        Bitacora::registrar('caja.arqueo', 'cajas', $cajaId, [
-            'efectivo_esperado' => number_format($esperado, 2, '.', ''),
-            'total_contado' => number_format((float) $conteo['total_contado'], 2, '.', ''),
-            'diferencia' => number_format($diferencia, 2, '.', ''),
-            'ventas' => $resumen['ventas'] ?? 0,
-        ]);
+            $cerradoEn = Reloj::sql();
+            Arqueo::guardarCierre($cajaId, $esperado, $diferencia, $resumen, $observacion, $cerradoEn);
+            Caja::cerrar($cajaId, $cerradoEn);
+
+            Bitacora::registrar('caja.arqueo', 'cajas', $cajaId, [
+                'efectivo_esperado' => number_format($esperado, 2, '.', ''),
+                'total_contado' => number_format((float) $conteo['total_contado'], 2, '.', ''),
+                'diferencia' => number_format($diferencia, 2, '.', ''),
+                'ventas' => $resumen['ventas'] ?? 0,
+            ]);
+
+            return ['esperado' => $esperado, 'diferencia' => $diferencia];
+        });
     }
 }
